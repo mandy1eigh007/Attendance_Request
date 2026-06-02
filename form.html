@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>ANEW — Attendance Request</title>
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#0e1413">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="ANEW Request">
+<link rel="stylesheet" href="/app.css">
+<style>
+.page{max-width:620px;margin:0 auto;padding:0 0 40px}
+.header{background:linear-gradient(165deg,var(--s3),var(--s1));border-bottom:.5px solid var(--b1);
+  padding:calc(22px + env(safe-area-inset-top)) 22px 20px;position:relative;overflow:hidden}
+.header::after{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--ac),var(--ac2))}
+.header-top{display:flex;align-items:flex-start;justify-content:space-between;gap:14px}
+.header h1{font-size:27px;font-weight:700;letter-spacing:-.03em;line-height:1.05}
+.header .sub{font-size:12.5px;color:var(--t3);margin-top:6px}
+.header-logo{width:50px;height:50px;border-radius:13px;background:linear-gradient(160deg,var(--ac2),var(--ac));
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 6px 18px var(--acg),inset 0 1px 0 rgba(255,255,255,.25)}
+.pill-row{display:flex;gap:7px;flex-wrap:wrap;margin-top:16px}
+.pill{font-size:11.5px;font-weight:500;padding:5px 11px;border-radius:var(--rpill);
+  border:.5px solid var(--acg);color:var(--ac2);background:var(--acd)}
+.pill.plain{border-color:var(--b2);color:var(--t3);background:var(--s2)}
+.body-wrap{padding:22px}
+.sec{font-size:13px;font-weight:600;letter-spacing:.02em;text-transform:uppercase;color:var(--ac2);
+  margin:0 0 14px;display:flex;align-items:center;gap:9px}
+.sec::after{content:'';flex:1;height:.5px;background:var(--b1)}
+.field{margin-bottom:15px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.divider{height:.5px;background:var(--b1);margin:24px 0}
+.type-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-bottom:16px}
+.type-card{cursor:pointer;background:var(--s2);border:1.5px solid var(--b2);border-radius:14px;padding:16px 8px 13px;
+  text-align:center;transition:border-color .18s var(--ease),background .18s var(--ease),transform .12s var(--ease);user-select:none}
+.type-card:active{transform:scale(.96)}
+.type-card .ico{font-size:24px;margin-bottom:8px;display:block;line-height:1}
+.type-card .lbl{font-size:12.5px;font-weight:600;color:var(--t2);display:block}
+.type-card .desc{font-size:11px;color:var(--t3);margin-top:3px;line-height:1.3}
+.type-card.sel{border-color:var(--ac);background:var(--acd)}
+.type-card.sel .lbl{color:var(--t1)}
+.type-card.sel .desc{color:var(--t2)}
+.cond{display:none;animation:slideDown .3s var(--ease-out)}
+.cond.on{display:block}
+@keyframes slideDown{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
+.info-note{background:var(--s2);border:.5px solid var(--b1);border-left:3px solid var(--ac);border-radius:0 12px 12px 0;padding:12px 15px;margin-bottom:16px}
+.info-note p{font-size:13.5px;color:var(--t2);line-height:1.5}
+.info-note strong{color:var(--t1);font-weight:600}
+.submit-row{display:flex;gap:10px;padding-top:6px}
+.submit-row .btn-primary{flex:1;padding:15px;font-size:16px}
+.spinner{width:19px;height:19px;border:2.5px solid var(--acg);border-top-color:var(--on-ac);border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.btn-primary.loading .btn-text{display:none}
+.btn-primary .spinner{display:none}
+.btn-primary.loading .spinner{display:block}
+.err-msg{background:var(--rdd);border:.5px solid rgba(248,113,113,.4);border-radius:11px;
+  padding:12px 15px;font-size:13.5px;color:var(--rd);margin-bottom:16px;display:none}
+.err-msg.on{display:block}
+#successPanel{display:none;text-align:center;padding:44px 20px;animation:sheetIn .5s var(--ease-out)}
+#successPanel.on{display:block}
+@keyframes sheetIn{from{opacity:0;transform:scale(.94)}to{opacity:1;transform:scale(1)}}
+.success-ic{width:72px;height:72px;border-radius:50%;background:var(--grd);color:var(--gr);
+  display:flex;align-items:center;justify-content:center;font-size:38px;margin:0 auto 18px}
+.success-h{font-size:27px;font-weight:700;letter-spacing:-.03em;margin-bottom:10px}
+.success-p{font-size:15px;color:var(--t2);line-height:1.65;margin-bottom:18px;max-width:420px;margin-left:auto;margin-right:auto}
+.success-p strong{color:var(--t1)}
+.success-badge{display:inline-block;background:var(--acd);border:.5px solid var(--acg);color:var(--ac2);
+  padding:8px 18px;border-radius:var(--rpill);font-size:13px;font-weight:600;margin-bottom:26px}
+.not-found{text-align:center;padding:60px 24px}
+.not-found h2{font-size:24px;font-weight:700;letter-spacing:-.02em;color:var(--rd);margin-bottom:10px}
+.not-found p{font-size:14.5px;color:var(--t2);line-height:1.6}
+.skeleton{text-align:center;padding:50px 24px;color:var(--t3);font-size:15px}
+@media(max-width:480px){.grid2,.type-grid{grid-template-columns:1fr}.submit-row{flex-direction:column-reverse}}
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="header">
+    <div class="header-top">
+      <div>
+        <h1>Attendance Request</h1>
+        <p class="sub" id="headerSub">ANEW Pre-Apprenticeship Program</p>
+      </div>
+      <div class="header-logo" aria-hidden="true">
+        <svg width="30" height="30" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M16 4L4 10V22L16 28L28 22V10L16 4Z" fill="#06231b" stroke="#06231b" stroke-width="1.5"/>
+          <path d="M16 4L16 28M4 10L28 22M28 10L4 22" stroke="#5fe6c1" stroke-width="1.5"/>
+        </svg>
+      </div>
+    </div>
+    <div class="pill-row">
+      <span class="pill" id="pillInstructor">Loading…</span>
+      <span class="pill plain">Confirmation sent to your email</span>
+      <span class="pill plain">No login required</span>
+    </div>
+  </div>
+  <div id="formBody">
+    <div class="skeleton">Loading class info…</div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+<script>
+// No secrets here anymore — all data + email goes through /submit and /respond.
+let classConfig = null;
+let classSlug = null;
+
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+
+async function loadClass(){
+  classSlug=new URLSearchParams(location.search).get('class');
+  if(!classSlug){showNotFound('No class specified in the link.');return;}
+  try{
+    const res=await fetch('/submit?class='+encodeURIComponent(classSlug));
+    if(!res.ok){showNotFound(`Class "${esc(classSlug)}" was not found.`);return;}
+    classConfig=await res.json();
+    document.title=`ANEW — ${classConfig.program_name}`;
+    document.getElementById('headerSub').textContent=classConfig.program_name+' — Tukwila, WA';
+    document.getElementById('pillInstructor').textContent='Instructor: '+classConfig.instructor_name;
+    renderForm();
+  }catch(e){console.error(e);showNotFound('Could not load class info. Please try again later.');}
+}
+
+function showNotFound(msg){
+  document.getElementById('formBody').innerHTML=`<div class="not-found"><h2>Class Not Found</h2><p>${msg}<br><br>Contact your instructor for the correct link.</p></div>`;
+}
+
+function renderForm(){
+  const opts=(classConfig.cohorts||[]).map(c=>`<option>${esc(c)}</option>`).join('');
+  const instr=esc(classConfig.instructor_name);
+  const today=new Date().toISOString().split('T')[0];
+  document.getElementById('formBody').innerHTML=`
+    <div class="body-wrap">
+    <div class="err-msg" id="errMsg"></div>
+    <form id="absenceForm" novalidate>
+      <div class="sec">Student Information</div>
+      <div class="grid2">
+        <div class="field"><label>First name <span class="req">*</span></label><input type="text" id="firstName" placeholder="First" autocomplete="given-name"></div>
+        <div class="field"><label>Last name <span class="req">*</span></label><input type="text" id="lastName" placeholder="Last" autocomplete="family-name"></div>
+      </div>
+      <div class="grid2">
+        <div class="field">
+          <label>Email address <span class="req">*</span></label>
+          <input type="email" id="studentEmail" placeholder="you@email.com" autocomplete="email" inputmode="email">
+          <p class="note">Your confirmation and decision will come here.</p>
+        </div>
+        <div class="field"><label>Cohort <span class="req">*</span></label>
+          <select id="cohort"><option value="">— Select —</option>${opts}</select>
+        </div>
+      </div>
+      <div class="info-note">
+        <p><strong>What happens next:</strong> After you submit, you will get a confirmation email. ${instr} will review your request and email you back with an approval or denial — usually within one business day.</p>
+      </div>
+      <div class="divider"></div>
+      <div class="sec">What are you requesting?</div>
+      <div class="type-grid">
+        <div class="type-card" data-type="Full Absence" onclick="selectType(this)"><span class="ico">🚪</span><span class="lbl">Full Absence</span><span class="desc">Missing the entire day</span></div>
+        <div class="type-card" data-type="Leave Early" onclick="selectType(this)"><span class="ico">⏱️</span><span class="lbl">Leave Early</span><span class="desc">Leaving before end of day</span></div>
+        <div class="type-card" data-type="Appointment" onclick="selectType(this)"><span class="ico">📋</span><span class="lbl">Appointment</span><span class="desc">Out a few hours &amp; returning</span></div>
+      </div>
+      <input type="hidden" id="requestType">
+      <div class="field"><label>Date of request <span class="req">*</span></label><input type="date" id="requestDate" min="${today}"></div>
+      <div class="cond" id="earlyRow">
+        <div class="field"><label>Leaving at <span class="req">*</span></label><input type="time" id="leaveTime"><p class="note">Time you need to leave the site.</p></div>
+      </div>
+      <div class="cond" id="apptRow">
+        <div class="grid2">
+          <div class="field"><label>Appointment start <span class="req">*</span></label><input type="time" id="apptStart"></div>
+          <div class="field"><label>Estimated return <span class="req">*</span></label><input type="time" id="apptReturn"></div>
+        </div>
+        <div class="field"><label>Appointment type</label>
+          <select id="apptType"><option value="">— Select if known —</option>
+            <option>Medical / Dental</option><option>Legal / Court</option>
+            <option>Housing / Social Services</option><option>Childcare / Family</option><option>Other</option>
+          </select>
+        </div>
+      </div>
+      <div class="field"><label>Reason / additional notes</label>
+        <textarea id="reason" placeholder="Any details ${instr} should know…"></textarea>
+      </div>
+      <div class="divider"></div>
+      <div class="sec">Make-Up Plan</div>
+      <div class="field"><label>If you miss instructional time, how do you plan to make it up?</label>
+        <select id="makeup"><option value="">— Select —</option>
+          <option>I will complete any missed assignments or work</option>
+          <option>I would like to discuss a make-up plan with my instructor</option>
+          <option>N/A — medical or emergency situation</option>
+          <option>Not sure yet</option>
+        </select>
+      </div>
+      <div class="submit-row">
+        <button type="button" class="btn btn-ghost" onclick="resetForm()">Clear</button>
+        <button type="button" class="btn btn-primary" id="submitBtn" onclick="handleSubmit()">
+          <span class="btn-text">Submit Request</span>
+          <div class="spinner"></div>
+        </button>
+      </div>
+    </form>
+    <div id="successPanel">
+      <div class="success-ic">✓</div>
+      <div class="success-h">Request Submitted</div>
+      <p class="success-p" id="successMsg"></p>
+      <div class="success-badge" id="successBadge"></div>
+      <div><button class="btn btn-ghost" onclick="showFormAgain()">Submit Another Request</button></div>
+    </div>
+    </div>`;
+}
+
+function selectType(card){
+  document.querySelectorAll('.type-card').forEach(c=>c.classList.remove('sel'));
+  card.classList.add('sel');
+  const t=card.dataset.type;
+  document.getElementById('requestType').value=t;
+  document.getElementById('earlyRow').classList.toggle('on',t==='Leave Early');
+  document.getElementById('apptRow').classList.toggle('on',t==='Appointment');
+}
+function showErr(msg){const el=document.getElementById('errMsg');el.textContent=msg;el.classList.add('on');el.scrollIntoView({behavior:'smooth',block:'center'});}
+function clearErr(){const el=document.getElementById('errMsg');el.textContent='';el.classList.remove('on');}
+function fmtTime(v){if(!v)return'';const[h,m]=v.split(':');const hr=parseInt(h);return(hr%12||12)+':'+m+(hr>=12?' PM':' AM');}
+function fmtDate(v){if(!v)return'';return new Date(v+'T12:00:00').toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'});}
+function setLoading(on){const btn=document.getElementById('submitBtn');btn.classList.toggle('loading',on);btn.disabled=on;}
+
+async function handleSubmit(){
+  clearErr();
+  const g=id=>document.getElementById(id).value.trim();
+  const data={firstName:g('firstName'),lastName:g('lastName'),studentEmail:g('studentEmail'),cohort:g('cohort'),requestType:g('requestType'),requestDate:g('requestDate'),leaveTime:fmtTime(g('leaveTime')),apptStart:fmtTime(g('apptStart')),apptReturn:fmtTime(g('apptReturn')),apptType:g('apptType'),reason:g('reason'),makeup:g('makeup')};
+  data.dateFormatted=fmtDate(data.requestDate);
+  if(!data.firstName)return showErr('Please enter your first name.');
+  if(!data.lastName)return showErr('Please enter your last name.');
+  if(!data.studentEmail||!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(data.studentEmail))return showErr('Please enter a valid email address.');
+  if(!data.cohort)return showErr('Please select your cohort.');
+  if(!data.requestType)return showErr('Please select a request type.');
+  if(!data.requestDate)return showErr('Please select the date of your request.');
+  if(data.requestType==='Leave Early'&&!document.getElementById('leaveTime').value)return showErr('Please enter the time you need to leave.');
+  if(data.requestType==='Appointment'){if(!document.getElementById('apptStart').value)return showErr('Please enter your appointment start time.');if(!document.getElementById('apptReturn').value)return showErr('Please enter your estimated return time.');}
+
+  setLoading(true);
+
+  try{
+    data.classSlug=classSlug;
+    const res=await fetch('/submit',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});
+    const out=await res.json();
+    if(!res.ok||!out.ok){throw new Error(out.error||'submit failed');}
+
+    document.getElementById('absenceForm').style.display='none';
+    document.getElementById('successPanel').classList.add('on');
+    document.getElementById('successBadge').textContent=data.requestType+' — '+data.dateFormatted;
+    const conf=out.studentEmailOk
+      ? `A confirmation has been sent to <strong>${esc(data.studentEmail)}</strong>.`
+      : `We couldn't send your confirmation email, but your request did go through — no need to resubmit.`;
+    document.getElementById('successMsg').innerHTML=`Your request has been sent to <strong>${esc(classConfig.instructor_name)}</strong>.<br>${conf}<br>Watch your inbox for an approval or denial.`;
+    window.scrollTo({top:0,behavior:'smooth'});
+
+  }catch(err){
+    console.error(err);
+    showErr('Something went wrong sending your request. Please try again, or contact your instructor directly.');
+    setLoading(false);
+  }
+}
+
+function resetForm(){
+  const f=document.getElementById('absenceForm');if(f)f.reset();
+  document.querySelectorAll('.type-card').forEach(c=>c.classList.remove('sel'));
+  document.getElementById('requestType').value='';
+  document.getElementById('earlyRow').classList.remove('on');
+  document.getElementById('apptRow').classList.remove('on');
+  clearErr();
+  setLoading(false);
+}
+function showFormAgain(){
+  document.getElementById('successPanel').classList.remove('on');
+  document.getElementById('absenceForm').style.display='';
+  resetForm();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+loadClass();
+</script>
+</body>
+</html>

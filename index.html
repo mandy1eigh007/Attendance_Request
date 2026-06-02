@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<!--
+═══════════════════════════════════════════════════════════════════════════════
+  DEPLOYING AGENT: READ README.md FIRST. Quick version:
+  • Host: Cloudflare Pages. Framework preset = None. Build command = EMPTY.
+    Build output directory = "/". There is NO build step (static + functions).
+  • Functions live in /functions and auto-serve at /admin /submit /respond.
+    Do NOT rename them or change the fetch paths in the HTML.
+  • Database is ALREADY LIVE in Supabase (ref lfizcpaqolckemrvsooy). Do NOT
+    create tables or edit the schema. /supabase/01_schema.sql is reference only.
+  • REQUIRED environment variables (set in Cloudflare → Settings → Env vars):
+      SUPABASE_URL          = https://lfizcpaqolckemrvsooy.supabase.co
+      SUPABASE_SERVICE_KEY  = <Supabase service_role secret key>  (SECRET)
+      ADMIN_PASSWORD        = <dashboard login password, owner picks>
+      EMAILJS_PRIVATE_KEY   = <EmailJS private key>               (SECRET)
+      SITE_URL              = <deployed URL, optional>
+  • After setting vars, redeploy (free on Cloudflare). Verify by logging in at
+    /admin.html. Full troubleshooting + function probe in README.md.
+  • Never commit secrets. EmailJS public key/IDs in functions are public by design.
+═══════════════════════════════════════════════════════════════════════════════
+-->
+
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>ANEW — Attendance Request System</title>
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#0e1413">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="ANEW">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='24' fill='%232dd4a7'/><path d='M50 18 L78 34 V66 L50 82 L22 66 V34 Z' fill='none' stroke='%2306231b' stroke-width='6' stroke-linejoin='round'/></svg>">
+<link rel="stylesheet" href="/app.css">
+<style>
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;
+  background:var(--mat-chrome);backdrop-filter:saturate(180%) blur(22px);-webkit-backdrop-filter:saturate(180%) blur(22px);
+  border-bottom:.5px solid var(--b1);padding-top:calc(14px + env(safe-area-inset-top));position:sticky;top:0;z-index:10}
+.topbar h1{font-size:17px;font-weight:600;letter-spacing:-.02em}
+.topbar .logo-dot{display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--ac);box-shadow:0 0 8px var(--ac);margin-right:8px;vertical-align:middle}
+.hero{max-width:680px;margin:0 auto;padding:48px 20px 32px;text-align:center}
+.logo{width:76px;height:76px;border-radius:20px;background:linear-gradient(160deg,var(--ac2),var(--ac));
+  display:flex;align-items:center;justify-content:center;margin:0 auto 22px;
+  box-shadow:0 10px 30px var(--acg),inset 0 1px 0 rgba(255,255,255,.25)}
+.hero h2{font-size:34px;font-weight:700;letter-spacing:-.03em;margin-bottom:10px}
+.hero .lede{font-size:16px;color:var(--t2);max-width:460px;margin:0 auto 36px;line-height:1.5}
+.cards{display:grid;grid-template-columns:1fr;gap:14px;max-width:440px;margin:0 auto}
+@media(min-width:620px){.cards{grid-template-columns:1fr 1fr;max-width:680px}}
+.card-link{display:flex;flex-direction:column;align-items:center;text-align:center;gap:10px;
+  padding:28px 22px;text-decoration:none;color:inherit;transition:transform .15s var(--ease),box-shadow .2s var(--ease),background .2s var(--ease)}
+.card-link:hover{transform:translateY(-2px);box-shadow:var(--sh2);background:var(--s3)}
+.card-link:active{transform:translateY(0) scale(.99)}
+.card-ic{width:46px;height:46px;border-radius:12px;background:var(--acd);color:var(--ac2);display:flex;align-items:center;justify-content:center}
+.card-ic svg{width:24px;height:24px}
+.card-link h3{font-size:18px;font-weight:600;letter-spacing:-.02em}
+.card-link p{font-size:13.5px;color:var(--t3);line-height:1.45}
+.card-link .pseudo{margin-top:auto;font-size:14px;font-weight:600;color:var(--ac2)}
+.card-link.muted{opacity:.66;cursor:default}
+.card-link.muted:hover{transform:none;box-shadow:var(--sh1);background:var(--s2)}
+.card-link.muted .pseudo{color:var(--t3)}
+.footer{text-align:center;padding:24px 20px calc(24px + env(safe-area-inset-bottom));font-size:12px;color:var(--t3)}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <h1><span class="logo-dot"></span>ANEW Attendance</h1>
+  <a href="/admin.html" class="btn btn-ghost btn-sm">Instructor Login</a>
+</div>
+<div class="hero">
+  <div class="logo">
+    <svg width="40" height="40" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M16 4L4 10V22L16 28L28 22V10L16 4Z" fill="#06231b" stroke="#06231b" stroke-width="1.5"/>
+      <path d="M16 4L16 28M4 10L28 22M28 10L4 22" stroke="#5fe6c1" stroke-width="1.5"/>
+    </svg>
+  </div>
+  <h2>Attendance Portal</h2>
+  <p class="lede">Pre-Apprenticeship Construction Training — Tukwila, WA</p>
+  <div class="cards">
+    <div class="card card-link muted">
+      <div class="card-ic">
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="12" height="14" rx="2"/><path d="M7.5 7h5M7.5 10h5M7.5 13h3"/></svg>
+      </div>
+      <h3>Submit a Request</h3>
+      <p>Students — use the unique link your instructor gave you to request an absence, appointment, or early departure.</p>
+      <span class="pseudo">Use your class link</span>
+    </div>
+    <a href="/admin.html" class="card card-link">
+      <div class="card-ic">
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6.25h7.5M14.5 6.25H17M3 13.75h2.5M9.5 13.75H17"/><circle cx="12.25" cy="6.25" r="1.9"/><circle cx="7.25" cy="13.75" r="1.9"/></svg>
+      </div>
+      <h3>Instructor Hub</h3>
+      <p>Instructors — log in to manage classes, assign cohorts, and see your student form links.</p>
+      <span class="pseudo">Go to Dashboard →</span>
+    </a>
+  </div>
+</div>
+<div class="footer">ANEW · anewcareer.org · Tukwila, WA</div>
+</body>
+</html>

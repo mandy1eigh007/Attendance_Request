@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>ANEW — Instructor Dashboard</title>
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#0e1413">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="ANEW">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='24' fill='%232dd4a7'/><path d='M50 18 L78 34 V66 L50 82 L22 66 V34 Z' fill='none' stroke='%2306231b' stroke-width='6' stroke-linejoin='round'/></svg>">
+<link rel="stylesheet" href="/app.css">
+</head>
+<body>
+
+<!-- LOGIN -->
+<div class="login-wrap" id="loginWrap" style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px">
+  <div class="card" style="max-width:380px;width:100%;padding:36px 28px;text-align:center">
+    <div style="width:60px;height:60px;border-radius:16px;background:linear-gradient(160deg,var(--ac2),var(--ac));display:flex;align-items:center;justify-content:center;margin:0 auto 18px;box-shadow:0 8px 26px var(--acg),inset 0 1px 0 rgba(255,255,255,.25)">
+      <svg width="32" height="32" viewBox="0 0 32 32" fill="none"><path d="M16 4L4 10V22L16 28L28 22V10L16 4Z" fill="#06231b" stroke="#06231b" stroke-width="1.5"/><path d="M16 4L16 28M4 10L28 22M28 10L4 22" stroke="#5fe6c1" stroke-width="1.5"/></svg>
+    </div>
+    <h1 style="font-size:24px;font-weight:700;letter-spacing:-.03em;margin-bottom:5px">ANEW Dashboard</h1>
+    <p style="font-size:13.5px;color:var(--t3);margin-bottom:22px">Attendance · Demerits · Requests</p>
+    <div class="alert alert-danger" id="loginErr" style="display:none">Incorrect password.</div>
+    <input type="password" id="pwInput" placeholder="Enter password" style="margin-bottom:14px;text-align:center" onkeydown="if(event.key==='Enter')doLogin()">
+    <button class="btn btn-primary btn-block" id="loginBtn" onclick="doLogin()">Sign In</button>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app" style="display:none">
+  <div class="app-header">
+    <div class="app-logo"><span class="dot"></span><b>ANEW</b></div>
+    <span class="app-sub">Instructor</span>
+    <div class="header-right">
+      <button class="btn btn-ghost btn-sm" onclick="doLogout()">Sign Out</button>
+    </div>
+  </div>
+
+  <div style="max-width:1000px;margin:14px auto 0;padding:0 16px">
+    <div class="nav-tabs" id="navTabs">
+      <button class="nav-tab active" data-view="attendance" onclick="showView('attendance')">Attendance</button>
+      <button class="nav-tab" data-view="demerit" onclick="showView('demerit')">Demerit</button>
+      <button class="nav-tab" data-view="requests" onclick="showView('requests')">Requests</button>
+      <button class="nav-tab" data-view="history" onclick="showView('history')">History</button>
+      <button class="nav-tab" data-view="manage" onclick="showView('manage')">Manage</button>
+    </div>
+  </div>
+
+  <div class="main">
+
+    <!-- context: class selector shared by attendance/demerit -->
+    <div class="context-bar" id="contextBar">
+      <span class="ctx-label">Class</span>
+      <select id="classSelect" onchange="onClassChange()"></select>
+    </div>
+
+    <!-- ATTENDANCE -->
+    <div class="view active" id="view-attendance">
+      <div class="page-header">
+        <div><div class="page-title">Attendance</div><div class="page-sub">Tap a status for each student</div></div>
+        <div class="flex-gap">
+          <input type="date" id="attDate" style="width:auto" onchange="loadAttendance()">
+        </div>
+      </div>
+      <div id="attAlert"></div>
+      <div class="section-card">
+        <table class="data-table">
+          <thead><tr><th>Student</th><th>Status</th><th>Demerits</th><th>Notes</th></tr></thead>
+          <tbody id="attBody"></tbody>
+        </table>
+      </div>
+      <p class="note" style="text-align:center">OT = On Time · L = Late · AE = Absent-Excused · AU = Absent-Unexcused. Saved automatically.</p>
+    </div>
+
+    <!-- DEMERIT -->
+    <div class="view" id="view-demerit">
+      <div class="page-header"><div><div class="page-title">Issue Demerit</div><div class="page-sub">Generates a signable slip + Salesforce case note</div></div></div>
+      <div id="demeritAlert"></div>
+      <div class="section-card">
+        <div class="field"><label>Student <span class="req">*</span></label><select id="dStudent" onchange="updateDemeritTotal()"></select></div>
+        <div class="grid2">
+          <div class="field"><label>Date <span class="req">*</span></label><input type="date" id="dDate"></div>
+          <div class="field"><label>Issuing staff <span class="req">*</span></label><input type="text" id="dStaff" placeholder="Your name"></div>
+        </div>
+        <div class="field"><label>Demerit code <span class="req">*</span></label><select id="dCode" onchange="onCodeSelect()"></select></div>
+        <div class="code-preview" id="codePreview" style="display:none">
+          <div class="code-num" id="cpNum"></div>
+          <div class="code-desc" id="cpDesc"></div>
+          <div class="code-pts" id="cpPts"></div>
+        </div>
+        <div class="grid2">
+          <div class="field"><label>Excused?</label>
+            <select id="dExcused" onchange="onExcusedChange()"><option value="no">No — points apply</option><option value="yes">Yes — 0 points</option></select>
+          </div>
+          <div class="field" id="excuseReasonGroup" style="display:none"><label>Excuse reason</label><select id="dExcuseReason"></select></div>
+        </div>
+        <div class="field"><label>Incident description <span id="incidentReq" class="note" style="display:inline">(optional)</span></label>
+          <textarea id="dIncident" placeholder="What happened…"></textarea>
+        </div>
+        <button class="btn btn-primary btn-block" onclick="generateDemerit()">Generate Demerit</button>
+      </div>
+      <div id="demeritCurrentAlert"></div>
+      <div class="output-block" id="demeritOutput" style="display:none">
+        <div class="section-card">
+          <div class="card-title">Printable Slip</div>
+          <div id="print-area"><div class="print-slip" id="printSlip"></div></div>
+          <button class="btn btn-ghost btn-block" style="margin-top:12px" onclick="window.print()">Print Slip</button>
+        </div>
+        <div class="section-card">
+          <div class="card-title">Salesforce Case Note</div>
+          <div class="case-note" id="caseNoteText"></div>
+          <button class="btn btn-primary btn-block" onclick="copyCaseNote()">Copy Case Note</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- REQUESTS -->
+    <div class="view" id="view-requests">
+      <div class="page-header">
+        <div><div class="page-title">Requests</div><div class="page-sub">Student absence / appointment requests</div></div>
+        <div class="flex-gap">
+          <select id="reqStatusFilter" style="width:auto" onchange="loadRequests()">
+            <option value="pending">Pending</option><option value="approved">Approved</option>
+            <option value="denied">Denied</option><option value="">All</option>
+          </select>
+        </div>
+      </div>
+      <div id="reqList"><div class="empty-state"><p>Loading…</p></div></div>
+    </div>
+
+    <!-- HISTORY -->
+    <div class="view" id="view-history">
+      <div class="page-header">
+        <div><div class="page-title">History</div><div class="page-sub">Attendance & demerit records</div></div>
+        <div class="flex-gap">
+          <select id="histType" style="width:auto" onchange="renderHistory()">
+            <option value="">All Types</option><option value="attendance">Attendance</option><option value="demerit">Demerits</option>
+          </select>
+          <button class="btn btn-ghost btn-sm" onclick="exportHistoryCsv()">Export CSV</button>
+        </div>
+      </div>
+      <div class="section-card">
+        <table class="data-table">
+          <thead><tr><th>Date</th><th>Student</th><th>Type</th><th>Detail</th><th>Pts</th><th></th></tr></thead>
+          <tbody id="histBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- MANAGE -->
+    <div class="view" id="view-manage">
+      <div class="page-header"><div><div class="page-title">Manage</div><div class="page-sub">Classes, students, instructors</div></div></div>
+      <div class="section-card">
+        <div class="card-title">Classes <button class="btn btn-primary btn-sm" style="margin-left:auto" onclick="openClassModal()">+ Add</button></div>
+        <div id="manageClasses"></div>
+      </div>
+      <div class="section-card">
+        <div class="card-title">Instructors <button class="btn btn-primary btn-sm" style="margin-left:auto" onclick="openInstrModal()">+ Add</button></div>
+        <div id="manageInstructors"></div>
+      </div>
+      <div class="section-card">
+        <div class="card-title">Students</div>
+        <div class="flex-gap" style="margin-bottom:12px">
+          <button class="btn btn-ghost btn-sm" onclick="openStudentModal()">+ Add Student</button>
+          <button class="btn btn-ghost btn-sm" onclick="openRosterModal()">Paste Roster</button>
+        </div>
+        <div id="manageStudents"></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- MODALS -->
+<div class="modal-bg" id="classModal"><div class="modal" role="dialog" aria-modal="true"><div class="grab"></div>
+  <h2 id="classModalTitle" style="font-size:22px;font-weight:700;letter-spacing:-.03em;margin-bottom:18px">Add Class</h2>
+  <div class="grid2">
+    <div class="field"><label>Program Type <span class="req">*</span></label>
+      <select id="fType" onchange="buildClassName()"><option value="">— Select —</option><option>PACE</option><option>TRP</option><option>CBC</option></select></div>
+    <div class="field"><label>Cohort Number <span class="req">*</span></label><input type="number" id="fNumber" placeholder="64" inputmode="numeric" oninput="buildClassName()"></div>
+  </div>
+  <input type="hidden" id="fProgram"><input type="hidden" id="fSlug">
+  <div class="field"><label>Student Form Link</label><div class="preview-box" id="slugPreview">select a type and number…</div></div>
+  <div class="field"><label>Assigned Instructors <span class="req">*</span></label>
+    <div class="instructor-select"><div class="instructor-checkboxes" id="instrChecks"></div></div></div>
+  <div class="field"><label>Cohorts</label>
+    <div class="cohort-builder"><div class="cohort-tags" id="cohortTags"></div>
+      <div class="cohort-input-row"><input type="text" id="cohortInput" placeholder="Type cohort…" onkeydown="if(event.key==='Enter'){event.preventDefault();addCohort()}"><button class="btn btn-ghost btn-sm" onclick="addCohort()">+ Add</button></div></div></div>
+  <div class="modal-actions"><button class="btn btn-ghost" onclick="closeModal('classModal')">Cancel</button><button class="btn btn-primary" id="classSaveBtn" onclick="saveClass()">Save Class</button></div>
+</div></div>
+
+<div class="modal-bg" id="instrModal"><div class="modal" role="dialog" aria-modal="true"><div class="grab"></div>
+  <h2 id="instrModalTitle" style="font-size:22px;font-weight:700;letter-spacing:-.03em;margin-bottom:18px">Add Instructor</h2>
+  <div class="field"><label>Name <span class="req">*</span> <span class="note" style="display:inline">— first name builds the @anewcareer.org email</span></label>
+    <input type="text" id="fInstrName" placeholder="e.g. Doug" oninput="previewEmail()"></div>
+  <div class="field"><label>Email Preview</label><div class="preview-box" id="emailPreview">enter a name…</div></div>
+  <div class="modal-actions"><button class="btn btn-ghost" onclick="closeModal('instrModal')">Cancel</button><button class="btn btn-primary" id="instrSaveBtn" onclick="saveInstructor()">Save</button></div>
+</div></div>
+
+<div class="modal-bg" id="studentModal"><div class="modal" role="dialog" aria-modal="true"><div class="grab"></div>
+  <h2 style="font-size:22px;font-weight:700;letter-spacing:-.03em;margin-bottom:18px">Add Student</h2>
+  <div class="field"><label>Class</label><select id="sClass"></select></div>
+  <div class="grid2">
+    <div class="field"><label>First <span class="req">*</span></label><input type="text" id="sFirst"></div>
+    <div class="field"><label>Last <span class="req">*</span></label><input type="text" id="sLast"></div></div>
+  <div class="field"><label>Email <span class="note" style="display:inline">(optional)</span></label><input type="email" id="sEmail" placeholder="for request matching"></div>
+  <div class="modal-actions"><button class="btn btn-ghost" onclick="closeModal('studentModal')">Cancel</button><button class="btn btn-primary" id="studentSaveBtn" onclick="saveStudent()">Add</button></div>
+</div></div>
+
+<div class="modal-bg" id="rosterModal"><div class="modal" role="dialog" aria-modal="true"><div class="grab"></div>
+  <h2 style="font-size:22px;font-weight:700;letter-spacing:-.03em;margin-bottom:18px">Paste Roster</h2>
+  <div class="field"><label>Class</label><select id="rClass"></select></div>
+  <div class="field"><label>Names (one per line — "First Last" or "Last, First")</label><textarea id="rText" style="min-height:140px" oninput="previewRoster()"></textarea></div>
+  <div id="rPreview" class="note"></div>
+  <div class="modal-actions"><button class="btn btn-ghost" onclick="closeModal('rosterModal')">Cancel</button><button class="btn btn-primary" id="rosterSaveBtn" onclick="saveRoster()">Import</button></div>
+</div></div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ════ ANEW merged dashboard — all data via /admin (server holds the keys) ════
+const DEMERIT_CODES = [
+  {code:1,desc:"Violation of phone, visitor, or dress policy",pts:1,asterisk:true},
+  {code:2,desc:"Unprofessional behavior during class (talking over instructor, not paying attention, horseplay, etc.)",pts:1,asterisk:true},
+  {code:3,desc:"Failure to submit homework assignment on time",pts:1,asterisk:false},
+  {code:4,desc:"Failure to have proper PPE on while in shop or on-site visits",pts:1,asterisk:false},
+  {code:5,desc:"Mistreatment of ANEW, guest, partner site, or classmate property",pts:1,asterisk:true},
+  {code:6,desc:"Refusal to sign demerit table",pts:1,asterisk:false},
+  {code:7,desc:"Absent during guest speaker, site visit, or certification",pts:3,asterisk:false},
+  {code:8,desc:"Arriving late or leaving early",pts:2,asterisk:false},
+  {code:9,desc:"Refusal or inability to participate in class activities",pts:2,asterisk:true},
+  {code:10,desc:"Absent full day (4+ hours)",pts:3,asterisk:false},
+  {code:11,desc:"Unprofessional behavior during site visits or certification classes (talking over instructor, not paying attention, horseplay, wandering off, etc.)",pts:3,asterisk:true},
+  {code:12,desc:"Mistreatment of ANEW staff, guest, or classmate",pts:3,asterisk:true},
+  {code:13,desc:"No-call no-show",pts:5,asterisk:false},
+  {code:14,desc:"Failure to follow safety instructions during class instruction or site visits",pts:5,asterisk:true},
+  {code:15,desc:"Violation of anti-harassment policy",pts:10,asterisk:true},
+  {code:16,desc:"Engaging in a physical altercation",pts:10,asterisk:true},
+  {code:17,desc:"Bringing weapons onto ANEW property",pts:10,asterisk:true},
+  {code:18,desc:"Possessing and/or being under the influence of controlled substances or alcohol",pts:10,asterisk:true},
+];
+const EXCUSE_REASONS=["Death of immediate family member","Birth of child/grandchild","Mandatory court appearance","Mandatory probation/parole meeting","Jury duty","Job/apprenticeship interview","Illness/injury with doctor's note"];
+
+let PW='';                       // admin password held in memory only for the session
+let classes=[], instructors=[], students=[], curClass=null;
+let cohorts=[], editClassId=null, editInstrId=null;
+let attendanceRows=[], demeritTotals={};
+
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function todayStr(){return new Date().toISOString().split('T')[0];}
+function fmtDate(s){if(!s)return'';const[y,m,d]=s.split('-');return `${m}/${d}/${y}`;}
+function studentName(s){return s?`${s.first} ${s.last}`:'Unknown';}
+
+// ── API ──
+async function api(action,payload){
+  const res=await fetch('/admin',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({password:PW,action,payload})});
+  const out=await res.json();
+  if(res.status===401){doLogout();throw new Error('Session expired');}
+  if(!res.ok)throw new Error(out.error||'Request failed');
+  return out;
+}
+
+// ── Auth ──
+async function doLogin(){
+  const pw=document.getElementById('pwInput').value;
+  const btn=document.getElementById('loginBtn');btn.disabled=true;btn.textContent='…';
+  PW=pw;
+  try{
+    await api('login');
+    sessionStorage.setItem('anew_pw',pw);
+    showApp();
+  }catch(e){
+    document.getElementById('loginErr').style.display='block';
+    document.getElementById('pwInput').value='';PW='';
+  }finally{btn.disabled=false;btn.textContent='Sign In';}
+}
+function doLogout(){sessionStorage.removeItem('anew_pw');PW='';location.reload();}
+function showApp(){
+  document.getElementById('loginWrap').style.display='none';
+  document.getElementById('app').style.display='block';
+  document.getElementById('attDate').value=todayStr();
+  document.getElementById('dDate').value=todayStr();
+  bootstrap();
+}
+
+// ── Bootstrap ──
+async function bootstrap(){
+  try{
+    const d=await api('bootstrap');
+    instructors=d.instructors;classes=d.classes;
+    renderClassSelect();renderManage();
+    if(classes.length){curClass=classes[0].id;document.getElementById('classSelect').value=curClass;await onClassChange();}
+  }catch(e){toast(e.message,true);}
+}
+
+// ── Nav ──
+function showView(name){
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t=>t.classList.toggle('active',t.dataset.view===name));
+  document.getElementById('view-'+name).classList.add('active');
+  document.getElementById('contextBar').style.display=(name==='attendance'||name==='demerit')?'flex':'none';
+  if(name==='requests')loadRequests();
+  if(name==='history')renderHistory();
+}
+
+// ── Class selector ──
+function renderClassSelect(){
+  const sel=document.getElementById('classSelect');
+  sel.innerHTML=classes.map(c=>`<option value="${esc(c.id)}">${esc(c.program_name)}</option>`).join('')||'<option>No classes yet</option>';
+}
+async function onClassChange(){
+  curClass=document.getElementById('classSelect').value;
+  if(!curClass)return;
+  const d=await api('students',{classId:curClass});students=d.students;
+  await refreshDemeritTotals();
+  populateDemeritStudents();
+  await loadAttendance();
+}
+async function refreshDemeritTotals(){
+  demeritTotals={};
+  const d=await api('demerits',{classId:curClass});
+  for(const s of students){
+    demeritTotals[s.id]=(d.demerits||[]).filter(x=>x.student_id===s.id&&!x.excused).reduce((a,x)=>a+(x.pts_num||0),0);
+  }
+  window._demerits=d.demerits||[];
+}
+function dtClass(t){return t>=10?'dt-out':t>=7?'dt-hi':t>=4?'dt-mid':t>0?'dt-low':'dt-0';}
+
+// ── ATTENDANCE ──
+async function loadAttendance(){
+  if(!curClass){document.getElementById('attBody').innerHTML='';return;}
+  const date=document.getElementById('attDate').value;
+  const d=await api('attendanceDay',{classId:curClass,date});attendanceRows=d.attendance||[];
+  renderAttendance();
+}
+function renderAttendance(){
+  const body=document.getElementById('attBody');
+  if(!students.length){body.innerHTML=`<tr><td colspan="4"><div class="empty-state"><p>No students in this class. Add some under Manage.</p></div></td></tr>`;return;}
+  const statuses=['OT','L','AE','AU'];
+  body.innerHTML=students.map(s=>{
+    const ex=attendanceRows.find(a=>a.student_id===s.id);const st=ex?ex.status:'';const notes=ex?(ex.notes||''):'';
+    const t=demeritTotals[s.id]||0;
+    return `<tr>
+      <td data-label="Student" class="student-name">${esc(studentName(s))}</td>
+      <td data-label="Status"><div class="status-group">${statuses.map(k=>`<button class="status-btn ${st===k?'sel-'+k:''}" onclick="setStatus('${esc(s.id)}','${k}',this)">${k}</button>`).join('')}</div></td>
+      <td data-label="Demerits"><span class="dt-chip ${dtClass(t)}">${t} pts</span>${t>=7?` <span style="color:var(--am);font-size:11px">⚠ ${t>=10?'DISMISS':'CONTRACT'}</span>`:''}</td>
+      <td data-label="Notes"><input type="text" placeholder="Notes" value="${esc(notes)}" style="font-size:13px;padding:6px 9px" onchange="setNote('${esc(s.id)}',this.value)"></td>
+    </tr>`;
+  }).join('');
+}
+async function setStatus(studentId,status,btn){
+  const row=btn.closest('tr');let cur='';
+  row.querySelectorAll('.status-btn').forEach(b=>{const c=[...b.classList].find(x=>x.startsWith('sel-'));if(c)cur=c.replace('sel-','');});
+  row.querySelectorAll('.status-btn').forEach(b=>b.className='status-btn');
+  const next=(cur===status)?'':status;
+  if(next)btn.classList.add('sel-'+next);
+  const notesInput=row.querySelector('input');const notes=notesInput?notesInput.value:'';
+  try{
+    await api('setAttendance',{studentId,classId:curClass,date:document.getElementById('attDate').value,status:next,notes});
+    const i=attendanceRows.findIndex(a=>a.student_id===studentId);
+    if(next){if(i>=0)attendanceRows[i].status=next;else attendanceRows.push({student_id:studentId,status:next,notes});}
+    else if(i>=0)attendanceRows.splice(i,1);
+  }catch(e){toast(e.message,true);}
+}
+async function setNote(studentId,notes){
+  const ex=attendanceRows.find(a=>a.student_id===studentId);
+  if(!ex||!ex.status)return; // note only attaches to an existing status
+  try{await api('setAttendance',{studentId,classId:curClass,date:document.getElementById('attDate').value,status:ex.status,notes});ex.notes=notes;}
+  catch(e){toast(e.message,true);}
+}
+
+// ── DEMERIT ──
+function populateDemeritStudents(){
+  const sel=document.getElementById('dStudent');
+  sel.innerHTML='<option value="">— Select student —</option>'+students.map(s=>`<option value="${esc(s.id)}">${esc(studentName(s))}</option>`).join('');
+  const cs=document.getElementById('dCode');
+  cs.innerHTML='<option value="">— Select code —</option>'+DEMERIT_CODES.map(d=>`<option value="${d.code}">Code ${d.code} — ${esc(d.desc.length>55?d.desc.slice(0,55)+'…':d.desc)} (${d.pts} pts)</option>`).join('');
+  const er=document.getElementById('dExcuseReason');
+  er.innerHTML=EXCUSE_REASONS.map(r=>`<option>${esc(r)}</option>`).join('');
+}
+function onCodeSelect(){
+  const code=parseInt(document.getElementById('dCode').value);
+  const dc=DEMERIT_CODES.find(d=>d.code===code);const pv=document.getElementById('codePreview');
+  if(!dc){pv.style.display='none';return;}
+  document.getElementById('cpNum').textContent=dc.code;
+  document.getElementById('cpDesc').innerHTML=esc(dc.desc)+(dc.asterisk?' <span class="code-asterisk">*</span>':'');
+  const pc=dc.pts>=10?'pts-10':dc.pts>=5?'pts-5':dc.pts>=3?'pts-3':dc.pts>=2?'pts-2':'pts-1';
+  const pe=document.getElementById('cpPts');pe.className='code-pts '+pc;pe.textContent=dc.pts+' pts';
+  pv.style.display='flex';
+  document.getElementById('incidentReq').textContent=dc.asterisk?'(required)':'(optional)';
+}
+function onExcusedChange(){
+  const ex=document.getElementById('dExcused').value==='yes';
+  document.getElementById('excuseReasonGroup').style.display=ex?'block':'none';
+}
+function updateDemeritTotal(){
+  const sid=document.getElementById('dStudent').value;const a=document.getElementById('demeritAlert');
+  if(!sid){a.innerHTML='';return;}
+  const t=demeritTotals[sid]||0;
+  if(t>=10)a.innerHTML=`<div class="alert alert-danger">DISMISSAL THRESHOLD: ${esc(studentName(students.find(s=>s.id===sid)))} has ${t} demerits and must be exited.</div>`;
+  else if(t>=7)a.innerHTML=`<div class="alert alert-warn">CONTRACT REQUIRED: ${esc(studentName(students.find(s=>s.id===sid)))} has ${t} demerits.</div>`;
+  else a.innerHTML='';
+}
+async function generateDemerit(){
+  const sid=document.getElementById('dStudent').value;
+  const date=document.getElementById('dDate').value;
+  const staff=document.getElementById('dStaff').value.trim();
+  const code=parseInt(document.getElementById('dCode').value);
+  const excused=document.getElementById('dExcused').value==='yes';
+  const excuseReason=document.getElementById('dExcuseReason').value;
+  const incident=document.getElementById('dIncident').value.trim();
+  if(!sid)return toast('Select a student',true);
+  if(!date)return toast('Enter a date',true);
+  if(!code)return toast('Select a code',true);
+  if(!staff)return toast('Enter issuing staff',true);
+  const dc=DEMERIT_CODES.find(d=>d.code===code);
+  if(dc.asterisk&&!incident&&!excused)return toast(`Code ${code} requires an incident description`,true);
+  try{
+    const out=await api('issueDemerit',{studentId:sid,classId:curClass,date,staff,code,description:dc.desc,excused,excuseReason,incident,signed:false});
+    demeritTotals[sid]=out.total;
+    const rec={student:students.find(s=>s.id===sid),classId:curClass,date,staff,code,desc:dc.desc,
+      ptsNum:excused?0:dc.pts,excused,excuseReason,incident,runningTotal:out.total};
+    buildSlip(rec);buildCaseNote(rec);
+    document.getElementById('demeritOutput').style.display='block';
+    document.getElementById('demeritOutput').scrollIntoView({behavior:'smooth'});
+    const ca=document.getElementById('demeritCurrentAlert');
+    if(out.total>=10)ca.innerHTML=`<div class="alert alert-danger">DISMISSAL THRESHOLD REACHED — ${out.total} demerits.</div>`;
+    else if(out.total>=7)ca.innerHTML=`<div class="alert alert-warn">CONTRACT REQUIRED — ${out.total} demerits.</div>`;
+    else ca.innerHTML='';
+    await refreshDemeritTotals();renderAttendance();
+  }catch(e){toast(e.message,true);}
+}
+function buildSlip(r){
+  const cls=classes.find(c=>c.id===r.classId);
+  const ptsText=r.excused?'EXCUSED — No points assessed':`${r.ptsNum} point(s)`;
+  const dc=DEMERIT_CODES.find(d=>d.code===r.code);
+  document.getElementById('printSlip').innerHTML=`
+    <h2>ANEW</h2><div class="print-sub">Building People, Building Communities — Demerit Documentation</div>
+    <div class="print-total-banner">Running Total: ${r.runningTotal} demerit point(s) as of ${fmtDate(r.date)}${r.runningTotal>=10?' — DISMISSAL THRESHOLD':r.runningTotal>=7?' — CONTRACT REQUIRED':''}</div>
+    <div class="print-row">
+      <div class="print-field"><div class="print-field-label">Student</div><div class="print-field-value">${esc(studentName(r.student))}</div></div>
+      <div class="print-field"><div class="print-field-label">Class</div><div class="print-field-value">${esc(cls?cls.program_name:'')}</div></div>
+      <div class="print-field"><div class="print-field-label">Date</div><div class="print-field-value">${fmtDate(r.date)}</div></div>
+    </div>
+    <div class="print-row">
+      <div class="print-field"><div class="print-field-label">Code</div><div class="print-field-value">Code ${r.code}</div></div>
+      <div class="print-field" style="flex:3"><div class="print-field-label">Description</div><div class="print-field-value">${esc(r.desc)}${dc&&dc.asterisk?' *':''}</div></div>
+      <div class="print-field"><div class="print-field-label">Points</div><div class="print-field-value">${ptsText}</div></div>
+    </div>
+    ${r.excused?`<div class="print-row"><div class="print-field"><div class="print-field-label">Excused Reason</div><div class="print-field-value">${esc(r.excuseReason)}</div></div></div>`:''}
+    ${r.incident?`<div class="print-incident"><strong>Incident:</strong><br>${esc(r.incident)}</div>`:''}
+    <div class="print-sig-area">
+      <div class="sig-block"><div class="sig-line"></div><div class="sig-label">Student Signature</div></div>
+      <div class="sig-block"><div class="sig-line"></div><div class="sig-label">Staff Signature</div></div>
+      <div class="sig-block"><div class="sig-line"></div><div class="sig-label">Date Signed</div></div>
+    </div>
+    <div class="print-disclaimer">I acknowledge receipt of this demerit. Refusal to sign results in an additional demerit (Code 6). Accumulation of 10 demerit points results in dismissal from the program.</div>`;
+}
+function buildCaseNote(r){
+  const cls=classes.find(c=>c.id===r.classId);
+  const ptsText=r.excused?`0 points (excused — ${r.excuseReason})`:`${r.ptsNum} point(s)`;
+  const note=`DEMERIT ISSUED — ${fmtDate(r.date)}
+Program: ${cls?cls.program_name:'N/A'}
+Student: ${studentName(r.student)}
+
+Demerit Code ${r.code}: ${r.desc}
+Points Assessed: ${ptsText}
+Running Total: ${r.runningTotal} point(s)
+
+${r.incident?`Incident Description:\n${r.incident}\n`:''}${r.excused?`Excused Reason: ${r.excuseReason}\n`:''}
+Staff: ${r.staff}
+Documentation: Student was informed and demerit slip presented for signature.${r.runningTotal>=10?'\n\nACTION REQUIRED: Student has reached 10 demerit points and must be exited from the program.':r.runningTotal>=7?'\n\nNOTE: Student has reached 7+ demerit points. A behavioral contract is required.':''}`;
+  document.getElementById('caseNoteText').textContent=note;
+}
+function copyCaseNote(){navigator.clipboard.writeText(document.getElementById('caseNoteText').textContent).then(()=>toast('Case note copied'));}
+
+// ── REQUESTS ──
+async function loadRequests(){
+  const status=document.getElementById('reqStatusFilter').value;
+  const list=document.getElementById('reqList');list.innerHTML='<div class="empty-state"><p>Loading…</p></div>';
+  try{
+    const d=await api('requests',{status});
+    if(!d.requests.length){list.innerHTML='<div class="empty-state"><p>No requests.</p></div>';return;}
+    list.innerHTML=d.requests.map(r=>{
+      const detail=r.request_type==='Leave Early'?`Leaving at ${esc(r.leave_time||'')}`:
+        r.request_type==='Appointment'?`${esc(r.appt_start||'')} – ${esc(r.appt_return||'')}${r.appt_type?' ('+esc(r.appt_type)+')':''}`:'Full day';
+      return `<div class="req-card ${r.status}">
+        <div class="req-top">
+          <div><div class="req-name">${esc(r.student_first)} ${esc(r.student_last)}</div>
+            <div class="req-meta">${esc(r.request_type)} · ${esc(r.request_date)} · ${esc(r.cohort||'')}</div></div>
+          <span class="req-status rs-${r.status}">${esc(r.status)}</span>
+        </div>
+        <div class="req-detail">${detail}${r.reason?'<br>'+esc(r.reason):''}</div>
+        ${r.status==='pending'?`<div class="req-actions">
+          <button class="btn btn-primary btn-sm" onclick="decide('${esc(r.id)}','approved')">Approve</button>
+          <button class="btn btn-danger btn-sm" onclick="decide('${esc(r.id)}','denied')">Deny</button></div>`:
+          `<div class="req-meta">${r.decided_by?'by '+esc(r.decided_by):''} ${r.decided_at?'· '+new Date(r.decided_at).toLocaleDateString():''}</div>`}
+      </div>`;
+    }).join('');
+  }catch(e){list.innerHTML=`<div class="empty-state"><p>${esc(e.message)}</p></div>`;}
+}
+async function decide(id,decision){
+  try{await api('decideRequest',{id,decision,by:'Instructor'});toast(`Request ${decision}`);loadRequests();}
+  catch(e){toast(e.message,true);}
+}
+
+// ── HISTORY ──
+async function renderHistory(){
+  const body=document.getElementById('histBody');body.innerHTML='<tr><td colspan="6">Loading…</td></tr>';
+  const type=document.getElementById('histType').value;
+  try{
+    let rows=[];
+    if(!type||type==='demerit'){
+      const d=await api('demerits',{classId:curClass});
+      (d.demerits||[]).forEach(x=>{const s=students.find(st=>st.id===x.student_id);
+        rows.push({date:x.date,name:s?studentName(s):'—',type:'Demerit',detail:`Code ${x.code}${x.excused?' (excused)':''}`,pts:x.pts_num,demeritId:x.id,studentId:x.student_id});});
+    }
+    if(!type||type==='attendance'){
+      const date=document.getElementById('attDate').value;
+      const d=await api('attendanceDay',{classId:curClass,date});
+      (d.attendance||[]).forEach(x=>{const s=students.find(st=>st.id===x.student_id);
+        rows.push({date:x.date,name:s?studentName(s):'—',type:'Attendance',detail:x.status,pts:'',demeritId:null});});
+    }
+    rows.sort((a,b)=>b.date.localeCompare(a.date));
+    window._historyRows=rows; // cached for CSV export
+    body.innerHTML=rows.length?rows.map(r=>`<tr><td data-label="Date">${esc(fmtDate(r.date))}</td><td data-label="Student">${esc(r.name)}</td><td data-label="Type">${esc(r.type)}</td><td data-label="Detail">${esc(r.detail)}</td><td data-label="Pts">${r.pts}</td><td data-label="">${r.demeritId?`<button class="btn btn-danger btn-sm" onclick="voidDemerit('${esc(r.demeritId)}','${esc(r.studentId||'')}')">Void</button>`:''}</td></tr>`).join(''):'<tr><td colspan="6"><div class="empty-state"><p>No records.</p></div></td></tr>';
+  }catch(e){body.innerHTML=`<tr><td colspan="6">${esc(e.message)}</td></tr>`;}
+}
+
+async function voidDemerit(id,studentId){
+  if(!confirm('Void this demerit? It will be removed from the student\u2019s point total and the active list. The record is kept (marked voided), not permanently deleted.'))return;
+  try{
+    const out=await api('voidDemerit',{id,studentId,by:'Instructor'});
+    toast('Demerit voided');
+    if(studentId&&demeritTotals.hasOwnProperty(studentId))demeritTotals[studentId]=out.total;
+    renderHistory();
+  }catch(e){toast(e.message,true);}
+}
+
+function exportHistoryCsv(){
+  const rows=window._historyRows||[];
+  if(!rows.length){toast('Nothing to export',true);return;}
+  const cls=classes.find(c=>c.id===curClass);
+  const clsName=cls?cls.program_name:'class';
+  const header=['Date','Student','Type','Detail','Points'];
+  const esc=v=>{v=v==null?'':String(v);return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v;};
+  const lines=[header.join(',')].concat(rows.map(r=>[r.date,r.name,r.type,r.detail,r.pts].map(esc).join(',')));
+  const blob=new Blob([lines.join('\r\n')],{type:'text/csv;charset=utf-8;'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;a.download=`ANEW_${clsName.replace(/\s+/g,'_')}_history_${todayStr()}.csv`;
+  document.body.appendChild(a);a.click();document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  toast('CSV downloaded');
+}
+
+// ── MANAGE: classes ──
+function renderManage(){
+  document.getElementById('manageClasses').innerHTML=classes.length?classes.map(c=>{
+    const names=(c.instructor_ids||[]).map(id=>(instructors.find(i=>i.id===id)||{}).name).filter(Boolean).join(', ');
+    return `<div style="padding:11px 0;border-bottom:.5px solid var(--b1);display:flex;justify-content:space-between;align-items:center;gap:10px">
+      <div><strong>${esc(c.program_name)}</strong> <span class="note" style="display:inline">${esc(names||'no instructors')}</span>
+        <div class="note">/form?class=${esc(c.slug)} · ${(c.cohorts||[]).length} cohort(s)</div></div>
+      <div class="flex-gap"><button class="btn btn-ghost btn-sm" onclick="openClassModal('${esc(c.id)}')">Edit</button>
+        <button class="btn btn-danger btn-sm" onclick="delClass('${esc(c.id)}')">Delete</button></div></div>`;
+  }).join(''):'<div class="empty-state"><p>No classes yet.</p></div>';
+  document.getElementById('manageInstructors').innerHTML=instructors.length?instructors.map(i=>
+    `<div style="padding:11px 0;border-bottom:.5px solid var(--b1);display:flex;justify-content:space-between;align-items:center;gap:10px">
+      <div><strong>${esc(i.name)}</strong> <span class="note" style="display:inline">${esc(i.email)}</span></div>
+      <div class="flex-gap"><button class="btn btn-ghost btn-sm" onclick="openInstrModal('${esc(i.id)}')">Edit</button>
+        <button class="btn btn-danger btn-sm" onclick="delInstr('${esc(i.id)}')">Remove</button></div></div>`).join(''):'<div class="empty-state"><p>No instructors yet.</p></div>';
+  renderManageStudents();
+}
+function renderManageStudents(){
+  const el=document.getElementById('manageStudents');
+  if(!curClass||!students.length){el.innerHTML='<div class="empty-state"><p>Select a class with students (top of Attendance), or add some.</p></div>';return;}
+  el.innerHTML=students.map(s=>`<div style="padding:9px 0;border-bottom:.5px solid var(--b1);display:flex;justify-content:space-between;align-items:center">
+    <span>${esc(studentName(s))}</span>
+    <div class="flex-gap"><span class="dt-chip ${dtClass(demeritTotals[s.id]||0)}">${demeritTotals[s.id]||0} pts</span>
+      <button class="btn btn-danger btn-sm" onclick="delStudent('${esc(s.id)}')">Remove</button></div></div>`).join('');
+}
+
+// ── Instructor modal ──
+function openInstrModal(id){
+  editInstrId=id||null;
+  document.getElementById('instrModalTitle').textContent=id?'Edit Instructor':'Add Instructor';
+  const i=id?instructors.find(x=>x.id===id):null;
+  document.getElementById('fInstrName').value=i?i.name.split(' ')[0]:'';
+  document.getElementById('emailPreview').textContent=i?i.email:'enter a name…';
+  document.getElementById('emailPreview').classList.toggle('filled',!!i);
+  openModal('instrModal');
+}
+function previewEmail(){
+  const f=document.getElementById('fInstrName').value.trim().toLowerCase().replace(/[^a-z]/g,'');
+  const pv=document.getElementById('emailPreview');pv.textContent=f?f+'@anewcareer.org':'enter a name…';pv.classList.toggle('filled',!!f);
+}
+async function saveInstructor(){
+  const raw=document.getElementById('fInstrName').value.trim();if(!raw)return toast('Enter a name',true);
+  const first=raw.split(' ')[0].toLowerCase().replace(/[^a-z]/g,'');if(!first)return toast('Name needs letters',true);
+  const email=first+'@anewcareer.org';
+  const name=raw.split(' ').filter(Boolean).map(w=>w[0].toUpperCase()+w.slice(1).toLowerCase()).join(' ');
+  const btn=document.getElementById('instrSaveBtn');btn.disabled=true;btn.textContent='Saving…';
+  try{await api('saveInstructor',{id:editInstrId,name,email});await bootstrap();closeModal('instrModal');toast(editInstrId?'Updated':'Added');}
+  catch(e){toast(e.message,true);}finally{btn.disabled=false;btn.textContent='Save';}
+}
+async function delInstr(id){const i=instructors.find(x=>x.id===id);if(!confirm(`Remove "${i.name}"?`))return;
+  try{await api('deleteInstructor',{id});await bootstrap();toast('Removed');}catch(e){toast(e.message,true);}}
+
+// ── Class modal ──
+function openClassModal(id){
+  editClassId=id||null;cohorts=[];
+  document.getElementById('classModalTitle').textContent=id?'Edit Class':'Add Class';
+  const c=id?classes.find(x=>x.id===id):null;
+  if(c){const parts=(c.program_name||'').split(' ');document.getElementById('fType').value=parts[0]||'';document.getElementById('fNumber').value=parts[1]||'';document.getElementById('fProgram').value=c.program_name;document.getElementById('fSlug').value=c.slug;document.getElementById('slugPreview').textContent='/form?class='+c.slug;cohorts=[...(c.cohorts||[])];}
+  else{['fType','fNumber','fProgram','fSlug'].forEach(i=>document.getElementById(i).value='');document.getElementById('slugPreview').textContent='select a type and number…';}
+  document.getElementById('classSaveBtn').textContent=id?'Save Changes':'Save Class';
+  const sel=c?(c.instructor_ids||[]):[];
+  document.getElementById('instrChecks').innerHTML=instructors.length?instructors.map(i=>
+    `<div class="check-row"><input type="checkbox" id="chk_${esc(i.id)}" value="${esc(i.id)}" ${sel.includes(i.id)?'checked':''}><label for="chk_${esc(i.id)}">${esc(i.name)}</label><span class="ce">${esc(i.email)}</span></div>`).join(''):'<div class="note">No instructors — add some first.</div>';
+  renderCohortTags();openModal('classModal');
+}
+function buildClassName(){
+  const t=document.getElementById('fType').value,n=document.getElementById('fNumber').value.trim();
+  const prog=t&&n?t+' '+n:'';document.getElementById('fProgram').value=prog;
+  const slug=prog.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');document.getElementById('fSlug').value=slug;
+  document.getElementById('slugPreview').textContent=slug?'/form?class='+slug:'select a type and number…';
+}
+function addCohort(){const inp=document.getElementById('cohortInput');const v=inp.value.trim().toUpperCase();if(v&&!cohorts.includes(v)){cohorts.push(v);renderCohortTags();}inp.value='';inp.focus();}
+function removeCohort(i){cohorts.splice(i,1);renderCohortTags();}
+function renderCohortTags(){document.getElementById('cohortTags').innerHTML=cohorts.map((c,i)=>`<span class="cohort-tag">${esc(c)}<button onclick="removeCohort(${i})">&times;</button></span>`).join('');}
+async function saveClass(){
+  const program=document.getElementById('fProgram').value.trim();const slug=document.getElementById('fSlug').value.trim();
+  const ids=[...document.querySelectorAll('#instrChecks input:checked')].map(c=>c.value);
+  if(!document.getElementById('fType').value)return toast('Select a type',true);
+  if(!document.getElementById('fNumber').value)return toast('Enter a number',true);
+  if(!ids.length)return toast('Assign an instructor',true);
+  const btn=document.getElementById('classSaveBtn');btn.disabled=true;btn.textContent='Saving…';
+  try{await api('saveClass',{id:editClassId,program_name:program,slug,cohorts,instructor_ids:ids});await bootstrap();closeModal('classModal');toast(editClassId?'Updated':'Added');}
+  catch(e){toast(e.message,true);}finally{btn.disabled=false;btn.textContent=editClassId?'Save Changes':'Save Class';}
+}
+async function delClass(id){const c=classes.find(x=>x.id===id);if(!confirm(`Delete "${c.program_name}"?`))return;
+  try{await api('deleteClass',{id});await bootstrap();toast('Deleted');}catch(e){toast(e.message,true);}}
+
+// ── Student modals ──
+function fillClassDropdown(elId){document.getElementById(elId).innerHTML=classes.map(c=>`<option value="${esc(c.id)}">${esc(c.program_name)}</option>`).join('');if(curClass)document.getElementById(elId).value=curClass;}
+function openStudentModal(){fillClassDropdown('sClass');['sFirst','sLast','sEmail'].forEach(i=>document.getElementById(i).value='');openModal('studentModal');}
+async function saveStudent(){
+  const first=document.getElementById('sFirst').value.trim(),last=document.getElementById('sLast').value.trim();
+  if(!first||!last)return toast('First and last required',true);
+  const btn=document.getElementById('studentSaveBtn');btn.disabled=true;btn.textContent='…';
+  try{await api('addStudent',{classId:document.getElementById('sClass').value,first,last,email:document.getElementById('sEmail').value.trim()});
+    if(document.getElementById('sClass').value===curClass)await onClassChange();renderManage();closeModal('studentModal');toast('Student added');}
+  catch(e){toast(e.message,true);}finally{btn.disabled=false;btn.textContent='Add';}
+}
+async function delStudent(id){const s=students.find(x=>x.id===id);if(!confirm(`Remove ${studentName(s)}?`))return;
+  try{await api('deleteStudent',{id});await onClassChange();renderManage();toast('Removed');}catch(e){toast(e.message,true);}}
+
+function openRosterModal(){fillClassDropdown('rClass');document.getElementById('rText').value='';document.getElementById('rPreview').innerHTML='';openModal('rosterModal');}
+function parseName(line){line=line.trim().replace(/\s+/g,' ');if(!line)return null;
+  if(line.includes(',')){const p=line.split(',');const last=p[0].trim();const first=p.slice(1).join(',').trim();if(first&&last)return{first,last};}
+  const p=line.split(' ');if(p.length>=2)return{first:p[0],last:p.slice(1).join(' ')};return null;}
+function previewRoster(){const names=document.getElementById('rText').value.split('\n').map(parseName).filter(Boolean);
+  document.getElementById('rPreview').innerHTML=names.length?`<strong>${names.length}</strong> name(s): `+names.map(n=>esc(n.first+' '+n.last)).join(', '):'<span style="color:var(--am)">No valid names yet.</span>';}
+async function saveRoster(){
+  const names=document.getElementById('rText').value.split('\n').map(parseName).filter(Boolean);
+  if(!names.length)return toast('No valid names',true);
+  const btn=document.getElementById('rosterSaveBtn');btn.disabled=true;btn.textContent='…';
+  try{const out=await api('addRoster',{classId:document.getElementById('rClass').value,students:names});
+    if(document.getElementById('rClass').value===curClass)await onClassChange();renderManage();closeModal('rosterModal');toast(`${out.added} student(s) imported`);}
+  catch(e){toast(e.message,true);}finally{btn.disabled=false;btn.textContent='Import';}
+}
+
+// ── Modal plumbing ──
+function openModal(id){document.getElementById(id).classList.add('on');}
+function closeModal(id){document.getElementById(id).classList.remove('on');}
+document.querySelectorAll('.modal-bg').forEach(bg=>bg.addEventListener('click',e=>{if(e.target===bg)closeModal(bg.id);}));
+document.addEventListener('keydown',e=>{if(e.key==='Escape')document.querySelectorAll('.modal-bg.on').forEach(m=>closeModal(m.id));});
+let toastTimer;
+function toast(msg,err){const el=document.getElementById('toast');el.textContent=msg;el.classList.toggle('err',!!err);el.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.classList.remove('show'),2600);}
+
+// ── Boot: resume session if password remembered ──
+(function(){const pw=sessionStorage.getItem('anew_pw');if(pw){PW=pw;api('login').then(showApp).catch(()=>{sessionStorage.removeItem('anew_pw');PW='';});}})();
+</script>
+</body>
+</html>
