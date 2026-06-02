@@ -212,7 +212,7 @@
 <div class="modal-bg" id="rosterModal"><div class="modal" role="dialog" aria-modal="true"><div class="grab"></div>
   <h2 style="font-size:22px;font-weight:700;letter-spacing:-.03em;margin-bottom:18px">Paste Roster</h2>
   <div class="field"><label>Class</label><select id="rClass"></select></div>
-  <div class="field"><label>Names (one per line — "First Last" or "Last, First")</label><textarea id="rText" style="min-height:140px" oninput="previewRoster()"></textarea></div>
+  <div class="field"><label>Names (one per line — supports "First Last", "Last, First", or pasted columns like "First<TAB>Last"; any email column is ignored)</label><textarea id="rText" style="min-height:140px" oninput="previewRoster()"></textarea></div>
   <div id="rPreview" class="note"></div>
   <div class="modal-actions"><button class="btn btn-ghost" onclick="closeModal('rosterModal')">Cancel</button><button class="btn btn-primary" id="rosterSaveBtn" onclick="saveRoster()">Import</button></div>
 </div></div>
@@ -680,9 +680,62 @@ async function delStudent(id){const s=students.find(x=>x.id===id);if(!confirm(`R
   try{await api('deleteStudent',{id});await onClassChange();renderManage();toast('Removed');}catch(e){toast(e.message,true);}}
 
 function openRosterModal(){fillClassDropdown('rClass');document.getElementById('rText').value='';document.getElementById('rPreview').innerHTML='';openModal('rosterModal');}
-function parseName(line){line=line.trim().replace(/\s+/g,' ');if(!line)return null;
-  if(line.includes(',')){const p=line.split(',');const last=p[0].trim();const first=p.slice(1).join(',').trim();if(first&&last)return{first,last};}
-  const p=line.split(' ');if(p.length>=2)return{first:p[0],last:p.slice(1).join(' ')};return null;}
+function parseName(line){
+  line=String(line||'').replace(/\r/g,'').trim();
+  if(!line) return null;
+
+  // Spreadsheet paste: tab-separated columns (e.g. First<TAB>Last<TAB>Email)
+  if(line.includes('\t')){
+    const cols=line.split('\t').map(s=>s.trim()).filter(Boolean);
+    if(!cols.length) return null;
+    // If first column is "Last, First" treat it as such and ignore extra cols
+    if(cols[0].includes(',')){
+      const parts=cols[0].split(',').map(s=>s.trim()).filter(Boolean);
+      const last=parts[0]||'';
+      const first=parts.slice(1).join(', ').trim();
+      if(first && last) return { first, last };
+      return null;
+    }
+    if(cols.length>=2){
+      // Assume First / Last columns; ignore any remaining columns (like email)
+      const first=cols[0];
+      const last=cols[1];
+      if(first && last) return { first, last };
+    }
+    // Fall back to parsing the first column as a freeform name
+    line=cols[0];
+  }
+
+  // CSV-ish: commas may indicate "Last, First" OR "First Last, email"
+  if(line.includes(',')){
+    const parts=line.split(',').map(s=>s.trim()).filter(Boolean);
+    if(parts.length>=2){
+      const after=parts.slice(1);
+      const looksLikeEmail = (s)=>/@/.test(s);
+
+      // "First Last, email" (common) → parse name from the first part
+      if(parts[0].includes(' ') && looksLikeEmail(after[0]||'')){
+        const tokens=parts[0].trim().split(/\s+/).filter(Boolean);
+        if(tokens.length>=2) return { first: tokens[0], last: tokens.slice(1).join(' ') };
+      }
+
+      // "Last, First" or "Last, First, Email" → treat first part as last name
+      const emailIdx=after.findIndex(looksLikeEmail);
+      const first=(emailIdx===-1?after:after.slice(0,emailIdx)).join(', ').trim();
+      const last=parts[0];
+      if(first && last) return { first, last };
+    }
+  }
+
+  // Space-separated: "First Last" (optionally with trailing email)
+  const tokens=line.replace(/\s+/g,' ').split(' ').map(s=>s.trim()).filter(Boolean);
+  if(tokens.length>=2){
+    // Drop a trailing email token if present
+    if(/@/.test(tokens[tokens.length-1])) tokens.pop();
+  }
+  if(tokens.length>=2) return { first: tokens[0], last: tokens.slice(1).join(' ') };
+  return null;
+}
 function previewRoster(){const names=document.getElementById('rText').value.split('\n').map(parseName).filter(Boolean);
   document.getElementById('rPreview').innerHTML=names.length?`<strong>${names.length}</strong> name(s): `+names.map(n=>esc(n.first+' '+n.last)).join(', '):'<span style="color:var(--am)">No valid names yet.</span>';}
 async function saveRoster(){
