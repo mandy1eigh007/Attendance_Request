@@ -217,6 +217,62 @@
   <div class="modal-actions"><button class="btn btn-ghost" onclick="closeModal('rosterModal')">Cancel</button><button class="btn btn-primary" id="rosterSaveBtn" onclick="saveRoster()">Import</button></div>
 </div></div>
 
+<div class="modal-bg" id="studentDetailModal"><div class="modal" role="dialog" aria-modal="true"><div class="grab"></div>
+  <h2 style="font-size:22px;font-weight:700;letter-spacing:-.03em;margin-bottom:18px">Student</h2>
+  <div class="field"><label>Name</label>
+    <div class="grid2">
+      <input type="text" id="sdFirst" placeholder="First">
+      <input type="text" id="sdLast" placeholder="Last">
+    </div>
+  </div>
+  <div class="field"><label>Email <span class="note" style="display:inline">(optional)</span></label><input type="email" id="sdEmail" placeholder="for request matching"></div>
+  <div class="modal-actions" style="margin-top:6px">
+    <button class="btn btn-ghost" onclick="closeModal('studentDetailModal')">Close</button>
+    <button class="btn btn-primary" id="sdSaveBtn" onclick="saveStudentDetail()">Save Student</button>
+  </div>
+
+  <div class="section-card" style="margin-top:16px">
+    <div class="card-title">Demerits</div>
+    <div id="sdDemeritList"><div class="empty-state"><p>Loading…</p></div></div>
+    <div class="note" style="margin-top:10px">Tip: click “Slip” to re-open the printable slip + case note later.</div>
+  </div>
+
+  <div class="output-block" id="sdSlipBlock" style="display:none">
+    <div class="section-card">
+      <div class="card-title">Printable Slip</div>
+      <div id="print-area-sd"><div class="print-slip" id="sdPrintSlip"></div></div>
+      <button class="btn btn-ghost btn-block" style="margin-top:12px" onclick="window.print()">Print Slip</button>
+    </div>
+    <div class="section-card">
+      <div class="card-title">Salesforce Case Note</div>
+      <div class="case-note" id="sdCaseNoteText"></div>
+      <button class="btn btn-primary btn-block" onclick="copyStudentCaseNote()">Copy Case Note</button>
+    </div>
+  </div>
+</div></div>
+
+<div class="modal-bg" id="demeritEditModal"><div class="modal" role="dialog" aria-modal="true"><div class="grab"></div>
+  <h2 style="font-size:22px;font-weight:700;letter-spacing:-.03em;margin-bottom:18px">Edit Demerit</h2>
+  <div class="grid2">
+    <div class="field"><label>Date <span class="req">*</span></label><input type="date" id="edDate"></div>
+    <div class="field"><label>Issuing staff <span class="req">*</span></label><input type="text" id="edStaff"></div>
+  </div>
+  <div class="field"><label>Demerit code <span class="req">*</span></label><select id="edCode"></select></div>
+  <div class="grid2">
+    <div class="field"><label>Excused?</label>
+      <select id="edExcused" onchange="onEditExcusedChange()"><option value="no">No — points apply</option><option value="yes">Yes — 0 points</option></select>
+    </div>
+    <div class="field" id="edExcuseReasonGroup" style="display:none"><label>Excuse reason</label><select id="edExcuseReason"></select></div>
+  </div>
+  <div class="field"><label>Incident description <span class="note" style="display:inline">(optional)</span></label>
+    <textarea id="edIncident" placeholder="What happened…"></textarea>
+  </div>
+  <div class="modal-actions">
+    <button class="btn btn-ghost" onclick="closeModal('demeritEditModal')">Cancel</button>
+    <button class="btn btn-primary" id="edSaveBtn" onclick="saveEditedDemerit()">Save Changes</button>
+  </div>
+</div></div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -247,6 +303,7 @@ let PW='';                       // admin password held in memory only for the s
 let classes=[], instructors=[], students=[], curClass=null;
 let cohorts=[], editClassId=null, editInstrId=null;
 let attendanceRows=[], demeritTotals={};
+let sdStudentId=null, sdDemerits=[], editDemeritId=null;
 
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function todayStr(){return new Date().toISOString().split('T')[0];}
@@ -498,6 +555,10 @@ Documentation: Student was informed and demerit slip presented for signature.${r
 }
 function copyCaseNote(){navigator.clipboard.writeText(document.getElementById('caseNoteText').textContent).then(()=>toast('Case note copied'));}
 
+function copyStudentCaseNote(){
+  navigator.clipboard.writeText(document.getElementById('sdCaseNoteText').textContent).then(()=>toast('Case note copied'));
+}
+
 // ── REQUESTS ──
 async function loadRequests(){
   const status=document.getElementById('reqStatusFilter').value;
@@ -598,10 +659,196 @@ function renderManage(){
 function renderManageStudents(){
   const el=document.getElementById('manageStudents');
   if(!curClass||!students.length){el.innerHTML='<div class="empty-state"><p>Select a class with students (top of Attendance), or add some.</p></div>';return;}
-  el.innerHTML=students.map(s=>`<div style="padding:9px 0;border-bottom:.5px solid var(--b1);display:flex;justify-content:space-between;align-items:center">
-    <span>${esc(studentName(s))}</span>
+  el.innerHTML=students.map(s=>`<div style="padding:9px 0;border-bottom:.5px solid var(--b1);display:flex;justify-content:space-between;align-items:center;gap:10px">
+    <button class="btn btn-ghost btn-sm" style="padding-left:0" onclick="openStudentDetail('${esc(s.id)}')">${esc(studentName(s))}</button>
     <div class="flex-gap"><span class="dt-chip ${dtClass(demeritTotals[s.id]||0)}">${demeritTotals[s.id]||0} pts</span>
       <button class="btn btn-danger btn-sm" onclick="delStudent('${esc(s.id)}')">Remove</button></div></div>`).join('');
+}
+
+// ── Student details ──
+async function openStudentDetail(id){
+  sdStudentId=id;
+  const s=students.find(x=>x.id===id);
+  if(!s){toast('Student not found',true);return;}
+  document.getElementById('sdFirst').value=s.first||'';
+  document.getElementById('sdLast').value=s.last||'';
+  document.getElementById('sdEmail').value=s.email||'';
+  document.getElementById('sdSlipBlock').style.display='none';
+  document.getElementById('sdDemeritList').innerHTML='<div class="empty-state"><p>Loading…</p></div>';
+  openModal('studentDetailModal');
+  await loadStudentDemerits();
+}
+
+async function saveStudentDetail(){
+  if(!sdStudentId) return;
+  const btn=document.getElementById('sdSaveBtn');btn.disabled=true;btn.textContent='…';
+  try{
+    const first=document.getElementById('sdFirst').value.trim();
+    const last=document.getElementById('sdLast').value.trim();
+    const email=document.getElementById('sdEmail').value.trim();
+    await api('updateStudent',{id:sdStudentId,first,last,email});
+    const s=students.find(x=>x.id===sdStudentId);
+    if(s){s.first=first;s.last=last;s.email=email||null;}
+    renderManageStudents();renderAttendance();
+    toast('Student saved');
+  }catch(e){toast(e.message,true);}finally{btn.disabled=false;btn.textContent='Save Student';}
+}
+
+async function loadStudentDemerits(){
+  if(!sdStudentId||!curClass) return;
+  try{
+    const d=await api('demerits',{classId:curClass,includeVoided:true});
+    sdDemerits=(d.demerits||[]).filter(x=>x.student_id===sdStudentId);
+    sdDemerits.sort((a,b)=>String(b.date||'').localeCompare(String(a.date||'')));
+    renderStudentDemerits();
+  }catch(e){
+    document.getElementById('sdDemeritList').innerHTML=`<div class="empty-state"><p>${esc(e.message)}</p></div>`;
+  }
+}
+
+function renderStudentDemerits(){
+  const el=document.getElementById('sdDemeritList');
+  const s=students.find(x=>x.id===sdStudentId);
+  if(!s){el.innerHTML='<div class="empty-state"><p>Student not found.</p></div>';return;}
+  if(!sdDemerits.length){el.innerHTML='<div class="empty-state"><p>No demerits.</p></div>';return;}
+  el.innerHTML=sdDemerits.map(d=>{
+    const code=Number(d.code||0);
+    const detail=`Code ${code}${d.excused?' (excused)':''}`;
+    const voided=d.voided;
+    return `<div style="padding:10px 0;border-bottom:.5px solid var(--b1)">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
+        <div><strong>${esc(fmtDate(d.date))}</strong> <span class="note" style="display:inline">${esc(detail)}</span>${voided?` <span class="note" style="display:inline;color:var(--am)">(voided)</span>`:''}</div>
+        <div class="flex-gap">
+          <button class="btn btn-ghost btn-sm" onclick="showSavedDemeritSlip('${esc(d.id)}')">Slip</button>
+          <button class="btn btn-ghost btn-sm" onclick="openEditDemerit('${esc(d.id)}')">Edit</button>
+          ${voided?``:`<button class="btn btn-danger btn-sm" onclick="voidStudentDemerit('${esc(d.id)}')">Remove</button>`}
+        </div>
+      </div>
+      ${d.incident?`<div class="note" style="margin-top:6px">${esc(String(d.incident).slice(0,160))}${String(d.incident).length>160?'…':''}</div>`:''}
+    </div>`;
+  }).join('');
+}
+
+function runningTotalAtDate(studentId,date){
+  const ds=sdDemerits.filter(x=>x.student_id===studentId && !x.voided && !x.excused && x.date && x.date<=date);
+  return ds.reduce((a,x)=>a+(x.pts_num||0),0);
+}
+
+function showSavedDemeritSlip(demeritId){
+  const d=sdDemerits.find(x=>x.id===demeritId);
+  const s=students.find(x=>x.id===sdStudentId);
+  if(!d||!s) return;
+  const code=Number(d.code||0);
+  const rec={
+    student:s,
+    classId:curClass,
+    date:d.date,
+    staff:d.staff||'',
+    code,
+    desc:d.description||'',
+    ptsNum:d.pts_num||0,
+    excused:!!d.excused,
+    excuseReason:d.excuse_reason||'',
+    incident:d.incident||'',
+    runningTotal: runningTotalAtDate(sdStudentId,d.date||'')
+  };
+
+  // Render into the student detail block (not the main demerit page)
+  const cls=classes.find(c=>c.id===rec.classId);
+  const ptsText=rec.excused?'EXCUSED — No points assessed':`${rec.ptsNum} point(s)`;
+  const dc=DEMERIT_CODES.find(x=>x.code===rec.code);
+  document.getElementById('sdPrintSlip').innerHTML=`
+    <h2>ANEW</h2><div class="print-sub">Building People, Building Communities — Demerit Documentation</div>
+    <div class="print-total-banner">Running Total: ${rec.runningTotal} demerit point(s) as of ${fmtDate(rec.date)}${rec.runningTotal>=10?' — DISMISSAL THRESHOLD':rec.runningTotal>=7?' — CONTRACT REQUIRED':''}</div>
+    <div class="print-row">
+      <div class="print-field"><div class="print-field-label">Student</div><div class="print-field-value">${esc(studentName(rec.student))}</div></div>
+      <div class="print-field"><div class="print-field-label">Class</div><div class="print-field-value">${esc(cls?cls.program_name:'')}</div></div>
+      <div class="print-field"><div class="print-field-label">Date</div><div class="print-field-value">${fmtDate(rec.date)}</div></div>
+    </div>
+    <div class="print-row">
+      <div class="print-field"><div class="print-field-label">Code</div><div class="print-field-value">Code ${rec.code}</div></div>
+      <div class="print-field" style="flex:3"><div class="print-field-label">Description</div><div class="print-field-value">${esc(rec.desc)}${dc&&dc.asterisk?' *':''}</div></div>
+      <div class="print-field"><div class="print-field-label">Points</div><div class="print-field-value">${ptsText}</div></div>
+    </div>
+    ${rec.excused?`<div class="print-row"><div class="print-field"><div class="print-field-label">Excused Reason</div><div class="print-field-value">${esc(rec.excuseReason)}</div></div></div>`:''}
+    ${rec.incident?`<div class="print-incident"><strong>Incident:</strong><br>${esc(rec.incident)}</div>`:''}
+    <div class="print-sig-area">
+      <div class="sig-block"><div class="sig-line"></div><div class="sig-label">Student Signature</div></div>
+      <div class="sig-block"><div class="sig-line"></div><div class="sig-label">Staff Signature</div></div>
+      <div class="sig-block"><div class="sig-line"></div><div class="sig-label">Date Signed</div></div>
+    </div>
+    <div class="print-disclaimer">I acknowledge receipt of this demerit. Refusal to sign results in an additional demerit (Code 6). Accumulation of 10 demerit points results in dismissal from the program.</div>`;
+
+  const ptsTextNote=rec.excused?`0 points (excused — ${rec.excuseReason})`:`${rec.ptsNum} point(s)`;
+  const note=`DEMERIT ISSUED — ${fmtDate(rec.date)}
+Program: ${cls?cls.program_name:'N/A'}
+Student: ${studentName(rec.student)}
+
+Demerit Code ${rec.code}: ${rec.desc}
+Points Assessed: ${ptsTextNote}
+Running Total: ${rec.runningTotal} point(s)
+
+${rec.incident?`Incident Description:\n${rec.incident}\n`:''}${rec.excused?`Excused Reason: ${rec.excuseReason}\n`:''}
+Staff: ${rec.staff}
+Documentation: Student was informed and demerit slip presented for signature.${rec.runningTotal>=10?'\n\nACTION REQUIRED: Student has reached 10 demerit points and must be exited from the program.':rec.runningTotal>=7?'\n\nNOTE: Student has reached 7+ demerit points. A behavioral contract is required.':''}`;
+  document.getElementById('sdCaseNoteText').textContent=note;
+  document.getElementById('sdSlipBlock').style.display='block';
+  document.getElementById('sdSlipBlock').scrollIntoView({behavior:'smooth'});
+}
+
+async function voidStudentDemerit(id){
+  if(!confirm('Remove this demerit? It will be voided (kept for record, removed from point totals).'))return;
+  try{
+    const out=await api('voidDemerit',{id,studentId:sdStudentId,by:'Instructor'});
+    if(sdStudentId)demeritTotals[sdStudentId]=out.total;
+    await refreshDemeritTotals();
+    await loadStudentDemerits();
+    renderAttendance();renderManageStudents();
+    toast('Demerit removed');
+  }catch(e){toast(e.message,true);}
+}
+
+function onEditExcusedChange(){
+  const ex=document.getElementById('edExcused').value==='yes';
+  document.getElementById('edExcuseReasonGroup').style.display=ex?'block':'none';
+}
+
+function openEditDemerit(id){
+  const d=sdDemerits.find(x=>x.id===id);
+  if(!d){toast('Demerit not found',true);return;}
+  editDemeritId=id;
+  document.getElementById('edDate').value=d.date||'';
+  document.getElementById('edStaff').value=d.staff||'';
+  document.getElementById('edCode').innerHTML=DEMERIT_CODES.map(x=>`<option value="${x.code}">Code ${x.code} — ${esc(x.desc.length>55?x.desc.slice(0,55)+'…':x.desc)} (${x.pts} pts)</option>`).join('');
+  document.getElementById('edCode').value=String(d.code||'');
+  document.getElementById('edExcuseReason').innerHTML=EXCUSE_REASONS.map(r=>`<option>${esc(r)}</option>`).join('');
+  document.getElementById('edExcused').value=d.excused?'yes':'no';
+  document.getElementById('edExcuseReason').value=d.excuse_reason||EXCUSE_REASONS[0];
+  document.getElementById('edIncident').value=d.incident||'';
+  onEditExcusedChange();
+  openModal('demeritEditModal');
+}
+
+async function saveEditedDemerit(){
+  if(!editDemeritId||!sdStudentId) return;
+  const d=sdDemerits.find(x=>x.id===editDemeritId);
+  if(!d){toast('Demerit not found',true);return;}
+  const btn=document.getElementById('edSaveBtn');btn.disabled=true;btn.textContent='…';
+  try{
+    const date=document.getElementById('edDate').value;
+    const staff=document.getElementById('edStaff').value.trim();
+    const code=parseInt(document.getElementById('edCode').value);
+    const excused=document.getElementById('edExcused').value==='yes';
+    const excuseReason=document.getElementById('edExcuseReason').value;
+    const incident=document.getElementById('edIncident').value.trim();
+    const dc=DEMERIT_CODES.find(x=>x.code===code);
+    await api('updateDemerit',{id:editDemeritId,studentId:sdStudentId,date,staff,code,description:dc?dc.desc:'',excused,excuseReason,incident});
+    await refreshDemeritTotals();
+    await loadStudentDemerits();
+    renderAttendance();renderManageStudents();
+    toast('Demerit updated');
+    closeModal('demeritEditModal');
+  }catch(e){toast(e.message,true);}finally{btn.disabled=false;btn.textContent='Save Changes';}
 }
 
 // ── Instructor modal ──

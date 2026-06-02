@@ -139,7 +139,9 @@ export async function onRequestPost(context) {
       }
 
       case 'demerits': {
-        const rows = await sb(`anew_demerits?class_id=eq.${enc(payload.classId)}&voided=eq.false&order=created_at.desc`);
+        let q = `anew_demerits?class_id=eq.${enc(payload.classId)}&order=created_at.desc`;
+        if (!payload.includeVoided) q += '&voided=eq.false';
+        const rows = await sb(q);
         return ok({ demerits: rows || [] });
       }
       case 'studentDemeritTotal': {
@@ -172,6 +174,56 @@ export async function onRequestPost(context) {
         await sb(`anew_demerits?id=eq.${enc(id)}`, { method:'PATCH', prefer:'return=minimal',
           body: JSON.stringify({ voided: true, voided_at: new Date().toISOString(), voided_by: clean(payload.by) || 'Instructor' }) });
         // recompute the student's running total without the voided one
+        let total = 0;
+        if (studentId) {
+          const rows = await sb(`anew_demerits?student_id=eq.${enc(studentId)}&excused=eq.false&voided=eq.false`);
+          total = (rows || []).reduce((s, d) => s + (d.pts_num || 0), 0);
+        }
+        return ok({ ok:true, total });
+      }
+
+      case 'updateStudent': {
+        const { id } = payload;
+        if (!id) return bad('Missing student id');
+        const first = clean(payload.first);
+        const last = clean(payload.last);
+        const email = clean(payload.email);
+        if (!first || !last) return bad('First and last name required');
+        await sb(`anew_students?id=eq.${enc(id)}`, {
+          method: 'PATCH',
+          prefer: 'return=minimal',
+          body: JSON.stringify({ first, last, email: email || null }),
+        });
+        return ok({ ok:true });
+      }
+
+      case 'updateDemerit': {
+        const { id, studentId } = payload;
+        if (!id) return bad('Missing demerit id');
+
+        const codeNum = parseInt(payload.code);
+        const excused = !!payload.excused;
+        if (!codeNum || !DEMERIT_PTS[codeNum]) return bad('Invalid code');
+        if (!payload.date) return bad('Missing date');
+        if (!clean(payload.staff)) return bad('Missing staff');
+
+        const ptsNum = excused ? 0 : DEMERIT_PTS[codeNum];
+        await sb(`anew_demerits?id=eq.${enc(id)}`, {
+          method: 'PATCH',
+          prefer: 'return=minimal',
+          body: JSON.stringify({
+            date: payload.date,
+            staff: clean(payload.staff),
+            code: codeNum,
+            description: clean(payload.description) || '',
+            pts_num: ptsNum,
+            excused,
+            excuse_reason: excused ? clean(payload.excuseReason) : null,
+            incident: clean(payload.incident) || null,
+          }),
+        });
+
+        // recompute running total
         let total = 0;
         if (studentId) {
           const rows = await sb(`anew_demerits?student_id=eq.${enc(studentId)}&excused=eq.false&voided=eq.false`);
