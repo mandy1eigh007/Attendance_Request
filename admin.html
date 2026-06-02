@@ -257,9 +257,28 @@ function studentName(s){return s?`${s.first} ${s.last}`:'Unknown';}
 async function api(action,payload){
   const res=await fetch('/admin',{method:'POST',headers:{'Content-Type':'application/json'},
     body:JSON.stringify({password:PW,action,payload})});
-  const out=await res.json();
-  if(res.status===401){doLogout();throw new Error('Session expired');}
-  if(!res.ok)throw new Error(out.error||'Request failed');
+
+  let out=null;
+  let raw='';
+  try{
+    raw=await res.text();
+    out=raw?JSON.parse(raw):null;
+  }catch{ /* non-JSON response */ }
+
+  if(res.status===404){
+    throw new Error('Server endpoint /admin not found. Cloudflare Pages Functions are not running (python static server cannot run them).');
+  }
+  if(res.status===401){
+    if(action==='login') throw new Error('Incorrect password.');
+    doLogout();
+    throw new Error('Session expired');
+  }
+  if(!res.ok){
+    throw new Error((out && out.error) || `Request failed (${res.status})`);
+  }
+  if(!out){
+    throw new Error('Invalid server response');
+  }
   return out;
 }
 
@@ -273,7 +292,9 @@ async function doLogin(){
     sessionStorage.setItem('anew_pw',pw);
     showApp();
   }catch(e){
-    document.getElementById('loginErr').style.display='block';
+    const el=document.getElementById('loginErr');
+    el.textContent=e && e.message ? e.message : 'Login failed';
+    el.style.display='block';
     document.getElementById('pwInput').value='';PW='';
   }finally{btn.disabled=false;btn.textContent='Sign In';}
 }
