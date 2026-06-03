@@ -650,7 +650,7 @@ function renderManage(){
       <div><strong>${esc(c.program_name)}</strong> <span class="note" style="display:inline">${esc(names||'no instructors')}</span>
         <div class="note">/form?class=${esc(c.slug)} · ${(c.cohorts||[]).length} cohort(s)</div></div>
       <div class="flex-gap"><button class="btn btn-ghost btn-sm" onclick="openClassModal('${esc(c.id)}')">Edit</button>
-        <button class="btn btn-danger btn-sm" onclick="delClass('${esc(c.id)}')">Delete</button></div></div>`;
+        <button class="btn btn-danger btn-sm" onclick="delClass('${esc(c.id)}')">Close</button></div></div>`;
   }).join(''):'<div class="empty-state"><p>No classes yet.</p></div>';
   document.getElementById('manageInstructors').innerHTML=instructors.length?instructors.map(i=>
     `<div style="padding:11px 0;border-bottom:.5px solid var(--b1);display:flex;justify-content:space-between;align-items:center;gap:10px">
@@ -912,8 +912,11 @@ async function saveClass(){
   try{await api('saveClass',{id:editClassId,program_name:program,slug,cohorts,instructor_ids:ids});await bootstrap();closeModal('classModal');toast(editClassId?'Updated':'Added');}
   catch(e){toast(e.message,true);}finally{btn.disabled=false;btn.textContent=editClassId?'Save Changes':'Save Class';}
 }
-async function delClass(id){const c=classes.find(x=>x.id===id);if(!confirm(`Delete "${c.program_name}"?`))return;
-  try{await api('deleteClass',{id});await bootstrap();toast('Deleted');}catch(e){toast(e.message,true);}}
+async function delClass(id){
+  const c=classes.find(x=>x.id===id);
+  if(!confirm(`Close "${c.program_name}"? Students will no longer see it as an option, but your records will be kept.`))return;
+  try{await api('deleteClass',{id});await bootstrap();toast('Closed');}catch(e){toast(e.message,true);}
+}
 
 // ── Student modals ──
 function fillClassDropdown(elId){document.getElementById(elId).innerHTML=classes.map(c=>`<option value="${esc(c.id)}">${esc(c.program_name)}</option>`).join('');if(curClass)document.getElementById(elId).value=curClass;}
