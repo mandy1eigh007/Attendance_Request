@@ -329,7 +329,7 @@
 <div class="toast" id="toast"></div>
 
 <script>
-// ════ ANEW merged dashboard — all data via /admin (server holds the keys) ════
+// ════ ANEW merged dashboard — all data via /api/admin (server holds the keys) ════
 const DEMERIT_CODES = [
   {code:1,desc:"Violation of phone, visitor, or dress policy",pts:1,asterisk:true},
   {code:2,desc:"Unprofessional behavior during class (talking over instructor, not paying attention, horseplay, etc.)",pts:1,asterisk:true},
@@ -369,7 +369,7 @@ function studentName(s){return s?`${s.first} ${s.last}`:'Unknown';}
 async function api(action,payload){
   const pl = payload ? { ...payload } : {};
   if (ME && ME.id && pl.instructorId === undefined) pl.instructorId = ME.id;
-  const res=await fetch('/admin',{method:'POST',headers:{'Content-Type':'application/json'},
+  const res=await fetch('/api/admin',{method:'POST',headers:{'Content-Type':'application/json'},
     body:JSON.stringify({password:PW,action,payload:pl})});
 
   let out=null;
@@ -380,7 +380,7 @@ async function api(action,payload){
   }catch{ /* non-JSON response */ }
 
   if(res.status===404){
-    throw new Error('Server endpoint /admin not found. Cloudflare Pages Functions are not running (python static server cannot run them).');
+    throw new Error('Server endpoint /api/admin not found. Cloudflare Pages Functions are not running (python static server cannot run them).');
   }
   if(res.status===401){
     if(action==='login') throw new Error('Incorrect password.');

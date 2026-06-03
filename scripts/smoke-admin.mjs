@@ -51,7 +51,7 @@ function readDevVarsAdminPassword() {
 }
 
 async function postAdmin(baseUrl, body) {
-  const url = new URL('/admin', baseUrl);
+  const url = new URL('/api/admin', baseUrl);
   const res = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -313,7 +313,7 @@ try {
     const r = await postAdmin(baseUrl, { action: 'login', password: '__WRONG__' });
     assert(r.status === 401, `Expected 401 for wrong password, got ${r.status}`);
     assert(r.json && r.json.error === 'Unauthorized', `Expected {error:"Unauthorized"}, got ${JSON.stringify(r.json)}`);
-    console.log('✓ /admin reachable; unauthorized rejected');
+    console.log('✓ /api/admin reachable; unauthorized rejected');
   }
 
   // 2) Auth works
@@ -360,12 +360,18 @@ try {
     console.log('✓ addCaseNote action present');
   }
 
-  // Method check
+  // Method / routing checks
   {
-    const url = new URL('/admin', baseUrl);
-    const res = await fetch(url, { method: 'GET' });
-    assert(res.status === 405, `Expected 405 for GET /admin, got ${res.status}`);
-    console.log('✓ GET /admin rejected with 405');
+    const apiUrl = new URL('/api/admin', baseUrl);
+    const res = await fetch(apiUrl, { method: 'GET' });
+    assert(res.status === 405, `Expected 405 for GET /api/admin, got ${res.status}`);
+    console.log('✓ GET /api/admin rejected with 405');
+
+    // /admin should land on the static UI (308 → /admin/ → 200)
+    const pageRes = await fetch(new URL('/admin', baseUrl), { redirect: 'follow' });
+    const ok = pageRes.status === 200 || pageRes.status === 304;
+    assert(ok, `Expected 200/304 for GET /admin (with redirect follow), got ${pageRes.status}`);
+    console.log('✓ GET /admin lands on the static UI');
   }
 
   if (opts.e2e) {

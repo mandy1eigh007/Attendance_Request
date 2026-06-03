@@ -1,13 +1,14 @@
-// functions/admin.js  → served at /admin
+// functions/api/admin.js  → served at /api/admin
+// Lives under /api so the path doesn't collide with the static /admin.html page
+// (Cloudflare Pages auto-redirects .html → clean URL, which would otherwise loop).
 import {
   makeSb, ok, bad, clean, enc,
   DEMERIT_PTS, decideRequest, instructorOwnsClass,
-} from './_lib.js';
+} from '../_lib.js';
 
-// Reject anything but POST so misdirected static GETs return a clear 405.
 export async function onRequest(context) {
   if (context.request.method !== 'POST') {
-    return new Response(JSON.stringify({ error: 'Method Not Allowed. POST JSON to /admin.' }), {
+    return new Response(JSON.stringify({ error: 'Method Not Allowed. POST JSON to /api/admin.' }), {
       status: 405,
       headers: { 'Content-Type': 'application/json', Allow: 'POST' },
     });

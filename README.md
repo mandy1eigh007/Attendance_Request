@@ -20,7 +20,7 @@ instructions:
 - **Static files** at the repo root: `index.html`, `form.html`, `admin.html`, `app.css`.
 - **Cloudflare Pages Functions** in `/functions`: `admin.js`, `submit.js`,
   `respond.js`, and a shared `_lib.js`. Cloudflare auto-serves these at
-  `/admin`, `/submit`, `/respond`. **Do not move or rename them.**
+  `/api/admin`, `/submit`, `/respond`. **Do not move or rename them.**
 - `_redirects` rewrites `/form?class=…` → `/form.html`.
 - The database is **already built and live** in Supabase (project ref
   `lfizcpaqolckemrvsooy`). **Do not create tables or touch the schema** — it
@@ -50,12 +50,12 @@ instructions:
    redeploys are free and unmetered.
 
 ### How to verify it works (do this after deploy)
-- Visit `/admin.html` → enter `ADMIN_PASSWORD` → should reach the dashboard.
+- Visit `/admin/` → enter `ADMIN_PASSWORD` → should reach the dashboard.
 - If login is rejected: the function isn't seeing `ADMIN_PASSWORD`. Re-check the
   env var name (exact, all caps) and redeploy.
 - A quick function probe (browser console on the site):
   ```js
-  fetch('/admin',{method:'POST',headers:{'Content-Type':'application/json'},
+  fetch('/api/admin',{method:'POST',headers:{'Content-Type':'application/json'},
     body:JSON.stringify({action:'login',password:'WRONG'})}).then(r=>r.text()).then(console.log)
   ```
   - `{"error":"Unauthorized"}` → function is live & has its password (good; type
@@ -83,7 +83,7 @@ instructions:
 - **Decision:** instructor clicks Approve/Deny in email → `/respond` records the
   decision; an approved absence that's matched to a roster student auto-writes an
   excused-absence (`AE`) attendance row (no demerit points, no double entry).
-- **Dashboard:** `/admin.html` → all data via POST `/admin` (auth'd by
+- **Dashboard:** `/admin/` → all data via POST `/api/admin` (auth'd by
   `ADMIN_PASSWORD`, checked server-side). Sections: Attendance, Demerit,
   Requests, History, Manage.
 - **Security:** the browser holds no Supabase key and no password. All DB access

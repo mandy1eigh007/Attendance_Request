@@ -11,8 +11,8 @@ This file is a “pick up where I left off” reference for the ANEW Attendance 
 - Smoke (e2e, mutating but cleans up): `node scripts/smoke-admin.mjs --e2e http://127.0.0.1:8000`
 
 ## What this app is
-- Static site at repo root (`index.html`, `form.html`, `admin.html`, `app.css`)
-- Cloudflare Pages Functions in `functions/` (served at `/admin`, `/submit`, `/respond`)
+- Static site at repo root (`index.html`, `form.html`, `app.css`, `admin/index.html`)
+- Cloudflare Pages Functions in `functions/` (served at `/api/admin`, `/submit`, `/respond`)
 - Supabase (Postgres) is already live; schema reference is in `supabase/01_schema.sql` (do not recreate tables)
 
 ## Local dev (Codespaces)
@@ -30,8 +30,8 @@ This file is a “pick up where I left off” reference for the ANEW Attendance 
 
 3) Open:
 - Home: `/`
-- Instructor dashboard (UI page): `/admin.html`
-- Instructor dashboard API (Cloudflare Function): `POST /admin`
+- Instructor dashboard (UI page): `/admin/` (served from `admin/index.html`)
+- Instructor dashboard API (Cloudflare Function): `POST /api/admin`
 - Student request form (class picker): `/form`
 
 ## Smoke tests
@@ -93,14 +93,28 @@ Manage → Classes uses **Close** (previously “Delete”).
 
 ## Routing
 - `_redirects` only rewrites `/form` → `/form.html` (so `/form?class=<slug>` works without the `.html`).
-- `/admin.html` is served directly as a static file (no rewrite).
-- `/admin`, `/submit`, `/respond` are Cloudflare Pages Functions (`functions/*.js`), auto-routed by filename. Do not move or rename these files.
+- `/admin/` is served from `admin/index.html` (a directory index — Cloudflare Pages handles this natively; no rewrite needed).
+- `/api/admin`, `/submit`, `/respond` are Cloudflare Pages Functions (`functions/api/admin.js`, `functions/submit.js`, `functions/respond.js`), auto-routed by filename. Do not move or rename these files.
+- IMPORTANT: the admin **page** and the admin **API** used to share the path `/admin`, which Cloudflare's html-handling redirect (`.html` → clean URL) turned into a 405 loop on the API. Keeping them on different paths (`/admin/` vs `/api/admin`) is what makes this work.
 
 ## Common gotchas
-- If `/admin` returns HTML or 404 in local dev: you’re not running Wrangler.
+- If `/admin/` returns HTML or 404 in local dev: you’re not running Wrangler.
 - If `/admin` returns 405: you sent a `GET`. The endpoint only accepts `POST` JSON.
 - If login fails: check `ADMIN_PASSWORD` is set in `.dev.vars` (local) or Cloudflare Pages env vars (prod), then restart/redeploy.
 - If you don’t see latest UI in browser: hard refresh (`Ctrl+Shift+R`) or add `?v=1` to the URL.
+
+## 2026-06-03 (hotfix) — admin page/API route collision
+Symptom reported: opening `/admin` in the browser, every button showed an "error" toast.
+
+Root cause: `/admin` was BOTH the static page (`admin.html`) AND the API function (`functions/admin.js`). Cloudflare Pages auto-redirects `.html` URLs to the clean form (`/admin.html` → 308 → `/admin`), which hit the POST-only Function and returned 405. The same was true in prod.
+
+Fix (this commit):
+- Moved the page to **`admin/index.html`** so it's served natively at `/admin/` (directory index, no html-handling redirect).
+- Moved the function to **`functions/api/admin.js`** so it's served at **`/api/admin`**.
+- Updated all fetch calls in the dashboard (`admin/index.html`), the homepage links (`index.html`), and the smoke test (`scripts/smoke-admin.mjs`).
+- `_redirects` is back to just `/form  /form.html  200`.
+
+If you bookmarked `/admin.html` or `/admin` directly, both still work: `/admin.html` → 308 → `/admin/` → 200, and `/admin` → 308 → `/admin/` → 200.
 
 ## 2026-06 — Optimization pass + Case Notes
 Big batch of fixes and a new feature. Highlights:
