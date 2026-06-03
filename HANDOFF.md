@@ -98,5 +98,41 @@ Manage → Classes uses **Close** (previously “Delete”).
 
 ## Common gotchas
 - If `/admin` returns HTML or 404 in local dev: you’re not running Wrangler.
+- If `/admin` returns 405: you sent a `GET`. The endpoint only accepts `POST` JSON.
 - If login fails: check `ADMIN_PASSWORD` is set in `.dev.vars` (local) or Cloudflare Pages env vars (prod), then restart/redeploy.
 - If you don’t see latest UI in browser: hard refresh (`Ctrl+Shift+R`) or add `?v=1` to the URL.
+
+## 2026-06 — Optimization pass + Case Notes
+Big batch of fixes and a new feature. Highlights:
+
+**Required DB migration (run once in Supabase SQL Editor):**
+The bottom of `supabase/01_schema.sql` now has an idempotent migration block. Re-run that file in Supabase to:
+- Ensure `anew_demerits` has `voided / voided_at / voided_by` columns (most prod DBs already do — safe re-run).
+- Create the new `anew_case_notes` table (required for the case-notes feature).
+- Create a placeholder `anew_grades` table for the next phase.
+- Add a partial index speeding up per-student demerit totals.
+
+**New: Case Notes (per-student case-management documentation).**
+- Open a student → new **Case Notes** section above Demerits.
+- Click **+ Add Note** to log subject, body, optional category + follow-up date.
+- Each note has a **Copy for Salesforce** button that emits a standard who/what/when block.
+- Visibility is enforced server-side: only an instructor linked to the student's class via `anew_class_instructors` can read/write.
+
+**New: Instructor identity at sign-in.**
+- After entering the password, the dashboard now asks **“Who are you signing in as?”** and stores the choice in `sessionStorage`.
+- The chosen instructor is sent with every admin API call as `payload.instructorId` and is required for any case-notes action.
+- A **Switch** button in the header lets you change identities without re-entering the password.
+
+**Backend cleanup (functions/):**
+- New shared helpers in `_lib.js`: `EMAILJS`, `sendEmail`, `DEMERIT_PTS`, `decideRequest`, `instructorOwnsClass`, `rateLimit`, `clientIp`.
+- `/admin` (`functions/admin.js`): rejects non-POST with 405; bug fix → `studentDemeritTotal` and `issueDemerit` now exclude voided rows; `addRoster` now persists `email`; `saveClass` validates instructor IDs and uses one bulk insert for class↔instructor links; `decideRequest` reuses the same idempotent-flip + auto-AE logic as `/respond`. New actions: `caseNotes`, `addCaseNote`, `updateCaseNote`, `voidCaseNote`.
+- `/submit` (`functions/submit.js`): splits `instructor_email` on `,` and emails each instructor (`Promise.allSettled`); per-IP and per-(email+date+type) rate limits via Cloudflare edge cache; structured `console.error` on email failures.
+- `/respond` (`functions/respond.js`): prefers DB values from `anew_requests` over URL params for the outgoing email; uses the shared `decideRequest` helper; logs caught errors.
+
+**Smoke test (`scripts/smoke-admin.mjs`):** added quick checks for `caseNotes`, `addCaseNote`, and the new 405 contract. Run with `node scripts/smoke-admin.mjs http://127.0.0.1:8000`.
+
+## Roadmap
+- Per-instructor class filtering on the main dashboard (today the picker is informational + drives case-note auth; class dropdowns still show all classes).
+- Wire the `anew_grades` table into the UI (Grades tab; case-note-style copy for Salesforce).
+- Replace `localStorage`/`sessionStorage` password with a short-lived signed cookie issued by `/admin login`.
+

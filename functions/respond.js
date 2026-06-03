@@ -1,24 +1,24 @@
 // functions/respond.js  → served at /respond
-import { makeSb, enc } from './_lib.js';
-
-const EMAILJS_SERVICE_ID  = 'service_w5fxqhb';
-const EMAILJS_TEMPLATE_ID = 'template_ad4tf59';
-const EMAILJS_PUBLIC_KEY  = 'jyNFKwUKoOYerQd9p';
+import { makeSb, enc, EMAILJS, decideRequest } from './_lib.js';
 
 export async function onRequestGet(context) {
   const { request, env } = context;
   const sb = makeSb(env);
   const p = Object.fromEntries(new URL(request.url).searchParams);
-  const decision = p.decision;
-  const studentName = p.name || 'Student';
-  const studentEmail = p.email || '';
-  const date = p.date || '';
-  const type = p.type || 'request';
-  const instructor = p.instructor || 'your instructor';
-  const program = p.program || 'ANEW';
-  const token = p.token || '';
 
-  if (!studentEmail || !['approved', 'denied'].includes(decision)) {
+  const decision = p.decision;
+  const token    = p.token || '';
+
+  // URL params are used only as fallback display values; trusted data
+  // comes from the DB row when we can locate it.
+  let studentName  = p.name || 'Student';
+  let studentEmail = p.email || '';
+  let dateLabel    = p.date || '';
+  let typeLabel    = p.type || 'request';
+  let instructor   = p.instructor || 'your instructor';
+  let program      = p.program || 'ANEW';
+
+  if (!['approved', 'denied'].includes(decision)) {
     return html(400, page('Error', 'Invalid or missing parameters. No email was sent.', '#C0392B', '⚠️'));
   }
 
@@ -27,8 +27,24 @@ export async function onRequestGet(context) {
   try {
     let reqRow = null;
     if (token) {
-      try { const rows = await sb(`anew_requests?token=eq.${enc(token)}&limit=1`); reqRow = rows && rows[0]; }
-      catch (e) {}
+      try {
+        const rows = await sb(`anew_requests?token=eq.${enc(token)}&limit=1`);
+        reqRow = rows && rows[0];
+      } catch (e) {
+        console.error('respond: failed to load request by token:', e && e.message);
+      }
+    }
+
+    // Prefer DB values over URL params when we have them.
+    if (reqRow) {
+      studentName  = `${reqRow.student_first || ''} ${reqRow.student_last || ''}`.trim() || studentName;
+      studentEmail = reqRow.student_email || studentEmail;
+      typeLabel    = reqRow.request_type || typeLabel;
+      dateLabel    = reqRow.request_date || dateLabel;
+    }
+
+    if (!studentEmail) {
+      return html(400, page('Error', 'Could not locate the student email. No email was sent.', '#C0392B', '⚠️'));
     }
 
     if (reqRow && reqRow.status && reqRow.status !== 'pending') {
@@ -38,46 +54,24 @@ export async function onRequestGet(context) {
         '#8295a0', 'ℹ️'));
     }
 
-    if (reqRow) {
-      await sb(`anew_requests?id=eq.${enc(reqRow.id)}`, {
-        method: 'PATCH', prefer: 'return=minimal',
-        body: JSON.stringify({ status: decision, decided_at: new Date().toISOString(), decided_by: instructor }),
-      });
-
-      if (isApproved && reqRow.student_id && reqRow.class_id && reqRow.request_date) {
-        try {
-          const existing = await sb(`anew_attendance?student_id=eq.${enc(reqRow.student_id)}&date=eq.${enc(reqRow.request_date)}&limit=1`);
-          if (!existing || !existing.length) {
-            await sb('anew_attendance', {
-              method: 'POST', prefer: 'return=minimal',
-              body: JSON.stringify({
-                student_id: reqRow.student_id, class_id: reqRow.class_id,
-                date: reqRow.request_date, status: 'AE',
-                notes: `Auto: approved ${reqRow.request_type} request`,
-                source: 'request', request_id: reqRow.id,
-              }),
-            });
-          }
-        } catch (e) {}
-      }
-    }
+    const decided = await decideRequest(sb, reqRow, decision, instructor);
 
     const decisionLine = isApproved
-      ? `✅ APPROVED — Your ${type} request for ${date} has been approved by ${instructor}.`
-      : `❌ DENIED — Your ${type} request for ${date} has been reviewed by ${instructor}. Please contact your instructor to discuss next steps.`;
+      ? `✅ APPROVED — Your ${typeLabel} request for ${dateLabel} has been approved by ${instructor}.`
+      : `❌ DENIED — Your ${typeLabel} request for ${dateLabel} has been reviewed by ${instructor}. Please contact your instructor to discuss next steps.`;
     const messageBody = isApproved
-      ? `Hi ${studentName},\n\nGreat news! Your ${type} request for ${date} has been APPROVED by ${instructor}.\n\nSee you there! If you have any questions, reply to this email.\n\nANEW Pre-Apprenticeship Program\n${program}`
-      : `Hi ${studentName},\n\nYour ${type} request for ${date} has been reviewed by ${instructor}.\n\nPlease reach out to your instructor to discuss next steps.\n\nANEW Pre-Apprenticeship Program\n${program}`;
+      ? `Hi ${studentName},\n\nGreat news! Your ${typeLabel} request for ${dateLabel} has been APPROVED by ${instructor}.\n\nSee you there! If you have any questions, reply to this email.\n\nANEW Pre-Apprenticeship Program\n${program}`
+      : `Hi ${studentName},\n\nYour ${typeLabel} request for ${dateLabel} has been reviewed by ${instructor}.\n\nPlease reach out to your instructor to discuss next steps.\n\nANEW Pre-Apprenticeship Program\n${program}`;
 
     const res = await fetch('https://api.emailjs.com/api/v1.0/email/send', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        service_id: EMAILJS_SERVICE_ID, template_id: EMAILJS_TEMPLATE_ID,
-        user_id: EMAILJS_PUBLIC_KEY, accessToken: env.EMAILJS_PRIVATE_KEY,
+        service_id: EMAILJS.SERVICE_ID, template_id: EMAILJS.TEMPLATE_STUDENT,
+        user_id: EMAILJS.PUBLIC_KEY, accessToken: env.EMAILJS_PRIVATE_KEY,
         template_params: {
           to_email: studentEmail, to_name: studentName,
-          subject: isApproved ? `Your ANEW request for ${date} — APPROVED`
-                              : `Your ANEW request for ${date} — Update from your instructor`,
+          subject: isApproved ? `Your ANEW request for ${dateLabel} — APPROVED`
+                              : `Your ANEW request for ${dateLabel} — Update from your instructor`,
           decision_line: decisionLine, message: messageBody, instructor, program,
         },
       }),
@@ -87,12 +81,13 @@ export async function onRequestGet(context) {
     const color = isApproved ? '#1A7A3E' : '#C0392B';
     const label = isApproved ? 'Approved' : 'Denied';
     const emoji = isApproved ? '✅' : '❌';
-    const extra = (isApproved && reqRow && reqRow.student_id) ? '<br>An excused-absence record was logged automatically.' : '';
+    const extra = decided.autoAttendance ? '<br>An excused-absence record was logged automatically.' : '';
     return html(200, page(label,
-      `Decision email sent to <strong>${studentName}</strong> at ${studentEmail}.<br>Request: ${type} on ${date}.${extra}`,
+      `Decision email sent to <strong>${studentName}</strong> at ${studentEmail}.<br>Request: ${typeLabel} on ${dateLabel}.${extra}`,
       color, emoji));
 
   } catch (err) {
+    console.error('respond failed:', err && err.message);
     return html(500, page('Send Failed', 'Could not complete: ' + err.message, '#C0392B', '⚠️'));
   }
 }

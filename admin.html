@@ -21,10 +21,21 @@
       <svg width="32" height="32" viewBox="0 0 32 32" fill="none"><path d="M16 4L4 10V22L16 28L28 22V10L16 4Z" fill="#06231b" stroke="#06231b" stroke-width="1.5"/><path d="M16 4L16 28M4 10L28 22M28 10L4 22" stroke="#5fe6c1" stroke-width="1.5"/></svg>
     </div>
     <h1 style="font-size:24px;font-weight:700;letter-spacing:-.03em;margin-bottom:5px">ANEW Dashboard</h1>
-    <p style="font-size:13.5px;color:var(--t3);margin-bottom:22px">Attendance · Demerits · Requests</p>
+    <p style="font-size:13.5px;color:var(--t3);margin-bottom:22px">Attendance · Demerits · Case Notes · Requests</p>
     <div class="alert alert-danger" id="loginErr" style="display:none">Incorrect password.</div>
     <input type="password" id="pwInput" placeholder="Enter password" style="margin-bottom:14px;text-align:center" onkeydown="if(event.key==='Enter')doLogin()">
     <button class="btn btn-primary btn-block" id="loginBtn" onclick="doLogin()">Sign In</button>
+  </div>
+</div>
+
+<!-- INSTRUCTOR PICKER (shown after password, before app) -->
+<div class="login-wrap" id="whoWrap" style="display:none;min-height:100vh;align-items:center;justify-content:center;padding:24px">
+  <div class="card" style="max-width:420px;width:100%;padding:32px 26px;text-align:center">
+    <h1 style="font-size:22px;font-weight:700;letter-spacing:-.03em;margin-bottom:6px">Who are you signing in as?</h1>
+    <p style="font-size:13.5px;color:var(--t3);margin-bottom:20px">Case notes you write will be stamped with your name. Only you (and other instructors assigned to the same class) can read them.</p>
+    <div class="field"><select id="whoSelect" style="text-align:center"></select></div>
+    <button class="btn btn-primary btn-block" onclick="chooseInstructor()">Continue</button>
+    <p class="note" style="margin-top:14px">Not in the list? Add yourself under Manage → Instructors after signing in as anyone, then come back.</p>
   </div>
 </div>
 
@@ -32,8 +43,9 @@
 <div id="app" style="display:none">
   <div class="app-header">
     <div class="app-logo"><span class="dot"></span><b>ANEW</b></div>
-    <span class="app-sub">Instructor</span>
+    <span class="app-sub" id="appSub">Instructor</span>
     <div class="header-right">
+      <button class="btn btn-ghost btn-sm" onclick="switchInstructor()" title="Switch instructor">Switch</button>
       <button class="btn btn-ghost btn-sm" onclick="doLogout()">Sign Out</button>
     </div>
   </div>
@@ -232,6 +244,14 @@
   </div>
 
   <div class="section-card" style="margin-top:16px">
+    <div class="card-title">Case Notes
+      <button class="btn btn-primary btn-sm" style="margin-left:auto" onclick="openAddCaseNote()">+ Add Note</button>
+    </div>
+    <div id="sdCaseNoteList"><div class="empty-state"><p>Loading…</p></div></div>
+    <div class="note" style="margin-top:10px">Visible only to instructors assigned to this class. Click <strong>Copy for Salesforce</strong> on any note to paste it into a Salesforce case note.</div>
+  </div>
+
+  <div class="section-card" style="margin-top:16px">
     <div class="card-title">Demerits</div>
     <div id="sdDemeritList"><div class="empty-state"><p>Loading…</p></div></div>
     <div class="note" style="margin-top:10px">Tip: click “Slip” to re-open the printable slip + case note later.</div>
@@ -248,6 +268,39 @@
       <div class="case-note" id="sdCaseNoteText"></div>
       <button class="btn btn-primary btn-block" onclick="copyStudentCaseNote()">Copy Case Note</button>
     </div>
+  </div>
+</div></div>
+
+<div class="modal-bg" id="caseNoteModal"><div class="modal" role="dialog" aria-modal="true"><div class="grab"></div>
+  <h2 id="caseNoteModalTitle" style="font-size:22px;font-weight:700;letter-spacing:-.03em;margin-bottom:18px">Add Case Note</h2>
+  <div class="grid2">
+    <div class="field"><label>Date <span class="req">*</span></label><input type="date" id="cnDate"></div>
+    <div class="field"><label>Category</label>
+      <select id="cnCategory">
+        <option value="">— None —</option>
+        <option>Check-in</option>
+        <option>Behavior</option>
+        <option>Academic</option>
+        <option>Attendance</option>
+        <option>Outreach</option>
+        <option>Referral</option>
+        <option>Wraparound / Support</option>
+        <option>Incident</option>
+        <option>Other</option>
+      </select>
+    </div>
+  </div>
+  <div class="field"><label>Subject <span class="req">*</span></label>
+    <input type="text" id="cnSubject" placeholder="Short headline (e.g. 'Met re: missed class on 6/2')">
+  </div>
+  <div class="field"><label>Note <span class="req">*</span></label>
+    <textarea id="cnBody" style="min-height:160px" placeholder="Who / What / Where / When / How. Include what was discussed, agreed-upon next steps, and any follow-up needed."></textarea>
+    <p class="note">Author and timestamp are recorded automatically. This will be available as a copy-paste Salesforce case note.</p>
+  </div>
+  <div class="field"><label>Follow-up date <span class="note" style="display:inline">(optional)</span></label><input type="date" id="cnFollowup"></div>
+  <div class="modal-actions">
+    <button class="btn btn-ghost" onclick="closeModal('caseNoteModal')">Cancel</button>
+    <button class="btn btn-primary" id="cnSaveBtn" onclick="saveCaseNote()">Save Note</button>
   </div>
 </div></div>
 
@@ -300,10 +353,12 @@ const DEMERIT_CODES = [
 const EXCUSE_REASONS=["Death of immediate family member","Birth of child/grandchild","Mandatory court appearance","Mandatory probation/parole meeting","Jury duty","Job/apprenticeship interview","Illness/injury with doctor's note"];
 
 let PW='';                       // admin password held in memory only for the session
+let ME=null;                     // chosen instructor: { id, name, email }
 let classes=[], instructors=[], students=[], curClass=null;
 let cohorts=[], editClassId=null, editInstrId=null;
 let attendanceRows=[], demeritTotals={};
 let sdStudentId=null, sdDemerits=[], editDemeritId=null;
+let sdCaseNotes=[], editCaseNoteId=null;
 
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function todayStr(){return new Date().toISOString().split('T')[0];}
@@ -312,8 +367,10 @@ function studentName(s){return s?`${s.first} ${s.last}`:'Unknown';}
 
 // ── API ──
 async function api(action,payload){
+  const pl = payload ? { ...payload } : {};
+  if (ME && ME.id && pl.instructorId === undefined) pl.instructorId = ME.id;
   const res=await fetch('/admin',{method:'POST',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({password:PW,action,payload})});
+    body:JSON.stringify({password:PW,action,payload:pl})});
 
   let out=null;
   let raw='';
@@ -347,7 +404,7 @@ async function doLogin(){
   try{
     await api('login');
     sessionStorage.setItem('anew_pw',pw);
-    showApp();
+    await showInstructorPicker();
   }catch(e){
     const el=document.getElementById('loginErr');
     el.textContent=e && e.message ? e.message : 'Login failed';
@@ -355,13 +412,61 @@ async function doLogin(){
     document.getElementById('pwInput').value='';PW='';
   }finally{btn.disabled=false;btn.textContent='Sign In';}
 }
-function doLogout(){sessionStorage.removeItem('anew_pw');PW='';location.reload();}
-function showApp(){
+function doLogout(){
+  sessionStorage.removeItem('anew_pw');
+  sessionStorage.removeItem('anew_me');
+  PW='';ME=null;
+  location.reload();
+}
+function switchInstructor(){
+  sessionStorage.removeItem('anew_me');
+  ME=null;
+  document.getElementById('app').style.display='none';
+  showInstructorPicker();
+}
+async function showInstructorPicker(){
   document.getElementById('loginWrap').style.display='none';
+  document.getElementById('app').style.display='none';
+  const wrap=document.getElementById('whoWrap');
+  wrap.style.display='flex';
+  const sel=document.getElementById('whoSelect');
+  sel.innerHTML='<option value="">Loading…</option>';
+  try{
+    const d=await api('bootstrap');
+    instructors=d.instructors||[];
+    classes=d.classes||[];
+    if(!instructors.length){
+      // No instructors yet — let them in as an unnamed admin so they can add one
+      ME={id:null,name:'Admin',email:''};
+      sessionStorage.setItem('anew_me',JSON.stringify(ME));
+      wrap.style.display='none';
+      showApp(true);
+      return;
+    }
+    sel.innerHTML=instructors.map(i=>`<option value="${esc(i.id)}">${esc(i.name)}</option>`).join('');
+  }catch(e){
+    sel.innerHTML=`<option value="">${esc(e.message)}</option>`;
+  }
+}
+function chooseInstructor(){
+  const id=document.getElementById('whoSelect').value;
+  if(!id){toast('Pick an instructor',true);return;}
+  const i=instructors.find(x=>x.id===id);
+  if(!i){toast('Instructor not found',true);return;}
+  ME={id:i.id,name:i.name,email:i.email};
+  sessionStorage.setItem('anew_me',JSON.stringify(ME));
+  document.getElementById('whoWrap').style.display='none';
+  showApp();
+}
+function showApp(skipBootstrap){
+  document.getElementById('loginWrap').style.display='none';
+  document.getElementById('whoWrap').style.display='none';
   document.getElementById('app').style.display='block';
   document.getElementById('attDate').value=todayStr();
   document.getElementById('dDate').value=todayStr();
-  bootstrap();
+  if(ME && ME.name) document.getElementById('appSub').textContent=ME.name;
+  if(ME && ME.name && !document.getElementById('dStaff').value) document.getElementById('dStaff').value=ME.name;
+  if(!skipBootstrap) bootstrap();
 }
 
 // ── Bootstrap ──
@@ -678,8 +783,9 @@ async function openStudentDetail(id){
   document.getElementById('sdEmail').value=s.email||'';
   document.getElementById('sdSlipBlock').style.display='none';
   document.getElementById('sdDemeritList').innerHTML='<div class="empty-state"><p>Loading…</p></div>';
+  document.getElementById('sdCaseNoteList').innerHTML='<div class="empty-state"><p>Loading…</p></div>';
   openModal('studentDetailModal');
-  await loadStudentDemerits();
+  await Promise.all([loadStudentDemerits(), loadStudentCaseNotes()]);
 }
 
 async function saveStudentDetail(){
@@ -814,6 +920,134 @@ async function voidStudentDemerit(id){
 function onEditExcusedChange(){
   const ex=document.getElementById('edExcused').value==='yes';
   document.getElementById('edExcuseReasonGroup').style.display=ex?'block':'none';
+}
+
+// ── CASE NOTES ──
+async function loadStudentCaseNotes(){
+  const el=document.getElementById('sdCaseNoteList');
+  if(!sdStudentId||!curClass){el.innerHTML='';return;}
+  if(!ME || !ME.id){
+    el.innerHTML='<div class="empty-state"><p>Pick an instructor (top-right \u2192 Switch) to see case notes.</p></div>';
+    return;
+  }
+  try{
+    const d=await api('caseNotes',{studentId:sdStudentId,classId:curClass});
+    sdCaseNotes=d.notes||[];
+    renderStudentCaseNotes();
+  }catch(e){
+    el.innerHTML=`<div class="empty-state"><p>${esc(e.message)}</p></div>`;
+  }
+}
+
+function renderStudentCaseNotes(){
+  const el=document.getElementById('sdCaseNoteList');
+  if(!sdCaseNotes.length){el.innerHTML='<div class="empty-state"><p>No case notes yet. Click <strong>+ Add Note</strong> to log one.</p></div>';return;}
+  el.innerHTML=sdCaseNotes.map(n=>`
+    <div style="padding:12px 0;border-bottom:.5px solid var(--b1)">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap">
+        <div style="flex:1;min-width:0">
+          <div><strong>${esc(n.subject||'(no subject)')}</strong>${n.category?` <span class="dt-chip dt-0" style="margin-left:6px">${esc(n.category)}</span>`:''}</div>
+          <div class="note" style="margin-top:2px">${esc(fmtDate(n.note_date))} \u00b7 ${esc(n.author_name||'Instructor')}${n.followup_date?` \u00b7 follow-up ${esc(fmtDate(n.followup_date))}`:''}</div>
+        </div>
+        <div class="flex-gap">
+          <button class="btn btn-primary btn-sm" onclick="copyCaseNoteToClipboard('${esc(n.id)}')">Copy for Salesforce</button>
+          <button class="btn btn-ghost btn-sm" onclick="openEditCaseNote('${esc(n.id)}')">Edit</button>
+          <button class="btn btn-danger btn-sm" onclick="voidCaseNote('${esc(n.id)}')">Remove</button>
+        </div>
+      </div>
+      <div style="margin-top:8px;font-size:13.5px;color:var(--t2);white-space:pre-wrap;line-height:1.5">${esc(n.body||'')}</div>
+    </div>
+  `).join('');
+}
+
+function buildCaseNoteText(n){
+  const s=students.find(x=>x.id===sdStudentId);
+  const cls=classes.find(c=>c.id===curClass);
+  const created = n.created_at ? new Date(n.created_at) : new Date();
+  const stamp = created.toLocaleString('en-US',{year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'});
+  const lines = [
+    `CASE NOTE \u2014 ${fmtDate(n.note_date)}`,
+    `Student: ${s ? studentName(s) : 'Unknown'}`,
+    `Program: ${cls ? cls.program_name : 'N/A'}`,
+    `Author: ${n.author_name || 'Instructor'}`,
+    `Logged: ${stamp}`,
+    n.category ? `Category: ${n.category}` : null,
+    n.followup_date ? `Follow-up: ${fmtDate(n.followup_date)}` : null,
+    '',
+    `Subject: ${n.subject || ''}`,
+    '',
+    n.body || '',
+  ].filter(x => x !== null);
+  return lines.join('\n');
+}
+
+function copyCaseNoteToClipboard(id){
+  const n=sdCaseNotes.find(x=>x.id===id);
+  if(!n){toast('Note not found',true);return;}
+  navigator.clipboard.writeText(buildCaseNoteText(n)).then(()=>toast('Case note copied'));
+}
+
+function openAddCaseNote(){
+  if(!ME || !ME.id){toast('Pick an instructor (Switch button) first',true);return;}
+  if(!curClass){toast('Select a class first',true);return;}
+  editCaseNoteId=null;
+  document.getElementById('caseNoteModalTitle').textContent='Add Case Note';
+  document.getElementById('cnDate').value=todayStr();
+  document.getElementById('cnCategory').value='';
+  document.getElementById('cnSubject').value='';
+  document.getElementById('cnBody').value='';
+  document.getElementById('cnFollowup').value='';
+  openModal('caseNoteModal');
+}
+
+function openEditCaseNote(id){
+  const n=sdCaseNotes.find(x=>x.id===id);
+  if(!n){toast('Note not found',true);return;}
+  editCaseNoteId=id;
+  document.getElementById('caseNoteModalTitle').textContent='Edit Case Note';
+  document.getElementById('cnDate').value=n.note_date||todayStr();
+  document.getElementById('cnCategory').value=n.category||'';
+  document.getElementById('cnSubject').value=n.subject||'';
+  document.getElementById('cnBody').value=n.body||'';
+  document.getElementById('cnFollowup').value=n.followup_date||'';
+  openModal('caseNoteModal');
+}
+
+async function saveCaseNote(){
+  const date=document.getElementById('cnDate').value;
+  const subject=document.getElementById('cnSubject').value.trim();
+  const body=document.getElementById('cnBody').value.trim();
+  const category=document.getElementById('cnCategory').value;
+  const followup=document.getElementById('cnFollowup').value;
+  if(!subject){toast('Subject is required',true);return;}
+  if(!body){toast('Note body is required',true);return;}
+  const btn=document.getElementById('cnSaveBtn');btn.disabled=true;btn.textContent='Saving\u2026';
+  try{
+    if(editCaseNoteId){
+      await api('updateCaseNote',{
+        id:editCaseNoteId, classId:curClass,
+        subject, body, category, noteDate:date, followupDate:followup
+      });
+      toast('Note updated');
+    }else{
+      await api('addCaseNote',{
+        studentId:sdStudentId, classId:curClass,
+        subject, body, category, noteDate:date, followupDate:followup
+      });
+      toast('Note saved');
+    }
+    closeModal('caseNoteModal');
+    await loadStudentCaseNotes();
+  }catch(e){toast(e.message,true);}finally{btn.disabled=false;btn.textContent='Save Note';}
+}
+
+async function voidCaseNote(id){
+  if(!confirm('Remove this case note? It will be hidden from the list (record retained).'))return;
+  try{
+    await api('voidCaseNote',{id, classId:curClass});
+    toast('Case note removed');
+    await loadStudentCaseNotes();
+  }catch(e){toast(e.message,true);}
 }
 
 function openEditDemerit(id){
@@ -1009,7 +1243,23 @@ let toastTimer;
 function toast(msg,err){const el=document.getElementById('toast');el.textContent=msg;el.classList.toggle('err',!!err);el.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.classList.remove('show'),2600);}
 
 // ── Boot: resume session if password remembered ──
-(function(){const pw=sessionStorage.getItem('anew_pw');if(pw){PW=pw;api('login').then(showApp).catch(()=>{sessionStorage.removeItem('anew_pw');PW='';});}})();
+(function(){
+  const pw=sessionStorage.getItem('anew_pw');
+  if(!pw) return;
+  PW=pw;
+  const meRaw=sessionStorage.getItem('anew_me');
+  if(meRaw){
+    try{ ME=JSON.parse(meRaw); }catch{ ME=null; }
+  }
+  api('login').then(()=>{
+    if(ME && ME.id){
+      // refresh bootstrap to update lists
+      showApp();
+    } else {
+      showInstructorPicker();
+    }
+  }).catch(()=>{sessionStorage.removeItem('anew_pw');sessionStorage.removeItem('anew_me');PW='';ME=null;});
+})();
 </script>
 </body>
 </html>

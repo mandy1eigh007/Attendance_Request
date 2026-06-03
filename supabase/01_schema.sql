@@ -146,3 +146,62 @@ alter table anew_demerits           enable row level security;
 --     execute format('drop policy if exists %I on %I.%I', r.policyname, r.schemaname, r.tablename);
 --   end loop;
 -- end $$;
+
+-- ════════════════════════════════════════════════════════════════════════
+-- 2025-Q2 ADDITIONS (idempotent — safe to re-run on the live database)
+-- ════════════════════════════════════════════════════════════════════════
+
+-- Demerit voiding (functions read/write these columns)
+alter table anew_demerits
+  add column if not exists voided     boolean not null default false,
+  add column if not exists voided_at  timestamptz,
+  add column if not exists voided_by  text;
+
+-- Speedup: per-student "active" demerit lookups
+create index if not exists idx_demerits_active
+  on anew_demerits(student_id)
+  where voided = false and excused = false;
+
+-- ── CASE NOTES (general case-management documentation) ──────────────────
+-- One row per note. Not tied to a demerit. Author is the instructor on file.
+-- Visibility is enforced server-side: only an instructor linked to the
+-- student's class (via anew_class_instructors) may read/write the note.
+create table if not exists anew_case_notes (
+  id              uuid primary key default gen_random_uuid(),
+  student_id      uuid not null references anew_students(id) on delete cascade,
+  class_id        uuid not null references anew_classes(id)  on delete cascade,
+  author_id       uuid references anew_instructors(id) on delete set null,
+  author_name     text not null,
+  note_date       date not null default current_date,
+  category        text,        -- e.g. 'Check-in', 'Behavior', 'Academic', 'Outreach', 'Other'
+  subject         text not null,
+  body            text not null,
+  followup_date   date,
+  voided          boolean not null default false,
+  voided_at       timestamptz,
+  voided_by       text,
+  created_at      timestamptz not null default now(),
+  updated_at      timestamptz not null default now()
+);
+create index if not exists idx_case_notes_student on anew_case_notes(student_id, note_date desc);
+create index if not exists idx_case_notes_class   on anew_case_notes(class_id,   note_date desc);
+
+alter table anew_case_notes enable row level security;
+-- No anon policies = anon role denied; service-role (functions) bypasses RLS.
+
+-- ── GRADES (placeholder for next phase — create now, wire later) ─────────
+create table if not exists anew_grades (
+  id           uuid primary key default gen_random_uuid(),
+  student_id   uuid not null references anew_students(id) on delete cascade,
+  class_id     uuid not null references anew_classes(id)  on delete cascade,
+  assessment   text not null,            -- 'OSHA-10 Exam', 'Week 3 Quiz', etc.
+  score        numeric,                  -- e.g. 87.5
+  max_score    numeric,                  -- e.g. 100
+  letter       text,                     -- optional letter grade
+  graded_on    date not null default current_date,
+  graded_by    text,
+  notes        text,
+  created_at   timestamptz not null default now()
+);
+create index if not exists idx_grades_student on anew_grades(student_id, graded_on desc);
+alter table anew_grades enable row level security;

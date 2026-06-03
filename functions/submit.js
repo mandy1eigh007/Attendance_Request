@@ -1,23 +1,8 @@
 // functions/submit.js  → served at /submit
-import { makeSb, ok, bad, clean, isEmail, enc } from './_lib.js';
-
-const EMAILJS_SERVICE_ID          = 'service_w5fxqhb';
-const EMAILJS_TEMPLATE_INSTRUCTOR = 'template_3oe8h8c';
-const EMAILJS_TEMPLATE_STUDENT    = 'template_ad4tf59';
-const EMAILJS_PUBLIC_KEY          = 'jyNFKwUKoOYerQd9p';
-
-async function sendEmail(env, template_id, template_params) {
-  const res = await fetch('https://api.emailjs.com/api/v1.0/email/send', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      service_id: EMAILJS_SERVICE_ID, template_id,
-      user_id: EMAILJS_PUBLIC_KEY, accessToken: env.EMAILJS_PRIVATE_KEY,
-      template_params,
-    }),
-  });
-  if (res.status !== 200) throw new Error('EmailJS ' + res.status + ': ' + (await res.text()));
-}
+import {
+  makeSb, ok, bad, clean, isEmail, enc,
+  EMAILJS, sendEmail, rateLimit, clientIp,
+} from './_lib.js';
 
 async function lookupClass(sb, slug) {
   const rows = await sb(`anew_classes?slug=eq.${enc(slug)}&active=eq.true&limit=1`);
@@ -42,6 +27,7 @@ async function matchStudent(sb, classId, first, last, email) {
 }
 
 // GET /submit?class=slug  → class info for the public form
+//       /submit (no params) → list of active classes for the picker
 export async function onRequestGet(context) {
   const { request, env } = context;
   const sb = makeSb(env);
@@ -80,6 +66,15 @@ export async function onRequestPost(context) {
   if (!date) return bad('Date is required');
   if (type === 'Leave Early' && !clean(d.leaveTime)) return bad('Leave time required');
   if (type === 'Appointment' && (!clean(d.apptStart) || !clean(d.apptReturn))) return bad('Appointment times required');
+
+  // Rate-limit duplicate submissions: per email+date+type for 60s, then per IP for 20s.
+  const dupKey = `${email.toLowerCase()}|${date}|${type}`;
+  if (!(await rateLimit('submit-dup', dupKey, 60))) {
+    return bad('We already received that request a moment ago. Check your email.', 429);
+  }
+  if (!(await rateLimit('submit-ip', clientIp(request), 20))) {
+    return bad('Please wait a few seconds before submitting again.', 429);
+  }
 
   try {
     const slug = clean(d.classSlug);
@@ -122,28 +117,47 @@ export async function onRequestPost(context) {
 
     const dateFormatted = clean(d.dateFormatted) || date;
 
-    await sendEmail(env, EMAILJS_TEMPLATE_INSTRUCTOR, {
-      to_email: cls.instructor_email, reply_to: email,
-      subject: `ANEW Request — ${first} ${last} — ${type} on ${dateFormatted}`,
-      student_name: first + ' ' + last, student_email: email, cohort,
-      request_type: type, request_date: dateFormatted,
-      time_details: timeDetails, notes_block: notesBlock,
-      makeup: clean(d.makeup) || 'Not specified',
-      approve_url: approveUrl, deny_url: denyUrl, sub_id: token,
-    });
+    // ── Send instructor email to every assigned instructor (split on comma) ──
+    const instructorEmails = String(cls.instructor_email || '')
+      .split(',')
+      .map(s => s.trim())
+      .filter(isEmail);
+    if (!instructorEmails.length) {
+      console.error('submit: class has no valid instructor_email', cls.id);
+    }
+
+    const sends = instructorEmails.map(addr =>
+      sendEmail(env, EMAILJS.TEMPLATE_INSTRUCTOR, {
+        to_email: addr, reply_to: email,
+        subject: `ANEW Request — ${first} ${last} — ${type} on ${dateFormatted}`,
+        student_name: first + ' ' + last, student_email: email, cohort,
+        request_type: type, request_date: dateFormatted,
+        time_details: timeDetails, notes_block: notesBlock,
+        makeup: clean(d.makeup) || 'Not specified',
+        approve_url: approveUrl, deny_url: denyUrl, sub_id: token,
+      })
+    );
+    const instructorResults = await Promise.allSettled(sends);
+    const instructorOk = instructorResults.some(r => r.status === 'fulfilled');
+    instructorResults.filter(r => r.status === 'rejected').forEach(r =>
+      console.error('submit: instructor email failed:', r.reason && r.reason.message));
 
     let studentEmailOk = true;
     try {
-      await sendEmail(env, EMAILJS_TEMPLATE_STUDENT, {
-        to_email: email, reply_to: cls.instructor_email,
+      await sendEmail(env, EMAILJS.TEMPLATE_STUDENT, {
+        to_email: email, reply_to: instructorEmails[0] || '',
         subject: `ANEW — Your ${type} request for ${dateFormatted} was received`,
         student_name: first, request_type: type, request_date: dateFormatted,
         cohort, instructor_name: cls.instructor_name, sub_id: token,
       });
-    } catch (e) { studentEmailOk = false; }
+    } catch (e) {
+      studentEmailOk = false;
+      console.error('submit: student email failed:', e && e.message);
+    }
 
-    return ok({ ok: true, token, matched: !!matched, studentEmailOk });
+    return ok({ ok: true, token, matched: !!matched, studentEmailOk, instructorOk });
   } catch (e) {
+    console.error('submit failed:', e && e.message);
     return bad('Could not submit request: ' + e.message, 500);
   }
 }

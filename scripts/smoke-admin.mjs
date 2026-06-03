@@ -347,6 +347,27 @@ try {
     console.log('✓ updateDemerit action present');
   }
 
+  // Case notes: ensure the action is wired and rejects missing fields.
+  {
+    const r = await postAdmin(baseUrl, { action: 'caseNotes', password, payload: {} });
+    assert(r.status === 400, `Expected 400 for caseNotes missing fields, got ${r.status}`);
+    assert(r.json && /Missing/.test(r.json.error || ''), `Expected Missing... for caseNotes, got ${JSON.stringify(r.json)}`);
+    console.log('✓ caseNotes action present');
+  }
+  {
+    const r = await postAdmin(baseUrl, { action: 'addCaseNote', password, payload: {} });
+    assert(r.status === 400, `Expected 400 for addCaseNote missing fields, got ${r.status}`);
+    console.log('✓ addCaseNote action present');
+  }
+
+  // Method check
+  {
+    const url = new URL('/admin', baseUrl);
+    const res = await fetch(url, { method: 'GET' });
+    assert(res.status === 405, `Expected 405 for GET /admin, got ${res.status}`);
+    console.log('✓ GET /admin rejected with 405');
+  }
+
   if (opts.e2e) {
     await runE2E({ baseUrl, password, classId: opts.classId });
   }
