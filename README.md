@@ -4,6 +4,10 @@ A student attendance-request form + instructor dashboard (attendance, demerits,
 requests, history) for ANEW, a pre-apprenticeship construction program. Static
 front-end + Cloudflare Pages Functions + a Supabase (Postgres) backend.
 
+## Start Here (Handoff / Runbook)
+- If you're picking this project back up (or handing it to someone else), read `HANDOFF.md` first.
+- It includes local dev commands, smoke tests, key URLs, and recent changes.
+
 ---
 
 ## 📋 FOR THE DEPLOYING AGENT — READ THIS FIRST
@@ -73,7 +77,7 @@ instructions:
 ---
 
 ## Architecture (for humans)
-- **Public flow:** student opens `/form?class=<slug>` → form POSTs to `/submit`
+- **Public flow:** student opens `/` or `/form` → selects their class (open classes only) → request form POSTs to `/submit`
   → request stored in Supabase, emails sent to instructor (with approve/deny
   links) and student.
 - **Decision:** instructor clicks Approve/Deny in email → `/respond` records the
