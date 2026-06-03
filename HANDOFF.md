@@ -30,7 +30,8 @@ This file is a “pick up where I left off” reference for the ANEW Attendance 
 
 3) Open:
 - Home: `/`
-- Instructor dashboard (UI page): `/admin` (same content as `/admin.html`)
+- Instructor dashboard (UI page): `/admin.html`
+- Instructor dashboard API (Cloudflare Function): `POST /admin`
 - Student request form (class picker): `/form`
 
 ## Smoke tests
@@ -86,6 +87,14 @@ Manage → Classes uses **Close** (previously “Delete”).
 - `b6d6c33` Show class selector on Manage/History
 - `4e11003` Add public class picker for requests
 - `5a43aaf` Rename Delete Class to Close Class
+- `83217dc` Add HANDOFF activity log
+- `2f12d23` Docs: add handoff pointer; remove uploaded zip
+- `4563a78` Docs: clarify handoff logging + quick start
+
+## Routing
+- `_redirects` only rewrites `/form` → `/form.html` (so `/form?class=<slug>` works without the `.html`).
+- `/admin.html` is served directly as a static file (no rewrite).
+- `/admin`, `/submit`, `/respond` are Cloudflare Pages Functions (`functions/*.js`), auto-routed by filename. Do not move or rename these files.
 
 ## Common gotchas
 - If `/admin` returns HTML or 404 in local dev: you’re not running Wrangler.
