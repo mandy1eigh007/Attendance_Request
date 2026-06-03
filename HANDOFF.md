@@ -2,6 +2,14 @@
 
 This file is a “pick up where I left off” reference for the ANEW Attendance System (Cloudflare Pages + Pages Functions + Supabase).
 
+## How to use this file
+- Document **all actions taken** (code changes, config changes, deploy tweaks, data fixes, decisions) in this file so the next agent can read it and continue confidently.
+
+## Quick start (local)
+- Dev server: `wrangler pages dev . --ip 0.0.0.0 --port 8000 --env-file .dev.vars --compatibility-date=2026-06-02`
+- Smoke (non-mutating): `node scripts/smoke-admin.mjs http://127.0.0.1:8000`
+- Smoke (e2e, mutating but cleans up): `node scripts/smoke-admin.mjs --e2e http://127.0.0.1:8000`
+
 ## What this app is
 - Static site at repo root (`index.html`, `form.html`, `admin.html`, `app.css`)
 - Cloudflare Pages Functions in `functions/` (served at `/admin`, `/submit`, `/respond`)
