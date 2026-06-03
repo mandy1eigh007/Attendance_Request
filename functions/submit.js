@@ -46,8 +46,17 @@ export async function onRequestGet(context) {
   const { request, env } = context;
   const sb = makeSb(env);
   const slug = new URL(request.url).searchParams.get('class');
-  if (!slug) return bad('No class specified');
   try {
+    if (!slug) {
+      const rows = await sb('anew_classes?active=eq.true&order=program_name.asc');
+      const classes = (rows || []).map(c => ({
+        id: c.id,
+        slug: c.slug,
+        program_name: c.program_name,
+        instructor_name: c.instructor_name,
+      }));
+      return ok({ classes });
+    }
     const info = await lookupClass(sb, slug);
     return info ? ok(info) : bad('Class not found', 404);
   } catch (e) { return bad(e.message, 500); }

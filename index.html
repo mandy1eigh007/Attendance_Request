@@ -76,14 +76,14 @@
   <h2>Attendance Portal</h2>
   <p class="lede">Pre-Apprenticeship Construction Training — Tukwila, WA</p>
   <div class="cards">
-    <div class="card card-link muted">
+    <a href="/form" class="card card-link">
       <div class="card-ic">
         <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="12" height="14" rx="2"/><path d="M7.5 7h5M7.5 10h5M7.5 13h3"/></svg>
       </div>
       <h3>Submit a Request</h3>
-      <p>Students — use the unique link your instructor gave you to request an absence, appointment, or early departure.</p>
-      <span class="pseudo">Use your class link</span>
-    </div>
+      <p>Students — select your class to request an absence, appointment, or early departure.</p>
+      <span class="pseudo">Choose your class →</span>
+    </a>
     <a href="/admin.html" class="card card-link">
       <div class="card-ic">
         <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6.25h7.5M14.5 6.25H17M3 13.75h2.5M9.5 13.75H17"/><circle cx="12.25" cy="6.25" r="1.9"/><circle cx="7.25" cy="13.75" r="1.9"/></svg>
@@ -93,7 +93,44 @@
       <span class="pseudo">Go to Dashboard →</span>
     </a>
   </div>
+
+  <div class="card" style="max-width:680px;margin:16px auto 0;padding:18px 18px">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
+      <div>
+        <div style="font-size:13px;font-weight:700;letter-spacing:.02em;text-transform:uppercase;color:var(--ac2)">Open Classes</div>
+        <div class="note">Pick your class to open the request form.</div>
+      </div>
+      <a href="/form" class="btn btn-ghost btn-sm">View All</a>
+    </div>
+    <div id="classLinks" style="margin-top:12px"></div>
+  </div>
 </div>
 <div class="footer">ANEW · anewcareer.org · Tukwila, WA</div>
+
+<script>
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+async function loadClasses(){
+  const host=document.getElementById('classLinks');
+  if(!host) return;
+  host.innerHTML='<div class="note">Loading…</div>';
+  try{
+    const res=await fetch('/submit');
+    if(!res.ok) throw new Error('Failed');
+    const data=await res.json();
+    const list=(data && data.classes) ? data.classes : [];
+    const rows=list.filter(c=>c && c.slug && c.program_name);
+    if(!rows.length){host.innerHTML='<div class="note">No open classes found.</div>';return;}
+    host.innerHTML=rows.map(c=>
+      `<a class="btn btn-ghost btn-block" style="justify-content:flex-start;margin:8px 0" href="/form?class=${encodeURIComponent(c.slug)}">
+        <span style="display:flex;flex-direction:column;gap:2px;align-items:flex-start">
+          <span style="font-weight:700">${esc(c.program_name)}</span>
+          <span class="note">${esc(c.instructor_name||'')}</span>
+        </span>
+      </a>`
+    ).join('');
+  }catch{host.innerHTML='<div class="note">Could not load classes.</div>';}
+}
+loadClasses();
+</script>
 </body>
 </html>
