@@ -379,7 +379,7 @@ function showView(name){
   document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
   document.querySelectorAll('.nav-tab').forEach(t=>t.classList.toggle('active',t.dataset.view===name));
   document.getElementById('view-'+name).classList.add('active');
-  document.getElementById('contextBar').style.display=(name==='attendance'||name==='demerit')?'flex':'none';
+  document.getElementById('contextBar').style.display=(name==='attendance'||name==='demerit'||name==='manage'||name==='history')?'flex':'none';
   if(name==='requests')loadRequests();
   if(name==='history')renderHistory();
 }
@@ -396,6 +396,9 @@ async function onClassChange(){
   await refreshDemeritTotals();
   populateDemeritStudents();
   await loadAttendance();
+  // keep other views in sync when switching class
+  try{renderManageStudents();}catch{}
+  try{if(document.getElementById('view-history').classList.contains('active'))renderHistory();}catch{}
 }
 async function refreshDemeritTotals(){
   demeritTotals={};
@@ -658,7 +661,7 @@ function renderManage(){
 }
 function renderManageStudents(){
   const el=document.getElementById('manageStudents');
-  if(!curClass||!students.length){el.innerHTML='<div class="empty-state"><p>Select a class with students (top of Attendance), or add some.</p></div>';return;}
+  if(!curClass||!students.length){el.innerHTML='<div class="empty-state"><p>Select a class above, or add some.</p></div>';return;}
   el.innerHTML=students.map(s=>`<div style="padding:9px 0;border-bottom:.5px solid var(--b1);display:flex;justify-content:space-between;align-items:center;gap:10px">
     <button class="btn btn-ghost btn-sm" style="padding-left:0" onclick="openStudentDetail('${esc(s.id)}')">${esc(studentName(s))}</button>
     <div class="flex-gap"><span class="dt-chip ${dtClass(demeritTotals[s.id]||0)}">${demeritTotals[s.id]||0} pts</span>
