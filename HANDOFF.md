@@ -2,6 +2,13 @@
 
 This file is a “pick up where I left off” reference for the ANEW Attendance System (Cloudflare Pages + Pages Functions + Supabase).
 
+## 2026-06-04 — Case Notes is live
+- Supabase migration ran: `anew_case_notes` table now exists in prod (verified via `GET /rest/v1/anew_case_notes` → 200).
+- Demerit `voided` columns confirmed present from the earlier e2e smoke run.
+- `anew_grades` placeholder table created (UI not wired yet — roadmap).
+- Latest deployed code: commit `5a4ec31` on `main`. Cloudflare Pages auto-deploys from `main`.
+- Feature is fully usable end-to-end: open a student → **+ Add Note** → **Copy for Salesforce**.
+
 ## How to use this file
 - Document **all actions taken** (code changes, config changes, deploy tweaks, data fixes, decisions) in this file so the next agent can read it and continue confidently.
 
