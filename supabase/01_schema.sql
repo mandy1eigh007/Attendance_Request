@@ -229,3 +229,31 @@ alter table anew_case_notes
 --   Allowed MIME types: image/jpeg, image/png, image/webp, image/gif, image/heic, application/pdf
 --
 -- No bucket policies needed — all access goes through the service-role key in functions.
+
+-- ════════════════════════════════════════════════════════════════════════
+-- 2026-Q2 ADDITION — CONTRACTS (behavioral / program contracts per student)
+-- Run in Supabase → SQL Editor. Safe to re-run (IF NOT EXISTS).
+-- ════════════════════════════════════════════════════════════════════════
+create table if not exists anew_contracts (
+  id            uuid primary key default gen_random_uuid(),
+  student_id    uuid not null references anew_students(id) on delete cascade,
+  class_id      uuid not null references anew_classes(id)  on delete cascade,
+  issued_by     text not null,
+  issued_date   date not null default current_date,
+  reason        text,
+  terms         text,
+  status        text not null default 'active',   -- active | completed | voided
+  review_date   date,
+  resolved_date date,
+  resolved_by   text,
+  resolution    text,
+  demerit_total_at_issue int,
+  voided        boolean not null default false,
+  voided_at     timestamptz,
+  voided_by     text,
+  created_at    timestamptz not null default now(),
+  updated_at    timestamptz not null default now()
+);
+create index if not exists idx_contracts_student on anew_contracts(student_id, issued_date desc);
+create index if not exists idx_contracts_class   on anew_contracts(class_id, status);
+alter table anew_contracts enable row level security;

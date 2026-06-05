@@ -111,6 +111,7 @@
           <button class="nav-tab active" data-ptab="att" onclick="showProfileTab('att')">Attendance</button>
           <button class="nav-tab" data-ptab="dem" onclick="showProfileTab('dem')">Demerits</button>
           <button class="nav-tab" data-ptab="notes" onclick="showProfileTab('notes')">Case Notes</button>
+          <button class="nav-tab" data-ptab="contracts" onclick="showProfileTab('contracts')">Contracts</button>
         </div>
 
         <!-- Bulk action bar -->
@@ -140,6 +141,14 @@
           <div id="profileDemBody"><div class="empty-state"><p>Loading…</p></div></div>
         </div>
 
+        <!-- Contracts tab -->
+        <div class="profile-tab-pane" id="ptab-contracts">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+            <span class="note">Behavioral / program contracts on file for this student</span>
+            <button class="btn btn-primary btn-sm" onclick="openAssignContract()">+ Assign Contract</button>
+          </div>
+          <div id="profileContractBody"><div class="empty-state"><p>Loading…</p></div></div>
+        </div>
         <!-- Case Notes tab -->
         <div class="profile-tab-pane" id="ptab-notes">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
@@ -354,6 +363,28 @@
       <div class="case-note" id="sdCaseNoteText"></div>
       <button class="btn btn-primary btn-block" onclick="copyStudentCaseNote()">Copy Case Note</button>
     </div>
+  </div>
+</div></div>
+
+<div class="modal-bg" id="contractModal"><div class="modal" role="dialog" aria-modal="true"><div class="grab"></div>
+  <h2 style="font-size:22px;font-weight:700;letter-spacing:-.03em;margin-bottom:18px">Assign Contract</h2>
+  <label style="display:block;font-size:13px;color:var(--t2);margin:10px 0 4px">Issue date</label>
+  <input type="date" id="ctIssueDate" style="width:100%;padding:11px 13px;background:var(--s4);border:.5px solid var(--b2);border-radius:12px;color:var(--t1);font-size:15px">
+  <label style="display:block;font-size:13px;color:var(--t2);margin:12px 0 4px">Reason</label>
+  <select id="ctReason" style="width:100%;padding:11px 13px;background:var(--s4);border:.5px solid var(--b2);border-radius:12px;color:var(--t1);font-size:15px">
+    <option>Attendance</option>
+    <option>Behavior / Demerits</option>
+    <option>Academic Progress</option>
+    <option>Conduct</option>
+    <option>Other</option>
+  </select>
+  <label style="display:block;font-size:13px;color:var(--t2);margin:12px 0 4px">Contract terms / expectations</label>
+  <textarea id="ctTerms" rows="5" placeholder="What the student is agreeing to, and what happens if the terms are not met." style="width:100%;padding:11px 13px;background:var(--s4);border:.5px solid var(--b2);border-radius:12px;color:var(--t1);font-size:15px;line-height:1.5;resize:vertical"></textarea>
+  <label style="display:block;font-size:13px;color:var(--t2);margin:12px 0 4px">Review date (optional)</label>
+  <input type="date" id="ctReviewDate" style="width:100%;padding:11px 13px;background:var(--s4);border:.5px solid var(--b2);border-radius:12px;color:var(--t1);font-size:15px">
+  <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px">
+    <button class="btn btn-ghost" onclick="closeModal('contractModal')">Cancel</button>
+    <button class="btn btn-primary" id="ctSaveBtn" onclick="saveContract()">Assign Contract</button>
   </div>
 </div></div>
 
@@ -1599,7 +1630,86 @@ function bulkPrint(){
     </div>
     <p style="margin-top:20px;font-size:11px;color:#777;border-top:1px solid #e0ddd5;padding-top:12px">I acknowledge receipt of this demerit. Refusal to sign results in an additional demerit (Code 6). Accumulation of 10 demerit points results in dismissal from the program.</p>`;
   });
-  html+='</body></html>';
+  html+='<script>
+// ── CONTRACT ASSIGNMENT (student profile sub-tab) ──
+let sdContracts=[];
+(function(){ const _spt=showProfileTab; showProfileTab=function(tab){ _spt(tab); if(tab==='contracts') loadStudentContracts(); }; })();
+
+async function loadStudentContracts(){
+  const el=document.getElementById('profileContractBody');
+  if(el) el.innerHTML='<div class="empty-state"><p>Loading…</p></div>';
+  try{
+    const out=await api('contracts',{studentId:sdStudentId,classId:curClass});
+    sdContracts=out.contracts||[];
+    renderProfileContracts();
+  }catch(e){ if(el) el.innerHTML='<div class="empty-state"><p>'+esc(e.message)+'</p></div>'; }
+}
+
+function renderProfileContracts(){
+  const el=document.getElementById('profileContractBody');
+  if(!el) return;
+  if(!sdContracts.length){ el.innerHTML='<div class="empty-state"><p>No contracts on file. Tap + Assign Contract.</p></div>'; return; }
+  const col={active:'#c9772e',completed:'#2e8b57',voided:'#888'};
+  el.innerHTML=sdContracts.map(c=>{
+    const st=c.status||'active';
+    return `<div style="padding:12px 4px;border-bottom:.5px solid var(--b1)">
+      <div style="display:flex;align-items:flex-start;gap:10px">
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+            <strong>${esc(fmtDate(c.issued_date))}</strong>
+            <span class="dt-chip" style="background:${col[st]||'#888'};color:#fff;text-transform:capitalize">${esc(st)}</span>
+            ${c.reason?`<span class="dt-chip dt-0">${esc(c.reason)}</span>`:''}
+          </div>
+          <div class="note" style="margin-top:2px">Issued by ${esc(c.issued_by||'Instructor')}${c.review_date?` · review ${esc(fmtDate(c.review_date))}`:''}${(c.demerit_total_at_issue!=null)?` · ${esc(String(c.demerit_total_at_issue))} demerit pts at issue`:''}${c.resolved_date?` · completed ${esc(fmtDate(c.resolved_date))}`:''}</div>
+          ${c.terms?`<div style="margin-top:6px;font-size:13px;color:var(--t2);white-space:pre-wrap;line-height:1.5">${esc(c.terms)}</div>`:''}
+        </div>
+        <div class="flex-gap">
+          ${st==='active'?`<button class="btn btn-ghost btn-sm" onclick="completeContract('${esc(c.id)}')">Complete</button>`:''}
+          <button class="btn btn-danger btn-sm" onclick="voidContract('${esc(c.id)}')">Remove</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function openAssignContract(){
+  document.getElementById('ctIssueDate').value=new Date().toISOString().slice(0,10);
+  const t=(typeof demeritTotals!=='undefined' && demeritTotals[sdStudentId])||0;
+  document.getElementById('ctReason').value = t>=7 ? 'Behavior / Demerits' : 'Attendance';
+  document.getElementById('ctTerms').value='';
+  document.getElementById('ctReviewDate').value='';
+  openModal('contractModal');
+}
+
+async function saveContract(){
+  const issuedDate=document.getElementById('ctIssueDate').value;
+  const reason=document.getElementById('ctReason').value;
+  const terms=document.getElementById('ctTerms').value.trim();
+  const reviewDate=document.getElementById('ctReviewDate').value||null;
+  if(!terms){toast('Contract terms are required',true);return;}
+  const btn=document.getElementById('ctSaveBtn');btn.disabled=true;btn.textContent='Saving…';
+  try{
+    await api('assignContract',{studentId:sdStudentId,classId:curClass,reason,terms,issuedDate,reviewDate});
+    toast('Contract assigned');
+    closeModal('contractModal');
+    await loadStudentContracts();
+  }catch(e){toast(e.message,true);}finally{btn.disabled=false;btn.textContent='Assign Contract';}
+}
+
+async function completeContract(id){
+  if(!confirm('Mark this contract as completed?'))return;
+  try{ await api('updateContract',{id,classId:curClass,status:'completed'}); toast('Contract completed'); await loadStudentContracts(); }
+  catch(e){toast(e.message,true);}
+}
+
+async function voidContract(id){
+  if(!confirm('Remove this contract? It will be hidden from the list (record retained).'))return;
+  try{ await api('voidContract',{id,classId:curClass}); toast('Contract removed'); await loadStudentContracts(); }
+  catch(e){toast(e.message,true);}
+}
+
+</script>
+</body></html>';
   const w=window.open('','_blank');w.document.write(html);w.document.close();
 }
 
