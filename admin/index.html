@@ -813,8 +813,11 @@ async function loadRequests(){
   }catch(e){list.innerHTML=`<div class="empty-state"><p>${esc(e.message)}</p></div>`;}
 }
 async function decide(id,decision){
-  try{await api('decideRequest',{id,decision,by:'Instructor'});toast(`Request ${decision}`);loadRequests();}
-  catch(e){toast(e.message,true);}
+  try{
+    const out=await api('decideRequest',{id,decision,by:(typeof ME!=='undefined'&&ME&&ME.name)?ME.name:'Instructor'});
+    toast((out&&out.emailed)?`Request ${decision} \u2014 student emailed`:`Request ${decision}`);
+    loadRequests();
+  }catch(e){toast(e.message,true);}
 }
 
 // ── HISTORY ──

@@ -1,92 +1,39 @@
+<!-- EmailJS template_3oe8h8c (instructor notification).
+     NOTE: this is the SOURCE for the EmailJS-hosted template. To change the
+     actual email, paste this HTML into the EmailJS dashboard for this template.
+     Approve/deny is no longer done from email (link prefetching auto-decided
+     requests) — instructors decide in the dashboard Requests tab. -->
 <!DOCTYPE html>
 <html>
-<head><meta charset="UTF-8"></head>
-<body style="margin:0;padding:0;background:#EDEBE5;font-family:Arial,sans-serif">
-<table width="100%" cellpadding="0" cellspacing="0" style="background:#EDEBE5;padding:32px 16px">
-  <tr><td align="center">
-    <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%">
-      <tr><td style="background:#10201c;border-radius:10px 10px 0 0;padding:0">
-        <table width="100%" cellpadding="0" cellspacing="0">
-          <tr><td colspan="2" style="background:#2dd4a7;height:5px;border-radius:10px 10px 0 0;font-size:0">&nbsp;</td></tr>
-          <tr>
-            <td style="padding:20px 28px 18px">
-              <div style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:#888;margin-bottom:4px">ANEW Pre-Apprenticeship Program</div>
-              <div style="font-size:26px;font-weight:700;color:#fff;letter-spacing:1px">New Attendance Request</div>
-            </td>
-            <td style="padding:20px 28px 18px;text-align:right;vertical-align:top">
-              <div style="background:#2dd4a7;border-radius:6px;width:48px;height:48px;display:inline-block;text-align:center;line-height:48px;font-size:22px">🔧</div>
-            </td>
-          </tr>
-        </table>
-      </td></tr>
-      <tr><td style="background:#fff;border:1px solid #D8D4CC;border-top:none;border-radius:0 0 10px 10px;padding:28px">
-        <div style="font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#1b6b56;border-bottom:2px solid #2dd4a7;padding-bottom:5px;margin-bottom:16px">Student Information</div>
-        <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:20px">
-          <tr>
-            <td width="50%" style="padding-bottom:12px;vertical-align:top">
-              <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px">Name</div>
-              <div style="font-size:15px;color:#10201c;font-weight:600">{{student_name}}</div>
-            </td>
-            <td width="50%" style="padding-bottom:12px;vertical-align:top">
-              <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px">Cohort</div>
-              <div style="font-size:15px;color:#10201c;font-weight:600">{{cohort}}</div>
-            </td>
-          </tr>
-          <tr>
-            <td width="50%" style="padding-bottom:12px;vertical-align:top">
-              <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px">Email</div>
-              <div style="font-size:15px;color:#10201c">{{student_email}}</div>
-            </td>
-            <td width="50%" style="padding-bottom:12px;vertical-align:top">
-              <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px">Submission ID</div>
-              <div style="font-size:13px;color:#888;font-family:monospace">{{sub_id}}</div>
-            </td>
-          </tr>
-        </table>
-        <div style="font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#1b6b56;border-bottom:2px solid #2dd4a7;padding-bottom:5px;margin-bottom:16px">Request Details</div>
-        <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:8px">
-          <tr>
-            <td width="50%" style="padding-bottom:12px;vertical-align:top">
-              <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px">Request Type</div>
-              <div style="font-size:15px;color:#10201c;font-weight:600">{{request_type}}</div>
-            </td>
-            <td width="50%" style="padding-bottom:12px;vertical-align:top">
-              <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px">Date</div>
-              <div style="font-size:15px;color:#10201c;font-weight:600">{{request_date}}</div>
-            </td>
-          </tr>
-        </table>
-        <div style="margin-bottom:20px">{{time_details}}</div>
-        <div style="margin-bottom:20px">{{notes_block}}</div>
-        <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:24px">
-          <tr>
-            <td style="vertical-align:top">
-              <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px">Make-Up Plan</div>
-              <div style="font-size:14px;color:#10201c">{{makeup}}</div>
-            </td>
-          </tr>
-        </table>
-        <div style="border-top:1px solid #E8E4DC;margin-bottom:24px"></div>
-        <div style="font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#1b6b56;margin-bottom:14px">Send Student a Decision</div>
-        <p style="font-size:13px;color:#888;margin:0 0 18px">Click one button to instantly email {{student_name}} your decision.</p>
-        <table width="100%" cellpadding="0" cellspacing="0">
-          <tr>
-            <td width="48%" style="padding-right:8px">
-              <a href="{{approve_url}}" style="display:block;background:#1A7A3E;color:#fff;text-decoration:none;text-align:center;padding:14px;border-radius:8px;font-size:16px;font-weight:700;letter-spacing:1px">✅ APPROVE</a>
-            </td>
-            <td width="4%"></td>
-            <td width="48%" style="padding-left:8px">
-              <a href="{{deny_url}}" style="display:block;background:#C0392B;color:#fff;text-decoration:none;text-align:center;padding:14px;border-radius:8px;font-size:16px;font-weight:700;letter-spacing:1px">❌ DENY</a>
-            </td>
-          </tr>
-        </table>
-        <p style="font-size:11px;color:#aaa;text-align:center;margin:20px 0 0">Clicking a button sends an immediate email to the student.</p>
-      </td></tr>
-      <tr><td style="padding:16px 0;text-align:center">
-        <div style="font-size:11px;color:#aaa;letter-spacing:.5px">ANEW &nbsp;|&nbsp; anewcareer.org &nbsp;|&nbsp; Tukwila, WA</div>
-      </td></tr>
-    </table>
-  </td></tr>
-</table>
+<body style="margin:0;background:#f2f2ef;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f2f2ef;padding:24px 0">
+    <tr><td align="center">
+      <table width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 2px 10px rgba(0,0,0,.06)">
+        <tr><td style="background:#0e1413;padding:22px 28px">
+          <div style="color:#2dd4a7;font-size:12px;font-weight:700;letter-spacing:2px;text-transform:uppercase">ANEW Attendance</div>
+          <div style="color:#fff;font-size:20px;font-weight:700;margin-top:4px">New Attendance Request</div>
+        </td></tr>
+        <tr><td style="padding:26px 28px 8px">
+          <p style="font-size:15px;color:#1C1C1C;margin:0 0 18px">A new request needs your review.</p>
+          <table width="100%" cellpadding="0" cellspacing="0" style="font-size:14px;color:#1C1C1C">
+            <tr><td style="padding:6px 0;color:#888;width:130px">Student</td><td style="padding:6px 0;font-weight:600">{{student_name}}</td></tr>
+            <tr><td style="padding:6px 0;color:#888">Email</td><td style="padding:6px 0">{{student_email}}</td></tr>
+            <tr><td style="padding:6px 0;color:#888">Cohort</td><td style="padding:6px 0">{{cohort}}</td></tr>
+            <tr><td style="padding:6px 0;color:#888">Request</td><td style="padding:6px 0;font-weight:600">{{request_type}} &middot; {{request_date}}</td></tr>
+          </table>
+          <div style="margin:10px 0">{{time_details}}</div>
+          <div style="margin:10px 0">{{notes_block}}</div>
+          <table width="100%" cellpadding="0" cellspacing="0" style="font-size:14px;color:#1C1C1C">
+            <tr><td style="padding:6px 0;color:#888;width:130px;vertical-align:top">Make-up plan</td><td style="padding:6px 0">{{makeup}}</td></tr>
+          </table>
+        </td></tr>
+        <tr><td style="padding:14px 28px 28px">
+          <a href="{{dashboard_url}}" style="display:block;background:#2dd4a7;color:#06231b;text-decoration:none;text-align:center;padding:15px;border-radius:10px;font-size:16px;font-weight:700;letter-spacing:.5px">Review in Dashboard &rarr;</a>
+          <p style="font-size:12px;color:#888;text-align:center;margin:16px 0 0;line-height:1.5">Open the dashboard, go to the <b>Requests</b> tab, and Approve or Deny. The student is emailed automatically.</p>
+          <p style="font-size:11px;color:#bbb;text-align:center;margin:10px 0 0">Ref {{sub_id}}</p>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
 </body>
 </html>

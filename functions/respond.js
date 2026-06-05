@@ -2,94 +2,14 @@
 import { makeSb, enc, EMAILJS, decideRequest } from './_lib.js';
 
 export async function onRequestGet(context) {
-  const { request, env } = context;
-  const sb = makeSb(env);
-  const p = Object.fromEntries(new URL(request.url).searchParams);
-
-  const decision = p.decision;
-  const token    = p.token || '';
-
-  // URL params are used only as fallback display values; trusted data
-  // comes from the DB row when we can locate it.
-  let studentName  = p.name || 'Student';
-  let studentEmail = p.email || '';
-  let dateLabel    = p.date || '';
-  let typeLabel    = p.type || 'request';
-  let instructor   = p.instructor || 'your instructor';
-  let program      = p.program || 'ANEW';
-
-  if (!['approved', 'denied'].includes(decision)) {
-    return html(400, page('Error', 'Invalid or missing parameters. No email was sent.', '#C0392B', '⚠️'));
-  }
-
-  const isApproved = decision === 'approved';
-
-  try {
-    let reqRow = null;
-    if (token) {
-      try {
-        const rows = await sb(`anew_requests?token=eq.${enc(token)}&limit=1`);
-        reqRow = rows && rows[0];
-      } catch (e) {
-        console.error('respond: failed to load request by token:', e && e.message);
-      }
-    }
-
-    // Prefer DB values over URL params when we have them.
-    if (reqRow) {
-      studentName  = `${reqRow.student_first || ''} ${reqRow.student_last || ''}`.trim() || studentName;
-      studentEmail = reqRow.student_email || studentEmail;
-      typeLabel    = reqRow.request_type || typeLabel;
-      dateLabel    = reqRow.request_date || dateLabel;
-    }
-
-    if (!studentEmail) {
-      return html(400, page('Error', 'Could not locate the student email. No email was sent.', '#C0392B', '⚠️'));
-    }
-
-    if (reqRow && reqRow.status && reqRow.status !== 'pending') {
-      const already = reqRow.status === 'approved' ? 'Approved' : 'Denied';
-      return html(200, page(`Already ${already}`,
-        `This request was already <strong>${already.toLowerCase()}</strong> on ${fmtTs(reqRow.decided_at)}. No second email was sent.`,
-        '#8295a0', 'ℹ️'));
-    }
-
-    const decided = await decideRequest(sb, reqRow, decision, instructor);
-
-    const decisionLine = isApproved
-      ? `✅ APPROVED — Your ${typeLabel} request for ${dateLabel} has been approved by ${instructor}.`
-      : `❌ DENIED — Your ${typeLabel} request for ${dateLabel} has been reviewed by ${instructor}. Please contact your instructor to discuss next steps.`;
-    const messageBody = isApproved
-      ? `Hi ${studentName},\n\nGreat news! Your ${typeLabel} request for ${dateLabel} has been APPROVED by ${instructor}.\n\nSee you there! If you have any questions, reply to this email.\n\nANEW Pre-Apprenticeship Program\n${program}`
-      : `Hi ${studentName},\n\nYour ${typeLabel} request for ${dateLabel} has been reviewed by ${instructor}.\n\nPlease reach out to your instructor to discuss next steps.\n\nANEW Pre-Apprenticeship Program\n${program}`;
-
-    const res = await fetch('https://api.emailjs.com/api/v1.0/email/send', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        service_id: EMAILJS.SERVICE_ID, template_id: EMAILJS.TEMPLATE_STUDENT,
-        user_id: EMAILJS.PUBLIC_KEY, accessToken: env.EMAILJS_PRIVATE_KEY,
-        template_params: {
-          to_email: studentEmail, to_name: studentName,
-          subject: isApproved ? `Your ANEW request for ${dateLabel} — APPROVED`
-                              : `Your ANEW request for ${dateLabel} — Update from your instructor`,
-          decision_line: decisionLine, message: messageBody, instructor, program,
-        },
-      }),
-    });
-    if (res.status !== 200) throw new Error('EmailJS error: ' + (await res.text()));
-
-    const color = isApproved ? '#1A7A3E' : '#C0392B';
-    const label = isApproved ? 'Approved' : 'Denied';
-    const emoji = isApproved ? '✅' : '❌';
-    const extra = decided.autoAttendance ? '<br>An excused-absence record was logged automatically.' : '';
-    return html(200, page(label,
-      `Decision email sent to <strong>${studentName}</strong> at ${studentEmail}.<br>Request: ${typeLabel} on ${dateLabel}.${extra}`,
-      color, emoji));
-
-  } catch (err) {
-    console.error('respond failed:', err && err.message);
-    return html(500, page('Send Failed', 'Could not complete: ' + err.message, '#C0392B', '⚠️'));
-  }
+  // Approve/deny is now handled in the authenticated instructor dashboard.
+  // This endpoint no longer changes any request — that prevents email-client
+  // link prefetching from auto-deciding requests. Old email links land here
+  // and are safely redirected to the dashboard.
+  const origin = new URL(context.request.url).origin;
+  return html(200, page('Manage in the Dashboard',
+    'Requests are now approved or denied in the instructor dashboard. Open the dashboard, go to the <strong>Requests</strong> tab, and decide there — the student is emailed automatically. <br><br><a href="' + origin + '/admin/" style="color:#2dd4a7;font-weight:600">Open the dashboard →</a>',
+    '#2dd4a7', '\uD83D\uDCCB'));
 }
 
 function fmtTs(ts){ if(!ts) return 'an earlier date'; try { return new Date(ts).toLocaleString('en-US'); } catch { return 'an earlier date'; } }

@@ -102,8 +102,12 @@ export async function onRequestPost(context) {
       type, instructor: cls.instructor_name || 'your instructor',
       program: cls.program_name || 'ANEW', token,
     });
-    const approveUrl = SITE_URL + '/respond?' + p + '&decision=approved';
-    const denyUrl    = SITE_URL + '/respond?' + p + '&decision=denied';
+    // Decisions are made in the authenticated dashboard (Requests tab). Email-client
+    // link prefetching was firing the old GET approve/deny links and auto-deciding
+    // requests, so both buttons now simply open the dashboard.
+    const dashUrl = SITE_URL + '/admin/';
+    const approveUrl = dashUrl;
+    const denyUrl    = dashUrl;
 
     let timeDetails = '';
     if (type === 'Leave Early')
@@ -134,7 +138,7 @@ export async function onRequestPost(context) {
         request_type: type, request_date: dateFormatted,
         time_details: timeDetails, notes_block: notesBlock,
         makeup: clean(d.makeup) || 'Not specified',
-        approve_url: approveUrl, deny_url: denyUrl, sub_id: token,
+        approve_url: approveUrl, deny_url: denyUrl, dashboard_url: dashUrl, sub_id: token,
       })
     );
     const instructorResults = await Promise.allSettled(sends);

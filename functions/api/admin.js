@@ -4,6 +4,7 @@
 import {
   makeSb, makeStorage, ok, bad, clean, enc,
   DEMERIT_PTS, decideRequest, instructorOwnsClass,
+  sendEmail, EMAILJS,
 } from '../_lib.js';
 
 export async function onRequest(context) {
@@ -168,7 +169,33 @@ export async function onRequestPost(context) {
         const reqRow = rows && rows[0];
         if (!reqRow) return bad('Request not found', 404);
         const r = await decideRequest(sb, reqRow, decision, payload.by);
-        return ok({ ok:true, alreadyDecided: r.alreadyDecided, autoAttendance: r.autoAttendance });
+        // Notify the student by email (only when this call actually changed the status).
+        let emailed = false;
+        if (r.changed && reqRow.student_email) {
+          try {
+            const cls = (await sb(`anew_classes?id=eq.${enc(reqRow.class_id)}&limit=1`))[0] || {};
+            const instructor = clean(payload.by) || cls.instructor_name || 'your instructor';
+            const program = cls.program_name || 'ANEW';
+            const sName = `${reqRow.student_first || ''} ${reqRow.student_last || ''}`.trim() || 'Student';
+            const typeLabel = reqRow.request_type || 'request';
+            const dateLabel = reqRow.request_date || '';
+            const isApproved = decision === 'approved';
+            const decisionLine = isApproved
+              ? `✅ APPROVED — Your ${typeLabel} request for ${dateLabel} has been approved by ${instructor}.`
+              : `❌ DENIED — Your ${typeLabel} request for ${dateLabel} has been reviewed by ${instructor}. Please contact your instructor to discuss next steps.`;
+            const message = isApproved
+              ? `Hi ${sName},\n\nGreat news! Your ${typeLabel} request for ${dateLabel} has been APPROVED by ${instructor}.\n\nSee you there! If you have any questions, reply to this email.\n\nANEW Pre-Apprenticeship Program\n${program}`
+              : `Hi ${sName},\n\nYour ${typeLabel} request for ${dateLabel} has been reviewed by ${instructor}.\n\nPlease reach out to your instructor to discuss next steps.\n\nANEW Pre-Apprenticeship Program\n${program}`;
+            await sendEmail(env, EMAILJS.TEMPLATE_STUDENT, {
+              to_email: reqRow.student_email, to_name: sName,
+              subject: isApproved ? `Your ANEW request for ${dateLabel} — APPROVED`
+                                  : `Your ANEW request for ${dateLabel} — Update from your instructor`,
+              decision_line: decisionLine, message, instructor, program,
+            });
+            emailed = true;
+          } catch (e) { console.error('decideRequest: student email failed:', e && e.message); }
+        }
+        return ok({ ok:true, alreadyDecided: r.alreadyDecided, autoAttendance: r.autoAttendance, emailed });
       }
 
       // ── Attendance ─────────────────────────────────────────────────
