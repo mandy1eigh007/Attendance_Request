@@ -1,1 +1,5 @@
-/form  /form.html  200
+# Cloudflare Pages serves /form from form.html automatically (clean URLs)
+# and 301-redirects /form.html -> /form. A "/form /form.html 200" rewrite
+# collides with that auto-redirect and causes ERR_TOO_MANY_REDIRECTS, so
+# there is intentionally NO rewrite rule here.
+# /form and /form?class=<slug> are served correctly without it.

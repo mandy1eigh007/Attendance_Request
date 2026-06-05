@@ -157,3 +157,9 @@ The bottom of `supabase/01_schema.sql` now has an idempotent migration block. Re
 - Wire the `anew_grades` table into the UI (Grades tab; case-note-style copy for Salesforce).
 - Replace `localStorage`/`sessionStorage` password with a short-lived signed cookie issued by `/admin login`.
 
+
+---
+### Fix: student form redirect loop (`/form` ERR_TOO_MANY_REDIRECTS)
+- **Symptom:** students tapping "Choose your class" → `/form` got "too many redirects"; page never loaded.
+- **Cause:** `_redirects` had `/form  /form.html  200`. Pages auto-redirects `/form.html` → `/form` (clean URLs), so the rewrite and the auto-redirect formed an infinite loop.
+- **Fix:** removed the rewrite rule (file now comment-only). Pages serves `/form` and `/form?class=<slug>` from `form.html` via clean URLs. No code changes needed.
