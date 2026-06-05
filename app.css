@@ -261,3 +261,12 @@ label{display:block;font-size:13px;font-weight:500;color:var(--t2);margin-bottom
   #print-area{position:absolute;left:0;top:0;width:100%}
   .print-slip{box-shadow:none;border-radius:0}
 }
+
+/* ── Student profile tab panes ── */
+.profile-tab-pane{display:none;animation:fadeIn .3s var(--ease)}
+.profile-tab-pane.active{display:block}
+
+/* ── Mobile slug fix in Manage ── */
+@media(max-width:560px){
+  .manage-class-slug{word-break:break-all;overflow-wrap:anywhere;max-width:calc(100vw - 120px)}
+}

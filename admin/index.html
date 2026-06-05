@@ -53,6 +53,7 @@
   <div style="max-width:1000px;margin:14px auto 0;padding:0 16px">
     <div class="nav-tabs" id="navTabs">
       <button class="nav-tab active" data-view="attendance" onclick="showView('attendance')">Attendance</button>
+      <button class="nav-tab" data-view="students" onclick="showView('students')">Students</button>
       <button class="nav-tab" data-view="demerit" onclick="showView('demerit')">Demerit</button>
       <button class="nav-tab" data-view="requests" onclick="showView('requests')">Requests</button>
       <button class="nav-tab" data-view="history" onclick="showView('history')">History</button>
@@ -66,6 +67,80 @@
     <div class="context-bar" id="contextBar">
       <span class="ctx-label">Class</span>
       <select id="classSelect" onchange="onClassChange()"></select>
+    </div>
+
+    <!-- STUDENTS -->
+    <div class="view" id="view-students">
+      <!-- Student List (shown when no student selected) -->
+      <div id="studentListPane">
+        <div class="page-header">
+          <div><div class="page-title">Students</div><div class="page-sub">Tap a name to open their profile</div></div>
+        </div>
+        <div class="section-card">
+          <input type="text" id="studentSearch" placeholder="Search students…" style="margin-bottom:14px" oninput="renderStudentList()">
+          <div id="studentListBody"></div>
+        </div>
+      </div>
+
+      <!-- Student Profile (shown when student selected) -->
+      <div id="studentProfilePane" style="display:none">
+        <div class="page-header" style="margin-bottom:12px">
+          <div style="display:flex;align-items:center;gap:10px">
+            <button class="btn btn-ghost btn-sm" onclick="closeStudentProfile()">← Back</button>
+            <div>
+              <div class="page-title" id="profileName">Student</div>
+              <div class="page-sub" id="profileMeta"></div>
+            </div>
+          </div>
+          <button class="btn btn-ghost btn-sm" onclick="openStudentDetail(sdStudentId)">Edit Info</button>
+        </div>
+
+        <!-- Profile sub-tabs -->
+        <div class="nav-tabs" id="profileTabs" style="margin-bottom:16px">
+          <button class="nav-tab active" data-ptab="att" onclick="showProfileTab('att')">Attendance</button>
+          <button class="nav-tab" data-ptab="dem" onclick="showProfileTab('dem')">Demerits</button>
+          <button class="nav-tab" data-ptab="notes" onclick="showProfileTab('notes')">Case Notes</button>
+        </div>
+
+        <!-- Bulk action bar -->
+        <div id="bulkBar" style="display:none;position:sticky;bottom:16px;z-index:30;margin-bottom:12px">
+          <div style="background:var(--s4);border:.5px solid var(--b2);border-radius:var(--rpill);padding:10px 16px;display:flex;align-items:center;gap:10px;box-shadow:var(--sh2)">
+            <span id="bulkCount" style="font-size:13px;color:var(--t2);flex:1">0 selected</span>
+            <button class="btn btn-ghost btn-sm" id="bulkPrintBtn" onclick="bulkPrint()" style="display:none">Print Selected</button>
+            <button class="btn btn-primary btn-sm" id="bulkCopyBtn" onclick="bulkCopySalesforce()">Copy to Salesforce</button>
+            <button class="btn btn-ghost btn-sm" onclick="clearSelection()">Clear</button>
+          </div>
+        </div>
+
+        <!-- Attendance tab -->
+        <div class="profile-tab-pane active" id="ptab-att">
+          <div class="section-card">
+            <div class="card-title">Attendance History</div>
+            <div id="profileAttBody"><div class="empty-state"><p>Loading…</p></div></div>
+          </div>
+        </div>
+
+        <!-- Demerits tab -->
+        <div class="profile-tab-pane" id="ptab-dem">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+            <span class="note">Check rows to print slips or copy to Salesforce</span>
+            <button class="btn btn-ghost btn-sm" onclick="selectAllDemerits()">Select All</button>
+          </div>
+          <div id="profileDemBody"><div class="empty-state"><p>Loading…</p></div></div>
+        </div>
+
+        <!-- Case Notes tab -->
+        <div class="profile-tab-pane" id="ptab-notes">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+            <span class="note">Check rows to copy to Salesforce</span>
+            <div class="flex-gap">
+              <button class="btn btn-ghost btn-sm" onclick="selectAllNotes()">Select All</button>
+              <button class="btn btn-primary btn-sm" onclick="openAddCaseNote()">+ Add Note</button>
+            </div>
+          </div>
+          <div id="profileNoteBody"><div class="empty-state"><p>Loading…</p></div></div>
+        </div>
+      </div>
     </div>
 
     <!-- ATTENDANCE -->
@@ -484,9 +559,10 @@ function showView(name){
   document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
   document.querySelectorAll('.nav-tab').forEach(t=>t.classList.toggle('active',t.dataset.view===name));
   document.getElementById('view-'+name).classList.add('active');
-  document.getElementById('contextBar').style.display=(name==='attendance'||name==='demerit'||name==='manage'||name==='history')?'flex':'none';
+  document.getElementById('contextBar').style.display=(name==='attendance'||name==='demerit'||name==='manage'||name==='history'||name==='students')?'flex':'none';
   if(name==='requests')loadRequests();
   if(name==='history')renderHistory();
+  if(name==='students'){closeStudentProfile();renderStudentList();}
 }
 
 // ── Class selector ──
@@ -503,6 +579,7 @@ async function onClassChange(){
   await loadAttendance();
   // keep other views in sync when switching class
   try{renderManageStudents();}catch{}
+  try{renderStudentList();}catch{}
   try{if(document.getElementById('view-history').classList.contains('active'))renderHistory();}catch{}
 }
 async function refreshDemeritTotals(){
@@ -753,7 +830,7 @@ function renderManage(){
     const names=(c.instructor_ids||[]).map(id=>(instructors.find(i=>i.id===id)||{}).name).filter(Boolean).join(', ');
     return `<div style="padding:11px 0;border-bottom:.5px solid var(--b1);display:flex;justify-content:space-between;align-items:center;gap:10px">
       <div><strong>${esc(c.program_name)}</strong> <span class="note" style="display:inline">${esc(names||'no instructors')}</span>
-        <div class="note">/form?class=${esc(c.slug)} · ${(c.cohorts||[]).length} cohort(s)</div></div>
+        <div class="note" style="margin-top:4px;word-break:break-all;overflow-wrap:anywhere">/form?class=<span style="color:var(--ac2)">${esc(c.slug)}</span> &nbsp;·&nbsp; ${(c.cohorts||[]).length} cohort(s)</div></div>
       <div class="flex-gap"><button class="btn btn-ghost btn-sm" onclick="openClassModal('${esc(c.id)}')">Edit</button>
         <button class="btn btn-danger btn-sm" onclick="delClass('${esc(c.id)}')">Close</button></div></div>`;
   }).join(''):'<div class="empty-state"><p>No classes yet.</p></div>';
@@ -810,6 +887,8 @@ async function loadStudentDemerits(){
     sdDemerits=(d.demerits||[]).filter(x=>x.student_id===sdStudentId);
     sdDemerits.sort((a,b)=>String(b.date||'').localeCompare(String(a.date||'')));
     renderStudentDemerits();
+    // Also refresh profile view if open
+    try{if(document.getElementById('studentProfilePane').style.display!=='none')renderProfileDemerits();}catch{}
   }catch(e){
     document.getElementById('sdDemeritList').innerHTML=`<div class="empty-state"><p>${esc(e.message)}</p></div>`;
   }
@@ -934,6 +1013,8 @@ async function loadStudentCaseNotes(){
     const d=await api('caseNotes',{studentId:sdStudentId,classId:curClass});
     sdCaseNotes=d.notes||[];
     renderStudentCaseNotes();
+    // Also refresh profile view if open
+    try{if(document.getElementById('studentProfilePane').style.display!=='none')renderProfileNotes();}catch{}
   }catch(e){
     el.innerHTML=`<div class="empty-state"><p>${esc(e.message)}</p></div>`;
   }
@@ -1233,6 +1314,239 @@ async function saveRoster(){
     if(document.getElementById('rClass').value===curClass)await onClassChange();renderManage();closeModal('rosterModal');toast(`${out.added} student(s) imported`);}
   catch(e){toast(e.message,true);}finally{btn.disabled=false;btn.textContent='Import';}
 }
+
+// ── STUDENT LIST VIEW ──
+function renderStudentList(){
+  const el=document.getElementById('studentListBody');
+  if(!students.length){el.innerHTML='<div class="empty-state"><p>No students in this class. Add some under Manage.</p></div>';return;}
+  const q=(document.getElementById('studentSearch').value||'').toLowerCase();
+  const filtered=q?students.filter(s=>studentName(s).toLowerCase().includes(q)):students;
+  if(!filtered.length){el.innerHTML='<div class="empty-state"><p>No matches.</p></div>';return;}
+  el.innerHTML=filtered.map(s=>{
+    const t=demeritTotals[s.id]||0;
+    return `<div style="padding:12px 4px;border-bottom:.5px solid var(--b1);display:flex;align-items:center;justify-content:space-between;gap:12px">
+      <button class="btn btn-ghost btn-sm" style="padding-left:0;font-size:15px;font-weight:600;color:var(--t1);background:none;border:none;text-align:left" onclick="openStudentProfile('${esc(s.id)}')">${esc(studentName(s))}</button>
+      <div class="flex-gap">
+        <span class="dt-chip ${dtClass(t)}">${t} pts</span>
+        <button class="btn btn-ghost btn-sm" onclick="openStudentProfile('${esc(s.id)}')">View</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── STUDENT PROFILE ──
+let selectedDemeritIds=new Set(), selectedNoteIds=new Set(), curProfileTab='att';
+let profileAttRows=[];
+
+async function openStudentProfile(id){
+  sdStudentId=id;
+  const s=students.find(x=>x.id===id);
+  if(!s)return;
+  selectedDemeritIds=new Set();selectedNoteIds=new Set();
+  document.getElementById('profileName').textContent=studentName(s);
+  const t=demeritTotals[id]||0;
+  document.getElementById('profileMeta').textContent=`${t} demerit pt${t!==1?'s':''} · Class: ${(classes.find(c=>c.id===curClass)||{}).program_name||''}`;
+  document.getElementById('studentListPane').style.display='none';
+  document.getElementById('studentProfilePane').style.display='block';
+  showProfileTab('att');
+  updateBulkBar();
+  await Promise.all([loadProfileAttendance(),loadStudentDemerits(),loadStudentCaseNotes()]);
+  renderProfileDemerits();
+  renderProfileNotes();
+}
+
+function closeStudentProfile(){
+  document.getElementById('studentListPane').style.display='block';
+  document.getElementById('studentProfilePane').style.display='none';
+  sdStudentId=null;
+  renderStudentList();
+}
+
+function showProfileTab(tab){
+  curProfileTab=tab;
+  document.querySelectorAll('.profile-tab-pane').forEach(p=>p.classList.remove('active'));
+  document.getElementById('ptab-'+tab).classList.add('active');
+  document.querySelectorAll('#profileTabs .nav-tab').forEach(t=>t.classList.toggle('active',t.dataset.ptab===tab));
+  updateBulkBar();
+}
+
+async function loadProfileAttendance(){
+  const el=document.getElementById('profileAttBody');
+  el.innerHTML='<div class="empty-state"><p>Loading…</p></div>';
+  try{
+    // Fetch last 60 days of attendance for this student across all dates
+    const d=await api('studentAttendance',{studentId:sdStudentId,classId:curClass});
+    profileAttRows=(d.attendance||[]).sort((a,b)=>String(b.date).localeCompare(String(a.date)));
+    renderProfileAttendance();
+  }catch(e){el.innerHTML=`<div class="empty-state"><p>${esc(e.message)}</p></div>`;}
+}
+
+function renderProfileAttendance(){
+  const el=document.getElementById('profileAttBody');
+  if(!profileAttRows.length){el.innerHTML='<div class="empty-state"><p>No attendance records yet.</p></div>';return;}
+  const statusLabel={OT:'On Time',L:'Late',AE:'Absent – Excused',AU:'Absent – Unexcused'};
+  el.innerHTML=profileAttRows.map(r=>{
+    const badge=r.status==='OT'?'sel-OT':r.status==='L'?'sel-L':r.status==='AE'?'sel-AE':'sel-AU';
+    return `<div style="padding:9px 4px;border-bottom:.5px solid var(--b1);display:flex;align-items:center;justify-content:space-between;gap:10px">
+      <span style="font-size:13.5px">${esc(fmtDate(r.date))}</span>
+      <span class="status-btn ${badge}" style="pointer-events:none">${esc(r.status)}</span>
+      ${r.notes?`<span class="note" style="display:inline;flex:1;text-align:right">${esc(r.notes)}</span>`:''}
+    </div>`;
+  }).join('');
+}
+
+// ── PROFILE DEMERITS (with checkboxes) ──
+function renderProfileDemerits(){
+  const el=document.getElementById('profileDemBody');
+  if(!sdDemerits.length){el.innerHTML='<div class="empty-state"><p>No demerits.</p></div>';return;}
+  el.innerHTML=sdDemerits.map(d=>{
+    const checked=selectedDemeritIds.has(d.id)?'checked':'';
+    const voided=d.voided?'<span class="note" style="display:inline;color:var(--am)">(voided)</span>':'';
+    return `<div style="padding:12px 4px;border-bottom:.5px solid var(--b1)">
+      <div style="display:flex;align-items:flex-start;gap:10px">
+        <input type="checkbox" ${checked} style="margin-top:3px;width:18px;height:18px;flex-shrink:0;accent-color:var(--ac)" onchange="toggleDemeritSel('${esc(d.id)}',this.checked)">
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+            <strong>${esc(fmtDate(d.date))}</strong>
+            <span class="dt-chip ${d.excused?'dt-0':dtClass(d.pts_num||0)}">${d.excused?'Excused':esc(String(d.pts_num||0))+' pts'}</span>
+            ${voided}
+          </div>
+          <div style="font-size:13px;color:var(--t2);margin-top:3px">Code ${esc(String(d.code))} — ${esc((d.description||'').slice(0,80))}${(d.description||'').length>80?'…':''}</div>
+          ${d.incident?`<div class="note" style="margin-top:4px">${esc(String(d.incident).slice(0,120))}${String(d.incident).length>120?'…':''}</div>`:''}
+        </div>
+        <div class="flex-gap">
+          <button class="btn btn-ghost btn-sm" onclick="showSavedDemeritSlip('${esc(d.id)}')">Slip</button>
+          <button class="btn btn-ghost btn-sm" onclick="openEditDemerit('${esc(d.id)}')">Edit</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function toggleDemeritSel(id,checked){
+  if(checked)selectedDemeritIds.add(id);else selectedDemeritIds.delete(id);
+  updateBulkBar();
+}
+function selectAllDemerits(){
+  sdDemerits.forEach(d=>selectedDemeritIds.add(d.id));
+  renderProfileDemerits();updateBulkBar();
+}
+
+// ── PROFILE CASE NOTES (with checkboxes) ──
+function renderProfileNotes(){
+  const el=document.getElementById('profileNoteBody');
+  if(!sdCaseNotes.length){el.innerHTML='<div class="empty-state"><p>No case notes yet. Tap + Add Note.</p></div>';return;}
+  el.innerHTML=sdCaseNotes.map(n=>{
+    const checked=selectedNoteIds.has(n.id)?'checked':'';
+    return `<div style="padding:12px 4px;border-bottom:.5px solid var(--b1)">
+      <div style="display:flex;align-items:flex-start;gap:10px">
+        <input type="checkbox" ${checked} style="margin-top:3px;width:18px;height:18px;flex-shrink:0;accent-color:var(--ac)" onchange="toggleNoteSel('${esc(n.id)}',this.checked)">
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+            <strong>${esc(n.subject||'(no subject)')}</strong>
+            ${n.category?`<span class="dt-chip dt-0">${esc(n.category)}</span>`:''}
+          </div>
+          <div class="note" style="margin-top:2px">${esc(fmtDate(n.note_date))} · ${esc(n.author_name||'Instructor')}${n.followup_date?` · follow-up ${esc(fmtDate(n.followup_date))}`:''}
+          </div>
+          <div style="margin-top:6px;font-size:13px;color:var(--t2);white-space:pre-wrap;line-height:1.5">${esc((n.body||'').slice(0,200))}${(n.body||'').length>200?'…':''}</div>
+        </div>
+        <div class="flex-gap">
+          <button class="btn btn-ghost btn-sm" onclick="openEditCaseNote('${esc(n.id)}')">Edit</button>
+          <button class="btn btn-danger btn-sm" onclick="voidCaseNote('${esc(n.id)}')">Remove</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function toggleNoteSel(id,checked){
+  if(checked)selectedNoteIds.add(id);else selectedNoteIds.delete(id);
+  updateBulkBar();
+}
+function selectAllNotes(){
+  sdCaseNotes.forEach(n=>selectedNoteIds.add(n.id));
+  renderProfileNotes();updateBulkBar();
+}
+
+// ── BULK BAR ──
+function updateBulkBar(){
+  const bar=document.getElementById('bulkBar');
+  const demCount=selectedDemeritIds.size, noteCount=selectedNoteIds.size;
+  const total=demCount+noteCount;
+  if(total===0){bar.style.display='none';return;}
+  bar.style.display='block';
+  document.getElementById('bulkCount').textContent=`${total} selected`;
+  document.getElementById('bulkPrintBtn').style.display=demCount>0?'inline-flex':'none';
+  document.getElementById('bulkCopyBtn').style.display=total>0?'inline-flex':'none';
+}
+function clearSelection(){
+  selectedDemeritIds=new Set();selectedNoteIds=new Set();
+  renderProfileDemerits();renderProfileNotes();updateBulkBar();
+}
+
+function bulkPrint(){
+  if(!selectedDemeritIds.size){toast('No demerits selected',true);return;}
+  // Build a multi-slip print page
+  const s=students.find(x=>x.id===sdStudentId);
+  const cls=classes.find(c=>c.id===curClass);
+  const selectedD=sdDemerits.filter(d=>selectedDemeritIds.has(d.id));
+  let html='<html><head><style>body{font-family:system-ui,sans-serif;padding:20px}@media print{.no-print{display:none}.pagebreak{page-break-before:always}}</style></head><body>';
+  html+=`<p class="no-print" style="margin-bottom:20px"><button onclick="window.print()">Print All</button> <button onclick="window.close()">Close</button></p>`;
+  selectedD.forEach((d,i)=>{
+    const dc=DEMERIT_CODES.find(x=>x.code===Number(d.code));
+    const rt=runningTotalAtDate(sdStudentId,d.date||'');
+    const ptsText=d.excused?'EXCUSED — No points assessed':`${d.pts_num||0} point(s)`;
+    if(i>0)html+='<div class="pagebreak"></div>';
+    html+=`<h2 style="font-size:26px;font-weight:800;color:#10201c">ANEW</h2>
+    <p style="font-size:11px;color:#666;margin-bottom:14px">Building People, Building Communities — Demerit Documentation</p>
+    <div style="background:#10201c;color:#5fe6c1;padding:9px 12px;border-radius:6px;font-size:13px;font-weight:600;margin-bottom:16px">Running Total: ${rt} pt(s) as of ${fmtDate(d.date||'')}</div>
+    <table style="width:100%;border-collapse:collapse;margin-bottom:14px"><tr>
+      <td style="padding:8px;border:1px solid #ddd"><small style="color:#888;display:block">STUDENT</small>${esc(studentName(s))}</td>
+      <td style="padding:8px;border:1px solid #ddd"><small style="color:#888;display:block">CLASS</small>${esc(cls?cls.program_name:'')}</td>
+      <td style="padding:8px;border:1px solid #ddd"><small style="color:#888;display:block">DATE</small>${fmtDate(d.date||'')}</td>
+    </tr></table>
+    <table style="width:100%;border-collapse:collapse;margin-bottom:14px"><tr>
+      <td style="padding:8px;border:1px solid #ddd;width:60px"><small style="color:#888;display:block">CODE</small>Code ${d.code}</td>
+      <td style="padding:8px;border:1px solid #ddd"><small style="color:#888;display:block">DESCRIPTION</small>${esc(d.description||'')}${dc&&dc.asterisk?' *':''}</td>
+      <td style="padding:8px;border:1px solid #ddd;width:140px"><small style="color:#888;display:block">POINTS</small>${ptsText}</td>
+    </tr></table>
+    ${d.incident?`<div style="background:#f6f5f1;border-left:3px solid #2dd4a7;padding:11px 14px;margin-bottom:16px"><strong>Incident:</strong><br>${esc(d.incident)}</div>`:''}
+    <div style="display:flex;gap:20px;margin-top:28px">
+      <div style="flex:1"><div style="border-bottom:1.5px solid #1a1a1a;height:30px;margin-bottom:5px"></div><small style="color:#666;text-transform:uppercase">Student Signature</small></div>
+      <div style="flex:1"><div style="border-bottom:1.5px solid #1a1a1a;height:30px;margin-bottom:5px"></div><small style="color:#666;text-transform:uppercase">Staff Signature</small></div>
+      <div style="flex:1"><div style="border-bottom:1.5px solid #1a1a1a;height:30px;margin-bottom:5px"></div><small style="color:#666;text-transform:uppercase">Date Signed</small></div>
+    </div>
+    <p style="margin-top:20px;font-size:11px;color:#777;border-top:1px solid #e0ddd5;padding-top:12px">I acknowledge receipt of this demerit. Refusal to sign results in an additional demerit (Code 6). Accumulation of 10 demerit points results in dismissal from the program.</p>`;
+  });
+  html+='</body></html>';
+  const w=window.open('','_blank');w.document.write(html);w.document.close();
+}
+
+function bulkCopySalesforce(){
+  const s=students.find(x=>x.id===sdStudentId);
+  const cls=classes.find(c=>c.id===curClass);
+  let parts=[];
+  // Selected demerits
+  sdDemerits.filter(d=>selectedDemeritIds.has(d.id)).forEach(d=>{
+    const rt=runningTotalAtDate(sdStudentId,d.date||'');
+    const ptsText=d.excused?`0 points (excused — ${d.excuse_reason||''})`:`${d.pts_num||0} point(s)`;
+    parts.push(`DEMERIT ISSUED — ${fmtDate(d.date||'')}
+Program: ${cls?cls.program_name:'N/A'}
+Student: ${s?studentName(s):'Unknown'}
+
+Demerit Code ${d.code}: ${d.description||''}
+Points Assessed: ${ptsText}
+Running Total: ${rt} point(s)
+${d.incident?'\nIncident Description:\n'+d.incident:''}${d.excused?'\nExcused Reason: '+d.excuse_reason:''}
+Staff: ${d.staff||'Instructor'}
+Documentation: Student was informed and demerit slip presented for signature.${rt>=10?'\n\nACTION REQUIRED: Student has reached 10 demerit points and must be exited from the program.':rt>=7?'\n\nNOTE: Student has reached 7+ demerit points. A behavioral contract is required.':''}`);
+  });
+  // Selected case notes
+  sdCaseNotes.filter(n=>selectedNoteIds.has(n.id)).forEach(n=>parts.push(buildCaseNoteText(n)));
+  if(!parts.length){toast('Nothing selected',true);return;}
+  navigator.clipboard.writeText(parts.join('\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n')).then(()=>toast(`${parts.length} note${parts.length>1?'s':''} copied`));
+}
+
 
 // ── Modal plumbing ──
 function openModal(id){document.getElementById(id).classList.add('on');}

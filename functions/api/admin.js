@@ -176,6 +176,11 @@ export async function onRequestPost(context) {
         const rows = await sb(`anew_attendance?class_id=eq.${enc(payload.classId)}&date=eq.${enc(payload.date)}`);
         return ok({ attendance: rows || [] });
       }
+      case 'studentAttendance': {
+        // All attendance records for a single student in a class, ordered by date desc
+        const rows = await sb(`anew_attendance?student_id=eq.${enc(payload.studentId)}&class_id=eq.${enc(payload.classId)}&order=date.desc&limit=120`);
+        return ok({ attendance: rows || [] });
+      }
       case 'setAttendance': {
         const { studentId, classId, date, status, notes } = payload;
         const existing = await sb(`anew_attendance?student_id=eq.${enc(studentId)}&date=eq.${enc(date)}&limit=1`);
