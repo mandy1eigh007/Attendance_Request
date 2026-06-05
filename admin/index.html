@@ -1194,7 +1194,6 @@ async function saveCaseNote(){
     await loadStudentCaseNotes();
   }catch(e){toast(e.message,true);}finally{btn.disabled=false;btn.textContent='Save Note';}
 }
-}
 
 async function voidCaseNote(id){
   if(!confirm('Remove this case note? It will be hidden from the list (record retained).'))return;
