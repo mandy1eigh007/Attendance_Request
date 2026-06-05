@@ -155,6 +155,7 @@
             <span class="note">Check rows to copy to Salesforce</span>
             <div class="flex-gap">
               <button class="btn btn-ghost btn-sm" onclick="selectAllNotes()">Select All</button>
+              <button class="btn btn-ghost btn-sm" onclick="printIncidentReport()">Incident Report</button>
               <button class="btn btn-primary btn-sm" onclick="openAddCaseNote()">+ Add Note</button>
             </div>
           </div>
@@ -1113,6 +1114,7 @@ function renderStudentCaseNotes(){
         </div>
         <div class="flex-gap">
           <button class="btn btn-primary btn-sm" onclick="copyCaseNoteToClipboard('${esc(n.id)}')">Copy for Salesforce</button>
+          <button class="btn btn-ghost btn-sm" onclick="printCaseNote('${esc(n.id)}')">Print</button>
           <button class="btn btn-ghost btn-sm" onclick="openEditCaseNote('${esc(n.id)}')">Edit</button>
           <button class="btn btn-danger btn-sm" onclick="voidCaseNote('${esc(n.id)}')">Remove</button>
         </div>
@@ -1570,6 +1572,8 @@ function renderProfileNotes(){
           <div style="margin-top:6px;font-size:13px;color:var(--t2);white-space:pre-wrap;line-height:1.5">${esc((n.body||'').slice(0,200))}${(n.body||'').length>200?'…':''}</div>
         </div>
         <div class="flex-gap">
+          <button class="btn btn-ghost btn-sm" onclick="printCaseNote('${esc(n.id)}')">Print</button>
+          ${n.category==='Incident'?`<button class="btn btn-ghost btn-sm" onclick="printIncidentReport('${esc(n.id)}')">Incident Report</button>`:''}
           <button class="btn btn-ghost btn-sm" onclick="openEditCaseNote('${esc(n.id)}')">Edit</button>
           <button class="btn btn-danger btn-sm" onclick="voidCaseNote('${esc(n.id)}')">Remove</button>
         </div>
@@ -2060,6 +2064,100 @@ function printContract(id){
   const win=window.open('','_blank');
   if(!win){toast('Allow pop-ups to print',true);return;}
   win.document.write(html); win.document.close();
+}
+
+</script>
+<script>
+// ── Printable case notes + incident report (ANEW forms) ──
+const _ANEW_PRINT_CSS=`*{box-sizing:border-box}
+body{font-family:Arial,Helvetica,sans-serif;margin:0.6in;color:#1a1a1a;font-size:10.5pt;line-height:1.45}
+.lh{text-align:center;border-bottom:3px solid #1a1a1a;padding-bottom:8px;margin-bottom:10px}
+.lh .org{font-size:24pt;font-weight:800;letter-spacing:2px}
+.lh .tag{font-size:8pt;letter-spacing:3px;color:#555;text-transform:uppercase}
+h1{font-size:15pt;text-align:center;margin:10px 0 2px}
+.codes{text-align:center;font-size:8.5pt;color:#555;margin-bottom:12px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:8px 18px;margin:12px 0 14px}
+.fld{border-bottom:1px solid #999;padding-bottom:3px}
+.fl{font-size:7.5pt;letter-spacing:1px;color:#777;text-transform:uppercase}
+.fv{font-size:12pt;font-weight:700;min-height:18px}
+h2{font-size:10.5pt;font-weight:800;text-transform:uppercase;letter-spacing:.5px;background:#f0f0f0;padding:4px 8px;margin:14px 0 6px;border-left:4px solid #1a1a1a}
+ul,ol{margin:4px 0 4px 4px;padding-left:20px}
+li{margin:3px 0}
+p{margin:6px 0}
+.cnote{font-size:9pt;color:#555;font-style:italic}
+.bl{border-bottom:1px solid #999;height:22px;margin:8px 0}
+.fill{border:1px solid #bbb;background:#fafafa;padding:8px;min-height:40px;white-space:pre-wrap}
+.closing{font-size:9.5pt;margin:12px 0 16px}
+.sigs{display:grid;grid-template-columns:1fr 1fr;gap:18px 24px;margin-top:6px}
+.sigline{border-bottom:1px solid #1a1a1a;height:30px}
+.sl{font-size:7.5pt;letter-spacing:1px;color:#777;text-transform:uppercase;margin-top:2px}
+.ftr{text-align:center;font-size:7.5pt;color:#888;margin-top:18px;border-top:1px solid #ccc;padding-top:6px}
+.bar{margin-bottom:14px}
+@media print{.bar{display:none}body{margin:0.5in}}`;
+
+function _ctInfoGrid(fields){return `<div class="grid">${fields.map(f=>`<div class="fld"><div class="fl">${f[0]}</div><div class="fv">${f[1]||'&nbsp;'}</div></div>`).join('')}</div>`;}
+function _ctSig(roles){return `<div class="sigs">${roles.map(r=>`<div class="sig"><div class="sigline"></div><div class="sl">${r}</div></div><div class="sig"><div class="sigline"></div><div class="sl">DATE</div></div>`).join('')}</div>`;}
+function _anewToday(){return (typeof todayStr==='function')?todayStr():new Date().toISOString().slice(0,10);}
+
+function _anewPrintWindow(docTitle, inner){
+  const html=`<!DOCTYPE html><html><head><title>${docTitle}</title><meta charset="utf-8"><style>${_ANEW_PRINT_CSS}</style></head><body>
+  <div class="bar"><button onclick="window.print()" style="padding:8px 16px;background:#1a1a1a;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:11pt">Print</button>
+  <button onclick="window.close()" style="padding:8px 16px;background:#888;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:11pt;margin-left:8px">Close</button></div>
+  <div class="lh"><div class="org">ANEW</div><div class="tag">Building People, Building Communities</div></div>
+  ${inner}
+  </body></html>`;
+  const win=window.open('','_blank');
+  if(!win){toast('Allow pop-ups to print',true);return;}
+  win.document.write(html); win.document.close();
+}
+
+function printCaseNote(id){
+  const n=sdCaseNotes.find(x=>x.id===id); if(!n){toast('Note not found',true);return;}
+  const s=students.find(x=>x.id===sdStudentId)||{};
+  const cls=classes.find(x=>x.id===curClass)||{};
+  const stamp=n.created_at?new Date(n.created_at).toLocaleString('en-US',{year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}):'';
+  const info=[['STUDENT',esc(studentName(s)||'')],['PROGRAM / COHORT',esc(cls.program_name||'')],['NOTE DATE',esc(fmtDate(n.note_date))],['AUTHOR',esc(n.author_name||'Instructor')]];
+  let body='';
+  if(n.category) body+=`<p><strong>Category:</strong> ${esc(n.category)}</p>`;
+  body+=`<h2>Subject</h2><p>${esc(n.subject||'')}</p>`;
+  body+=`<h2>Note</h2><div class="fill">${esc(n.body||'').replace(/\n/g,'<br>')}</div>`;
+  const proto=[];
+  if(n.supervisor_notified) proto.push('Supervisor notified'+(n.supervisor_notified_date?(' ('+esc(fmtDate(n.supervisor_notified_date))+')'):''));
+  if(n.statement_obtained) proto.push('Written student statement obtained');
+  if(proto.length) body+=`<h2>Incident Protocol</h2><ul>${proto.map(p=>`<li>${p}</li>`).join('')}</ul>`;
+  if(n.followup_date) body+=`<p><strong>Follow-up:</strong> ${esc(fmtDate(n.followup_date))}</p>`;
+  if(n.attachments&&n.attachments.length) body+=`<h2>Attachments</h2><ul>${n.attachments.map(a=>`<li>${esc(a.file_name||a.fileName||a.name||'attachment')}</li>`).join('')}</ul>`;
+  if(stamp) body+=`<p class="cnote">Logged ${esc(stamp)}</p>`;
+  const inner=`<h1>CASE NOTE</h1><div class="codes">Confidential student record</div>${_ctInfoGrid(info)}${body}<div style="margin-top:20px"></div>${_ctSig(['INSTRUCTOR / AUTHOR','PROGRAM COORDINATOR'])}<div class="ftr">ANEW — Case Note — Confidential Student Record</div>`;
+  _anewPrintWindow('Case Note — '+(studentName(s)||''), inner);
+}
+
+function printIncidentReport(id){
+  const n = id ? sdCaseNotes.find(x=>x.id===id) : null;
+  const s=students.find(x=>x.id===sdStudentId)||{};
+  const cls=classes.find(x=>x.id===curClass)||{};
+  const dem=(typeof demeritTotals!=='undefined'?(demeritTotals[sdStudentId]||''):'');
+  const dt = n ? fmtDate(n.note_date) : fmtDate(_anewToday());
+  const info=[['STUDENT',esc(studentName(s)||'')],['PROGRAM / COHORT',esc(cls.program_name||'')],['DATE OF INCIDENT',esc(dt)],['DEMERITS ON FILE',String(dem)]];
+  const desc = n ? (esc((n.subject?(n.subject+'\n\n'):'')+(n.body||'')).replace(/\n/g,'<br>')) : '';
+  const sup = n && n.supervisor_notified;
+  const stmt = n && n.statement_obtained;
+  const att = n && n.attachments && n.attachments.length;
+  let inner=`<h1>INCIDENT REPORT</h1><div class="codes">Confidential student record · complete all sections</div>${_ctInfoGrid(info)}`;
+  inner+=`<div class="grid"><div class="fld"><div class="fl">TIME OF INCIDENT</div><div class="fv">&nbsp;</div></div><div class="fld"><div class="fl">LOCATION</div><div class="fv">&nbsp;</div></div><div class="fld"><div class="fl">REPORTED BY</div><div class="fv">&nbsp;</div></div><div class="fld"><div class="fl">RELATED DEMERIT CODE</div><div class="fv">&nbsp;</div></div></div>`;
+  inner+=`<h2>Description of Incident</h2>`+(desc?`<div class="fill">${desc}</div>`:`<div class="bl"></div><div class="bl"></div><div class="bl"></div><div class="bl"></div>`);
+  inner+=`<h2>Individuals Involved / Witnesses</h2><div class="bl"></div><div class="bl"></div>`;
+  inner+=`<h2>Immediate Action Taken</h2><div class="bl"></div><div class="bl"></div>`;
+  inner+=`<h2>Incident Protocol</h2><ul>`+
+    `<li>Supervisor notified: ${sup?('YES'+(n.supervisor_notified_date?(' — '+esc(fmtDate(n.supervisor_notified_date))):'')):'☐ Yes  ☐ No   ·   Date: __________'}</li>`+
+    `<li>Written student statement obtained: ${stmt?'YES':'☐ Yes  ☐ No'}</li>`+
+    `<li>Photos / evidence attached: ${att?(n.attachments.length+' file(s)'):'☐ Yes  ☐ No'}</li>`+
+    `</ul>`;
+  inner+=`<h2>Follow-Up / Corrective Action</h2><div class="bl"></div><div class="bl"></div>`;
+  inner+=`<div class="closing">I certify that the information in this report is accurate to the best of my knowledge.</div>`;
+  inner+=_ctSig(['STUDENT SIGNATURE','INSTRUCTOR SIGNATURE','PROGRAM COORDINATOR','DIRECTOR SIGNATURE']);
+  inner+=`<div class="ftr">ANEW — Incident Report — Confidential Student Record</div>`;
+  _anewPrintWindow('Incident Report — '+(studentName(s)||''), inner);
 }
 
 </script>
