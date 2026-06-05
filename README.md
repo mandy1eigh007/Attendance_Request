@@ -21,7 +21,7 @@ instructions:
 - **Cloudflare Pages Functions** in `/functions`: `admin.js`, `submit.js`,
   `respond.js`, and a shared `_lib.js`. Cloudflare auto-serves these at
   `/api/admin`, `/submit`, `/respond`. **Do not move or rename them.**
-- `_redirects` rewrites `/form?class=…` → `/form.html`.
+- `_redirects` is intentionally empty — Pages clean URLs serve `/form` from `form.html`. A `/form → /form.html` rewrite loops with Pages’ auto `.html` redirect (ERR_TOO_MANY_REDIRECTS).
 - The database is **already built and live** in Supabase (project ref
   `lfizcpaqolckemrvsooy`). **Do not create tables or touch the schema** — it
   exists, with row-level security on. Schema is in `/supabase/01_schema.sql`
@@ -102,7 +102,7 @@ index.html          Landing page
 form.html           Public student request form  → /submit
 admin.html          Instructor dashboard         → /admin
 app.css             Shared teal/native design system
-_redirects          /form → /form.html rewrite
+_redirects          (no rules — clean URLs serve /form; a rewrite caused a redirect loop)
 functions/
   _lib.js           Supabase service-role wrapper + helpers (CF module)
   admin.js          Auth'd dashboard endpoint (17 actions)
