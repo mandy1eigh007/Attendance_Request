@@ -2,7 +2,7 @@
 // Lives under /api so the path doesn't collide with the static /admin.html page
 // (Cloudflare Pages auto-redirects .html → clean URL, which would otherwise loop).
 import {
-  makeSb, ok, bad, clean, enc,
+  makeSb, makeStorage, ok, bad, clean, enc,
   DEMERIT_PTS, decideRequest, instructorOwnsClass,
 } from '../_lib.js';
 
@@ -276,7 +276,8 @@ export async function onRequestPost(context) {
       }
 
       case 'addCaseNote': {
-        const { studentId, classId, instructorId, subject, body: noteBody, category, noteDate, followupDate } = payload;
+        const { studentId, classId, instructorId, subject, body: noteBody, category, noteDate, followupDate,
+                supervisorNotified, supervisorNotifiedDate, statementObtained } = payload;
         if (!studentId || !classId) return bad('Missing studentId or classId');
         if (!instructorId) return bad('Missing instructorId');
         if (!clean(subject)) return bad('Subject is required');
@@ -297,19 +298,23 @@ export async function onRequestPost(context) {
           subject:    clean(subject),
           body:       clean(noteBody),
           followup_date: clean(followupDate) || null,
+          supervisor_notified: !!supervisorNotified,
+          supervisor_notified_date: supervisorNotified && supervisorNotifiedDate ? clean(supervisorNotifiedDate) : null,
+          statement_obtained: !!statementObtained,
         };
         const r = await sb('anew_case_notes', { method:'POST', body: JSON.stringify(row) });
-        return ok({ ok:true, note: r && r[0] });
+        const saved = r && r[0];
+        return ok({ ok:true, id: saved && saved.id, note: saved });
       }
 
       case 'updateCaseNote': {
-        const { id, classId, instructorId, subject, body: noteBody, category, noteDate, followupDate } = payload;
+        const { id, classId, instructorId, subject, body: noteBody, category, noteDate, followupDate,
+                supervisorNotified, supervisorNotifiedDate, statementObtained } = payload;
         if (!id) return bad('Missing case note id');
         if (!instructorId || !classId) return bad('Missing instructorId or classId');
         if (!(await instructorOwnsClass(sb, instructorId, classId))) {
           return bad('You are not assigned to this class', 403);
         }
-        // Verify the note belongs to that class (prevents cross-class edits)
         const existing = await sb(`anew_case_notes?id=eq.${enc(id)}&limit=1`);
         const note = existing && existing[0];
         if (!note) return bad('Case note not found', 404);
@@ -320,6 +325,9 @@ export async function onRequestPost(context) {
           category:      clean(category) || null,
           note_date:     clean(noteDate) || note.note_date,
           followup_date: clean(followupDate) || null,
+          supervisor_notified: !!supervisorNotified,
+          supervisor_notified_date: supervisorNotified && supervisorNotifiedDate ? clean(supervisorNotifiedDate) : null,
+          statement_obtained: !!statementObtained,
           updated_at:    new Date().toISOString(),
         };
         await sb(`anew_case_notes?id=eq.${enc(id)}`, { method:'PATCH', prefer:'return=minimal', body: JSON.stringify(patch) });
@@ -342,6 +350,78 @@ export async function onRequestPost(context) {
         await sb(`anew_case_notes?id=eq.${enc(id)}`, { method:'PATCH', prefer:'return=minimal',
           body: JSON.stringify({ voided:true, voided_at: new Date().toISOString(), voided_by: by }) });
         return ok({ ok:true });
+      }
+
+      // ── File upload (multipart — receives raw binary) ──────────────
+      // Called with a real multipart fetch, NOT JSON.
+      // We handle this specially: the password is in a form field.
+      case 'uploadStudentPhoto': {
+        const storage = makeStorage(env);
+        const { studentId, fileName, fileData, contentType } = payload;
+        if (!studentId) return bad('Missing studentId');
+        if (!fileData) return bad('Missing fileData');
+        const ext = (fileName || 'photo').split('.').pop().toLowerCase();
+        const allowed = ['jpg','jpeg','png','webp','gif','heic'];
+        if (!allowed.includes(ext)) return bad('File type not allowed');
+        const path = `student-photos/${studentId}.${ext}`;
+        const binary = Uint8Array.from(atob(fileData), c => c.charCodeAt(0));
+        await storage.upload('anew-uploads', path, binary, contentType || 'image/jpeg');
+        await sb(`anew_students?id=eq.${enc(studentId)}`, {
+          method: 'PATCH', prefer: 'return=minimal',
+          body: JSON.stringify({ photo_path: path }),
+        });
+        const url = await storage.signedUrl('anew-uploads', path, 3600);
+        return ok({ url, path });
+      }
+
+      case 'getStudentPhoto': {
+        const storage = makeStorage(env);
+        const { studentId } = payload;
+        if (!studentId) return bad('Missing studentId');
+        const rows = await sb(`anew_students?id=eq.${enc(studentId)}&select=photo_path&limit=1`);
+        const path = rows && rows[0] && rows[0].photo_path;
+        if (!path) return ok({ url: null });
+        const url = await storage.signedUrl('anew-uploads', path, 3600);
+        return ok({ url, path });
+      }
+
+      case 'uploadCaseAttachment': {
+        const storage = makeStorage(env);
+        const { noteId, studentId, fileName, fileData, contentType } = payload;
+        if (!noteId || !fileData) return bad('Missing noteId or fileData');
+        const ext = (fileName || 'file').split('.').pop().toLowerCase();
+        const allowed = ['jpg','jpeg','png','webp','gif','heic','pdf'];
+        if (!allowed.includes(ext)) return bad('File type not allowed. Use jpg, png, pdf.');
+        const ts = Date.now();
+        const safeName = (fileName || 'attachment').replace(/[^a-z0-9._-]/gi, '_');
+        const path = `case-attachments/${studentId || 'unknown'}/${noteId}/${ts}_${safeName}`;
+        const binary = Uint8Array.from(atob(fileData), c => c.charCodeAt(0));
+        await storage.upload('anew-uploads', path, binary, contentType || 'application/octet-stream');
+        // Append path to the note's attachments array
+        const existing = await sb(`anew_case_notes?id=eq.${enc(noteId)}&select=attachments&limit=1`);
+        const current = (existing && existing[0] && existing[0].attachments) || [];
+        const updated = [...current, { path, name: fileName || 'attachment', uploaded_at: new Date().toISOString() }];
+        await sb(`anew_case_notes?id=eq.${enc(noteId)}`, {
+          method: 'PATCH', prefer: 'return=minimal',
+          body: JSON.stringify({ attachments: updated }),
+        });
+        const url = await storage.signedUrl('anew-uploads', path, 3600);
+        return ok({ url, path, name: fileName });
+      }
+
+      case 'getCaseAttachments': {
+        const storage = makeStorage(env);
+        const { noteId } = payload;
+        if (!noteId) return bad('Missing noteId');
+        const rows = await sb(`anew_case_notes?id=eq.${enc(noteId)}&select=attachments&limit=1`);
+        const attachments = (rows && rows[0] && rows[0].attachments) || [];
+        const signed = await Promise.all(
+          attachments.map(async a => ({
+            ...a,
+            url: await storage.signedUrl('anew-uploads', a.path, 3600).catch(() => null),
+          }))
+        );
+        return ok({ attachments: signed });
       }
 
       default:

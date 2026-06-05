@@ -205,3 +205,27 @@ create table if not exists anew_grades (
 );
 create index if not exists idx_grades_student on anew_grades(student_id, graded_on desc);
 alter table anew_grades enable row level security;
+
+-- ════════════════════════════════════════════════════════════════════════
+-- 2026-Q2 ADDITIONS — incident documentation, photo support
+-- Run in Supabase → SQL Editor. Safe to re-run (IF NOT EXISTS / IF NOT EXISTS).
+-- ════════════════════════════════════════════════════════════════════════
+
+-- Student profile photo path (stored in Supabase Storage bucket: anew-uploads)
+alter table anew_students
+  add column if not exists photo_path text;
+
+-- Case note: incident tracking fields + file attachments
+alter table anew_case_notes
+  add column if not exists supervisor_notified      boolean not null default false,
+  add column if not exists supervisor_notified_date date,
+  add column if not exists statement_obtained       boolean not null default false,
+  add column if not exists attachments              jsonb not null default '[]'::jsonb;
+
+-- Storage bucket (create manually in Supabase Dashboard → Storage):
+--   Bucket name:  anew-uploads
+--   Public:       NO (private)
+--   File size limit: 10MB
+--   Allowed MIME types: image/jpeg, image/png, image/webp, image/gif, image/heic, application/pdf
+--
+-- No bucket policies needed — all access goes through the service-role key in functions.

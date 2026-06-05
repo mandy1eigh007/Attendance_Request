@@ -27,6 +27,59 @@ export function makeSb(env) {
   };
 }
 
+// ── Supabase Storage wrapper ───────────────────────────────────────────
+export function makeStorage(env) {
+  const SUPABASE_URL = env.SUPABASE_URL;
+  const SERVICE_KEY  = env.SUPABASE_SERVICE_KEY;
+  const base = `${SUPABASE_URL}/storage/v1`;
+  return {
+    async upload(bucket, path, body, contentType) {
+      const res = await fetch(`${base}/object/${bucket}/${path}`, {
+        method: 'POST',
+        headers: {
+          apikey: SERVICE_KEY,
+          Authorization: `Bearer ${SERVICE_KEY}`,
+          'Content-Type': contentType,
+          'x-upsert': 'true',
+        },
+        body,
+      });
+      const text = await res.text();
+      if (!res.ok) throw new Error(`Storage upload ${res.status}: ${text}`);
+      return JSON.parse(text);
+    },
+    async signedUrl(bucket, path, expiresIn = 3600) {
+      const res = await fetch(`${base}/object/sign/${bucket}/${path}`, {
+        method: 'POST',
+        headers: {
+          apikey: SERVICE_KEY,
+          Authorization: `Bearer ${SERVICE_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ expiresIn }),
+      });
+      const text = await res.text();
+      if (!res.ok) throw new Error(`Storage sign ${res.status}: ${text}`);
+      const data = JSON.parse(text);
+      return `${base}${data.signedURL}`;
+    },
+    async delete(bucket, paths) {
+      const res = await fetch(`${base}/object/${bucket}`, {
+        method: 'DELETE',
+        headers: {
+          apikey: SERVICE_KEY,
+          Authorization: `Bearer ${SERVICE_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ prefixes: paths }),
+      });
+      const text = await res.text();
+      if (!res.ok) throw new Error(`Storage delete ${res.status}: ${text}`);
+      return text ? JSON.parse(text) : null;
+    },
+  };
+}
+
 // ── HTTP helpers ───────────────────────────────────────────────────────
 export const json = (status, body) =>
   new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });

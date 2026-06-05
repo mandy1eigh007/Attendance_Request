@@ -85,8 +85,19 @@
       <!-- Student Profile (shown when student selected) -->
       <div id="studentProfilePane" style="display:none">
         <div class="page-header" style="margin-bottom:12px">
-          <div style="display:flex;align-items:center;gap:10px">
+          <div style="display:flex;align-items:center;gap:12px">
             <button class="btn btn-ghost btn-sm" onclick="closeStudentProfile()">← Back</button>
+            <!-- Student photo -->
+            <div style="position:relative;flex-shrink:0">
+              <div id="profilePhotoWrap" style="width:52px;height:52px;border-radius:50%;background:var(--s4);border:.5px solid var(--b2);overflow:hidden;display:flex;align-items:center;justify-content:center">
+                <svg id="profilePhotoPlaceholder" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--t3)" stroke-width="1.5"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+                <img id="profilePhotoImg" style="width:100%;height:100%;object-fit:cover;display:none" alt="Student photo">
+              </div>
+              <label style="position:absolute;bottom:-2px;right:-2px;width:20px;height:20px;border-radius:50%;background:var(--ac);display:flex;align-items:center;justify-content:center;cursor:pointer;border:2px solid var(--bg)">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="var(--on-ac)" stroke-width="3"><path d="M12 5v14M5 12h14"/></svg>
+                <input type="file" accept="image/*" style="display:none" onchange="uploadStudentPhoto(this)">
+              </label>
+            </div>
             <div>
               <div class="page-title" id="profileName">Student</div>
               <div class="page-sub" id="profileMeta"></div>
@@ -373,6 +384,38 @@
     <p class="note">Author and timestamp are recorded automatically. This will be available as a copy-paste Salesforce case note.</p>
   </div>
   <div class="field"><label>Follow-up date <span class="note" style="display:inline">(optional)</span></label><input type="date" id="cnFollowup"></div>
+
+  <div style="background:rgba(248,113,113,.07);border:.5px solid rgba(248,113,113,.25);border-radius:11px;padding:14px;margin:14px 0">
+    <div style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--rd);margin-bottom:12px">Incident Protocol Checklist</div>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <label style="display:flex;align-items:center;gap:10px;font-size:14px;color:var(--t1);margin:0;cursor:pointer">
+        <input type="checkbox" id="cnSupervisorNotified" style="width:18px;height:18px;flex-shrink:0;accent-color:var(--ac)">
+        Supervisor notified
+      </label>
+      <div id="cnSupervisorDateGroup" style="display:none;padding-left:28px">
+        <label style="margin-bottom:4px">Date notified</label>
+        <input type="date" id="cnSupervisorDate" style="width:auto">
+      </div>
+      <label style="display:flex;align-items:center;gap:10px;font-size:14px;color:var(--t1);margin:0;cursor:pointer">
+        <input type="checkbox" id="cnStatementObtained" style="width:18px;height:18px;flex-shrink:0;accent-color:var(--ac)">
+        Written student statement obtained
+      </label>
+    </div>
+  </div>
+
+  <div class="field">
+    <label>Attachments <span class="note" style="display:inline">(photos, screenshots — jpg, png, pdf)</span></label>
+    <div id="cnAttachmentArea" style="border:.5px solid var(--b2);border-radius:11px;padding:12px;background:rgba(0,0,0,.18)">
+      <div id="cnAttachmentList" style="margin-bottom:10px"></div>
+      <label style="display:inline-flex;align-items:center;gap:8px;cursor:pointer;padding:8px 14px;background:var(--s3);border-radius:var(--rpill);font-size:13px;color:var(--t1);border:.5px solid var(--b2)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        Choose file
+        <input type="file" id="cnFileInput" accept="image/*,.pdf" style="display:none" multiple onchange="handleCaseNoteFiles(this)">
+      </label>
+      <p class="note" style="margin-top:8px">Files are uploaded when you save the note. Max 10MB each.</p>
+    </div>
+  </div>
+
   <div class="modal-actions">
     <button class="btn btn-ghost" onclick="closeModal('caseNoteModal')">Cancel</button>
     <button class="btn btn-primary" id="cnSaveBtn" onclick="saveCaseNote()">Save Note</button>
@@ -1072,12 +1115,18 @@ function openAddCaseNote(){
   if(!ME || !ME.id){toast('Pick an instructor (Switch button) first',true);return;}
   if(!curClass){toast('Select a class first',true);return;}
   editCaseNoteId=null;
+  cnPendingFiles=[];
   document.getElementById('caseNoteModalTitle').textContent='Add Case Note';
   document.getElementById('cnDate').value=todayStr();
   document.getElementById('cnCategory').value='';
   document.getElementById('cnSubject').value='';
   document.getElementById('cnBody').value='';
   document.getElementById('cnFollowup').value='';
+  document.getElementById('cnSupervisorNotified').checked=false;
+  document.getElementById('cnSupervisorDate').value='';
+  document.getElementById('cnSupervisorDateGroup').style.display='none';
+  document.getElementById('cnStatementObtained').checked=false;
+  renderCnAttachmentList();
   openModal('caseNoteModal');
 }
 
@@ -1085,12 +1134,18 @@ function openEditCaseNote(id){
   const n=sdCaseNotes.find(x=>x.id===id);
   if(!n){toast('Note not found',true);return;}
   editCaseNoteId=id;
+  cnPendingFiles=[];
   document.getElementById('caseNoteModalTitle').textContent='Edit Case Note';
   document.getElementById('cnDate').value=n.note_date||todayStr();
   document.getElementById('cnCategory').value=n.category||'';
   document.getElementById('cnSubject').value=n.subject||'';
   document.getElementById('cnBody').value=n.body||'';
   document.getElementById('cnFollowup').value=n.followup_date||'';
+  document.getElementById('cnSupervisorNotified').checked=!!n.supervisor_notified;
+  document.getElementById('cnSupervisorDate').value=n.supervisor_notified_date||'';
+  document.getElementById('cnSupervisorDateGroup').style.display=n.supervisor_notified?'block':'none';
+  document.getElementById('cnStatementObtained').checked=!!n.statement_obtained;
+  renderCnAttachmentList();
   openModal('caseNoteModal');
 }
 
@@ -1100,26 +1155,45 @@ async function saveCaseNote(){
   const body=document.getElementById('cnBody').value.trim();
   const category=document.getElementById('cnCategory').value;
   const followup=document.getElementById('cnFollowup').value;
+  const supervisorNotified=document.getElementById('cnSupervisorNotified').checked;
+  const supervisorDate=document.getElementById('cnSupervisorDate').value||null;
+  const statementObtained=document.getElementById('cnStatementObtained').checked;
   if(!subject){toast('Subject is required',true);return;}
   if(!body){toast('Note body is required',true);return;}
-  const btn=document.getElementById('cnSaveBtn');btn.disabled=true;btn.textContent='Saving\u2026';
+  const btn=document.getElementById('cnSaveBtn');btn.disabled=true;btn.textContent='Saving…';
   try{
+    let savedId=editCaseNoteId;
     if(editCaseNoteId){
       await api('updateCaseNote',{
         id:editCaseNoteId, classId:curClass,
-        subject, body, category, noteDate:date, followupDate:followup
+        subject, body, category, noteDate:date, followupDate:followup,
+        supervisorNotified, supervisorNotifiedDate:supervisorDate, statementObtained,
       });
       toast('Note updated');
     }else{
-      await api('addCaseNote',{
+      const out=await api('addCaseNote',{
         studentId:sdStudentId, classId:curClass,
-        subject, body, category, noteDate:date, followupDate:followup
+        subject, body, category, noteDate:date, followupDate:followup,
+        supervisorNotified, supervisorNotifiedDate:supervisorDate, statementObtained,
       });
+      savedId=out.id;
       toast('Note saved');
+    }
+    // Upload any pending files
+    if(cnPendingFiles.length && savedId){
+      btn.textContent='Uploading files…';
+      for(const file of cnPendingFiles){
+        try{
+          const b64=await fileToBase64(file);
+          await api('uploadCaseAttachment',{noteId:savedId,studentId:sdStudentId,fileName:file.name,fileData:b64,contentType:file.type});
+        }catch(e){toast(`Failed to upload ${file.name}: ${e.message}`,true);}
+      }
+      cnPendingFiles=[];
     }
     closeModal('caseNoteModal');
     await loadStudentCaseNotes();
   }catch(e){toast(e.message,true);}finally{btn.disabled=false;btn.textContent='Save Note';}
+}
 }
 
 async function voidCaseNote(id){
@@ -1348,9 +1422,12 @@ async function openStudentProfile(id){
   document.getElementById('profileMeta').textContent=`${t} demerit pt${t!==1?'s':''} · Class: ${(classes.find(c=>c.id===curClass)||{}).program_name||''}`;
   document.getElementById('studentListPane').style.display='none';
   document.getElementById('studentProfilePane').style.display='block';
+  // reset photo
+  document.getElementById('profilePhotoImg').style.display='none';
+  document.getElementById('profilePhotoPlaceholder').style.display='block';
   showProfileTab('att');
   updateBulkBar();
-  await Promise.all([loadProfileAttendance(),loadStudentDemerits(),loadStudentCaseNotes()]);
+  await Promise.all([loadProfileAttendance(),loadStudentDemerits(),loadStudentCaseNotes(),loadStudentPhoto()]);
   renderProfileDemerits();
   renderProfileNotes();
 }
@@ -1447,6 +1524,11 @@ function renderProfileNotes(){
             ${n.category?`<span class="dt-chip dt-0">${esc(n.category)}</span>`:''}
           </div>
           <div class="note" style="margin-top:2px">${esc(fmtDate(n.note_date))} · ${esc(n.author_name||'Instructor')}${n.followup_date?` · follow-up ${esc(fmtDate(n.followup_date))}`:''}
+          </div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:5px">
+            ${n.supervisor_notified?`<span class="dt-chip dt-low" style="font-size:11px">Supervisor notified ${n.supervisor_notified_date?fmtDate(n.supervisor_notified_date):''}</span>`:''}
+            ${n.statement_obtained?`<span class="dt-chip dt-low" style="font-size:11px">Statement obtained</span>`:''}
+            ${(n.attachments&&n.attachments.length)?`<span class="dt-chip dt-0" style="font-size:11px">${n.attachments.length} attachment${n.attachments.length>1?'s':''}</span>`:''}
           </div>
           <div style="margin-top:6px;font-size:13px;color:var(--t2);white-space:pre-wrap;line-height:1.5">${esc((n.body||'').slice(0,200))}${(n.body||'').length>200?'…':''}</div>
         </div>
@@ -1547,6 +1629,86 @@ Documentation: Student was informed and demerit slip presented for signature.${r
   navigator.clipboard.writeText(parts.join('\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n')).then(()=>toast(`${parts.length} note${parts.length>1?'s':''} copied`));
 }
 
+
+// ── STUDENT PHOTO ──
+async function uploadStudentPhoto(input){
+  const file=input.files[0];if(!file)return;
+  if(file.size>10*1024*1024){toast('File too large (max 10MB)',true);return;}
+  toast('Uploading photo…');
+  try{
+    const b64=await fileToBase64(file);
+    const out=await api('uploadStudentPhoto',{studentId:sdStudentId,fileName:file.name,fileData:b64,contentType:file.type});
+    if(out.url){showProfilePhoto(out.url);}
+    toast('Photo saved');
+  }catch(e){toast(e.message,true);}
+  input.value='';
+}
+async function loadStudentPhoto(){
+  try{
+    const out=await api('getStudentPhoto',{studentId:sdStudentId});
+    if(out.url)showProfilePhoto(out.url);
+    else{document.getElementById('profilePhotoImg').style.display='none';document.getElementById('profilePhotoPlaceholder').style.display='block';}
+  }catch{}
+}
+function showProfilePhoto(url){
+  const img=document.getElementById('profilePhotoImg');
+  const ph=document.getElementById('profilePhotoPlaceholder');
+  img.src=url;img.style.display='block';ph.style.display='none';
+}
+
+// ── FILE HELPERS ──
+function fileToBase64(file){
+  return new Promise((res,rej)=>{
+    const r=new FileReader();
+    r.onload=()=>res(r.result.split(',')[1]);
+    r.onerror=rej;
+    r.readAsDataURL(file);
+  });
+}
+
+// ── CASE NOTE ATTACHMENTS ──
+let cnPendingFiles=[];
+function handleCaseNoteFiles(input){
+  const files=[...input.files];
+  files.forEach(f=>{
+    if(f.size>10*1024*1024){toast(`${f.name} too large (max 10MB)`,true);return;}
+    cnPendingFiles.push(f);
+  });
+  renderCnAttachmentList();
+  input.value='';
+}
+function renderCnAttachmentList(){
+  const el=document.getElementById('cnAttachmentList');
+  if(!cnPendingFiles.length){el.innerHTML='';return;}
+  el.innerHTML=cnPendingFiles.map((f,i)=>`
+    <div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:.5px solid var(--b1)">
+      <span style="font-size:13px;flex:1;color:var(--t2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(f.name)}</span>
+      <span class="note" style="display:inline">${(f.size/1024).toFixed(0)} KB</span>
+      <button class="btn btn-danger btn-sm" onclick="removeCnFile(${i})">✕</button>
+    </div>`).join('');
+}
+function removeCnFile(i){cnPendingFiles.splice(i,1);renderCnAttachmentList();}
+
+// ── SUPERVISOR CHECKBOX TOGGLE ──
+document.addEventListener('DOMContentLoaded',()=>{
+  document.getElementById('cnSupervisorNotified').addEventListener('change',function(){
+    document.getElementById('cnSupervisorDateGroup').style.display=this.checked?'block':'none';
+    if(this.checked&&!document.getElementById('cnSupervisorDate').value)
+      document.getElementById('cnSupervisorDate').value=todayStr();
+  });
+});
+
+// ── CASE NOTE ATTACHMENTS on existing note ──
+async function loadCaseAttachments(noteId){
+  try{
+    const out=await api('getCaseAttachments',{noteId});
+    return out.attachments||[];
+  }catch{return[];}
+}
+
+// ── PROFILE PHOTO LOADING ──
+const _origOpenStudentProfile=openStudentProfile;
+// (photo loads in openStudentProfile override below)
 
 // ── Modal plumbing ──
 function openModal(id){document.getElementById(id).classList.add('on');}
