@@ -262,11 +262,106 @@ label{display:block;font-size:13px;font-weight:500;color:var(--t2);margin-bottom
   .print-slip{box-shadow:none;border-radius:0}
 }
 
+/* ── Two-column grid ── */
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+
 /* ── Student profile tab panes ── */
 .profile-tab-pane{display:none;animation:fadeIn .3s var(--ease)}
 .profile-tab-pane.active{display:block}
 
-/* ── Mobile slug fix in Manage ── */
-@media(max-width:560px){
-  .manage-class-slug{word-break:break-all;overflow-wrap:anywhere;max-width:calc(100vw - 120px)}
+/* ════ MOBILE OVERHAUL ════ */
+@media(max-width:600px){
+
+  /* Header: compress, hide sub-label, tighten buttons */
+  .app-header{padding:10px 14px;padding-top:calc(10px + env(safe-area-inset-top));gap:8px}
+  .app-sub{display:none}
+  .app-logo{font-size:15px}
+  .header-right{gap:6px}
+  .header-right .btn{padding:6px 11px;font-size:12px}
+
+  /* Nav: tighter pills, smaller text */
+  .nav-tabs{padding:2px;gap:1px;margin-bottom:0;border-radius:10px}
+  .nav-tab{padding:7px 11px;font-size:12.5px}
+
+  /* Nav wrapper: flush to edges */
+  #app > div[style*="max-width:1000px"]{padding:0 10px;margin-top:10px}
+
+  /* Main content padding */
+  .main{padding:12px 10px calc(80px + env(safe-area-inset-bottom))}
+
+  /* Context bar: full width select */
+  .context-bar{flex-wrap:wrap;padding:9px 12px;gap:8px}
+  .context-bar select{flex:1;min-width:0;width:100%}
+
+  /* Section cards: tighter */
+  .section-card{padding:12px;border-radius:14px}
+
+  /* Page headers: stack vertically */
+  .page-header{flex-direction:column;align-items:flex-start;gap:8px;margin-bottom:14px}
+  .page-title{font-size:22px}
+  .page-header .flex-gap{width:100%}
+  .page-header .flex-gap select{flex:1}
+
+  /* Grid 2-col: stack to 1-col on mobile */
+  .grid2{grid-template-columns:1fr!important;gap:0}
+
+  /* Attendance table: student name full width, status group wraps */
+  .data-table td[data-label="Student"]{font-size:14px;font-weight:600}
+  .data-table td[data-label="Status"] .status-group{flex-wrap:wrap;gap:3px}
+  .status-btn{min-width:44px;padding:8px 8px;font-size:13px;flex:1}
+
+  /* Student list rows: bigger tap targets */
+  #studentListBody > div{padding:14px 4px;min-height:52px}
+  #studentListBody .btn-ghost[style*="font-size:15px"]{font-size:15px!important;min-height:44px}
+
+  /* Profile page header: wrap nicely */
+  #studentProfilePane .page-header{flex-direction:row;flex-wrap:wrap;align-items:center;gap:8px}
+  #studentProfilePane .page-header > div:first-child{flex:1;min-width:0}
+  #profileName{font-size:19px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:55vw}
+
+  /* Profile sub-tabs */
+  #profileTabs{margin-bottom:12px}
+  #profileTabs .nav-tab{padding:7px 12px;font-size:12px}
+
+  /* Bulk action bar: wrap buttons on tiny screens */
+  #bulkBar > div{border-radius:14px;flex-wrap:wrap;gap:8px;padding:10px 12px}
+  #bulkBar .btn{flex:1;min-width:0;justify-content:center;font-size:12px;padding:8px 10px}
+  #bulkCount{width:100%;text-align:center;flex:none}
+
+  /* Demerit profile rows: stack action buttons below content */
+  #profileDemBody > div > div,
+  #profileNoteBody > div > div{flex-wrap:wrap}
+  #profileDemBody .flex-gap,
+  #profileNoteBody .flex-gap{width:100%;justify-content:flex-end;margin-top:8px}
+
+  /* Manage view: slug word wrap */
+  .note{word-break:break-word;overflow-wrap:anywhere}
+
+  /* Request cards */
+  .req-card{padding:12px}
+  .req-actions{flex-wrap:wrap}
+  .req-actions .btn{flex:1}
+
+  /* Buttons in flex rows */
+  .flex-gap{gap:6px}
+  .btn-sm{padding:7px 11px;font-size:12.5px}
+
+  /* Demerit code preview: compact */
+  .code-preview{gap:8px;padding:10px 12px}
+  .code-num{width:30px;height:30px;font-size:13px}
+
+  /* Case note monospace box */
+  .case-note{font-size:11.5px;padding:10px;max-height:220px}
+
+  /* Modal: full height on small phones */
+  .modal{max-height:96vh;padding:20px 16px;padding-bottom:calc(20px + env(safe-area-inset-bottom))}
+
+  /* Input font size stays 16px to prevent iOS zoom */
+  input,select,textarea{font-size:16px!important}
+
+  /* Empty state */
+  .empty-state{padding:24px 12px}
+
+  /* History table action column */
+  .data-table td:last-child{justify-content:flex-end}
 }
