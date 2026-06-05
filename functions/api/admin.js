@@ -352,6 +352,93 @@ export async function onRequestPost(context) {
         return ok({ ok:true });
       }
 
+      // ── CONTRACTS (behavioral contracts — assigned to a student) ────
+      // Mirrors case notes: class-authorized, author recorded server-side.
+      case 'contracts': {
+        const { studentId, classId, instructorId, includeVoided } = payload;
+        if (!studentId || !classId) return bad('Missing studentId or classId');
+        if (!instructorId) return bad('Missing instructorId');
+        if (!(await instructorOwnsClass(sb, instructorId, classId))) {
+          return bad('You are not assigned to this class', 403);
+        }
+        let q = `anew_contracts?student_id=eq.${enc(studentId)}&class_id=eq.${enc(classId)}&order=issued_date.desc,created_at.desc`;
+        if (!includeVoided) q += '&voided=eq.false';
+        const rows = await sb(q);
+        return ok({ contracts: rows || [] });
+      }
+
+      case 'assignContract': {
+        const { studentId, classId, instructorId, reason, terms, issuedDate, reviewDate } = payload;
+        if (!studentId || !classId) return bad('Missing studentId or classId');
+        if (!instructorId) return bad('Missing instructorId');
+        if (!clean(reason)) return bad('Choose a contract type');
+        if (!(await instructorOwnsClass(sb, instructorId, classId))) {
+          return bad('You are not assigned to this class', 403);
+        }
+        const instrs = await sb(`anew_instructors?id=eq.${enc(instructorId)}&limit=1`);
+        const instr = instrs && instrs[0];
+        if (!instr) return bad('Instructor not found', 404);
+        let total = null; try { total = await activeTotal(sb, studentId); } catch {}
+        const row = {
+          student_id: studentId,
+          class_id:   classId,
+          issued_by:  instr.name,
+          issued_date: clean(issuedDate) || new Date().toISOString().slice(0,10),
+          reason:     clean(reason) || null,
+          terms:      clean(terms),
+          review_date: clean(reviewDate) || null,
+          status:     'active',
+          demerit_total_at_issue: total,
+        };
+        const r = await sb('anew_contracts', { method:'POST', body: JSON.stringify(row) });
+        const saved = r && r[0];
+        return ok({ ok:true, id: saved && saved.id, contract: saved });
+      }
+
+      case 'updateContract': {
+        const { id, classId, instructorId, status, reason, terms, reviewDate, resolution } = payload;
+        if (!id) return bad('Missing contract id');
+        if (!instructorId || !classId) return bad('Missing instructorId or classId');
+        if (!(await instructorOwnsClass(sb, instructorId, classId))) {
+          return bad('You are not assigned to this class', 403);
+        }
+        const existing = await sb(`anew_contracts?id=eq.${enc(id)}&limit=1`);
+        const c = existing && existing[0];
+        if (!c) return bad('Contract not found', 404);
+        if (c.class_id !== classId) return bad('Contract does not belong to that class', 403);
+        const patch = { updated_at: new Date().toISOString() };
+        if (status     !== undefined) patch.status      = clean(status) || c.status;
+        if (reason     !== undefined) patch.reason      = clean(reason) || null;
+        if (terms      !== undefined) patch.terms       = clean(terms)  || c.terms;
+        if (reviewDate !== undefined) patch.review_date = clean(reviewDate) || null;
+        if (resolution !== undefined) patch.resolution  = clean(resolution) || null;
+        if (clean(status) === 'completed') {
+          const instrs = await sb(`anew_instructors?id=eq.${enc(instructorId)}&limit=1`);
+          patch.resolved_date = new Date().toISOString().slice(0,10);
+          patch.resolved_by   = (instrs && instrs[0] && instrs[0].name) || 'Instructor';
+        }
+        await sb(`anew_contracts?id=eq.${enc(id)}`, { method:'PATCH', prefer:'return=minimal', body: JSON.stringify(patch) });
+        return ok({ ok:true });
+      }
+
+      case 'voidContract': {
+        const { id, classId, instructorId } = payload;
+        if (!id) return bad('Missing contract id');
+        if (!instructorId || !classId) return bad('Missing instructorId or classId');
+        if (!(await instructorOwnsClass(sb, instructorId, classId))) {
+          return bad('You are not assigned to this class', 403);
+        }
+        const existing = await sb(`anew_contracts?id=eq.${enc(id)}&limit=1`);
+        const c = existing && existing[0];
+        if (!c) return bad('Contract not found', 404);
+        if (c.class_id !== classId) return bad('Contract does not belong to that class', 403);
+        const instrs = await sb(`anew_instructors?id=eq.${enc(instructorId)}&limit=1`);
+        const by = (instrs && instrs[0] && instrs[0].name) || 'Instructor';
+        await sb(`anew_contracts?id=eq.${enc(id)}`, { method:'PATCH', prefer:'return=minimal',
+          body: JSON.stringify({ voided:true, voided_at: new Date().toISOString(), voided_by: by }) });
+        return ok({ ok:true });
+      }
+
       // ── File upload (multipart — receives raw binary) ──────────────
       // Called with a real multipart fetch, NOT JSON.
       // We handle this specially: the password is in a form field.
