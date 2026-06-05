@@ -379,7 +379,7 @@
     <option>Safety Violation Contract</option>
     <option>Professional Conduct Contract</option>
     <option>Site Visit / Certification Conduct Contract</option>
-    <option>Property & Equipment Accountability Contract</option>
+    <option>Property &amp; Equipment Accountability Contract</option>
     <option>Support Plan Contract</option>
     <option>Marijuana Accountability Contract</option>
     <option>Certification Release Contingency Agreement</option>
@@ -1637,7 +1637,144 @@ function bulkPrint(){
     </div>
     <p style="margin-top:20px;font-size:11px;color:#777;border-top:1px solid #e0ddd5;padding-top:12px">I acknowledge receipt of this demerit. Refusal to sign results in an additional demerit (Code 6). Accumulation of 10 demerit points results in dismissal from the program.</p>`;
   });
-  html+='<script>
+  html+='</body></html>';
+  const w=window.open('','_blank');w.document.write(html);w.document.close();
+}
+
+function bulkCopySalesforce(){
+  const s=students.find(x=>x.id===sdStudentId);
+  const cls=classes.find(c=>c.id===curClass);
+  let parts=[];
+  // Selected demerits
+  sdDemerits.filter(d=>selectedDemeritIds.has(d.id)).forEach(d=>{
+    const rt=runningTotalAtDate(sdStudentId,d.date||'');
+    const ptsText=d.excused?`0 points (excused — ${d.excuse_reason||''})`:`${d.pts_num||0} point(s)`;
+    parts.push(`DEMERIT ISSUED — ${fmtDate(d.date||'')}
+Program: ${cls?cls.program_name:'N/A'}
+Student: ${s?studentName(s):'Unknown'}
+
+Demerit Code ${d.code}: ${d.description||''}
+Points Assessed: ${ptsText}
+Running Total: ${rt} point(s)
+${d.incident?'\nIncident Description:\n'+d.incident:''}${d.excused?'\nExcused Reason: '+d.excuse_reason:''}
+Staff: ${d.staff||'Instructor'}
+Documentation: Student was informed and demerit slip presented for signature.${rt>=10?'\n\nACTION REQUIRED: Student has reached 10 demerit points and must be exited from the program.':rt>=7?'\n\nNOTE: Student has reached 7+ demerit points. A behavioral contract is required.':''}`);
+  });
+  // Selected case notes
+  sdCaseNotes.filter(n=>selectedNoteIds.has(n.id)).forEach(n=>parts.push(buildCaseNoteText(n)));
+  if(!parts.length){toast('Nothing selected',true);return;}
+  navigator.clipboard.writeText(parts.join('\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n')).then(()=>toast(`${parts.length} note${parts.length>1?'s':''} copied`));
+}
+
+
+// ── STUDENT PHOTO ──
+async function uploadStudentPhoto(input){
+  const file=input.files[0];if(!file)return;
+  if(file.size>10*1024*1024){toast('File too large (max 10MB)',true);return;}
+  toast('Uploading photo…');
+  try{
+    const b64=await fileToBase64(file);
+    const out=await api('uploadStudentPhoto',{studentId:sdStudentId,fileName:file.name,fileData:b64,contentType:file.type});
+    if(out.url){showProfilePhoto(out.url);}
+    toast('Photo saved');
+  }catch(e){toast(e.message,true);}
+  input.value='';
+}
+async function loadStudentPhoto(){
+  try{
+    const out=await api('getStudentPhoto',{studentId:sdStudentId});
+    if(out.url)showProfilePhoto(out.url);
+    else{document.getElementById('profilePhotoImg').style.display='none';document.getElementById('profilePhotoPlaceholder').style.display='block';}
+  }catch{}
+}
+function showProfilePhoto(url){
+  const img=document.getElementById('profilePhotoImg');
+  const ph=document.getElementById('profilePhotoPlaceholder');
+  img.src=url;img.style.display='block';ph.style.display='none';
+}
+
+// ── FILE HELPERS ──
+function fileToBase64(file){
+  return new Promise((res,rej)=>{
+    const r=new FileReader();
+    r.onload=()=>res(r.result.split(',')[1]);
+    r.onerror=rej;
+    r.readAsDataURL(file);
+  });
+}
+
+// ── CASE NOTE ATTACHMENTS ──
+let cnPendingFiles=[];
+function handleCaseNoteFiles(input){
+  const files=[...input.files];
+  files.forEach(f=>{
+    if(f.size>10*1024*1024){toast(`${f.name} too large (max 10MB)`,true);return;}
+    cnPendingFiles.push(f);
+  });
+  renderCnAttachmentList();
+  input.value='';
+}
+function renderCnAttachmentList(){
+  const el=document.getElementById('cnAttachmentList');
+  if(!cnPendingFiles.length){el.innerHTML='';return;}
+  el.innerHTML=cnPendingFiles.map((f,i)=>`
+    <div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:.5px solid var(--b1)">
+      <span style="font-size:13px;flex:1;color:var(--t2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(f.name)}</span>
+      <span class="note" style="display:inline">${(f.size/1024).toFixed(0)} KB</span>
+      <button class="btn btn-danger btn-sm" onclick="removeCnFile(${i})">✕</button>
+    </div>`).join('');
+}
+function removeCnFile(i){cnPendingFiles.splice(i,1);renderCnAttachmentList();}
+
+// ── SUPERVISOR CHECKBOX TOGGLE ──
+document.addEventListener('DOMContentLoaded',()=>{
+  document.getElementById('cnSupervisorNotified').addEventListener('change',function(){
+    document.getElementById('cnSupervisorDateGroup').style.display=this.checked?'block':'none';
+    if(this.checked&&!document.getElementById('cnSupervisorDate').value)
+      document.getElementById('cnSupervisorDate').value=todayStr();
+  });
+});
+
+// ── CASE NOTE ATTACHMENTS on existing note ──
+async function loadCaseAttachments(noteId){
+  try{
+    const out=await api('getCaseAttachments',{noteId});
+    return out.attachments||[];
+  }catch{return[];}
+}
+
+// ── PROFILE PHOTO LOADING ──
+const _origOpenStudentProfile=openStudentProfile;
+// (photo loads in openStudentProfile override below)
+
+// ── Modal plumbing ──
+function openModal(id){document.getElementById(id).classList.add('on');}
+function closeModal(id){document.getElementById(id).classList.remove('on');}
+document.querySelectorAll('.modal-bg').forEach(bg=>bg.addEventListener('click',e=>{if(e.target===bg)closeModal(bg.id);}));
+document.addEventListener('keydown',e=>{if(e.key==='Escape')document.querySelectorAll('.modal-bg.on').forEach(m=>closeModal(m.id));});
+let toastTimer;
+function toast(msg,err){const el=document.getElementById('toast');el.textContent=msg;el.classList.toggle('err',!!err);el.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.classList.remove('show'),2600);}
+
+// ── Boot: resume session if password remembered ──
+(function(){
+  const pw=sessionStorage.getItem('anew_pw');
+  if(!pw) return;
+  PW=pw;
+  const meRaw=sessionStorage.getItem('anew_me');
+  if(meRaw){
+    try{ ME=JSON.parse(meRaw); }catch{ ME=null; }
+  }
+  api('login').then(()=>{
+    if(ME && ME.id){
+      // refresh bootstrap to update lists
+      showApp();
+    } else {
+      showInstructorPicker();
+    }
+  }).catch(()=>{sessionStorage.removeItem('anew_pw');sessionStorage.removeItem('anew_me');PW='';ME=null;});
+})();
+</script>
+<script>
 // ── CONTRACT ASSIGNMENT (student profile sub-tab) ──
 let sdContracts=[];
 (function(){ const _spt=showProfileTab; showProfileTab=function(tab){ _spt(tab); if(tab==='contracts') loadStudentContracts(); }; })();
@@ -1925,143 +2062,6 @@ function printContract(id){
   win.document.write(html); win.document.close();
 }
 
-</script>
-</body></html>';
-  const w=window.open('','_blank');w.document.write(html);w.document.close();
-}
-
-function bulkCopySalesforce(){
-  const s=students.find(x=>x.id===sdStudentId);
-  const cls=classes.find(c=>c.id===curClass);
-  let parts=[];
-  // Selected demerits
-  sdDemerits.filter(d=>selectedDemeritIds.has(d.id)).forEach(d=>{
-    const rt=runningTotalAtDate(sdStudentId,d.date||'');
-    const ptsText=d.excused?`0 points (excused — ${d.excuse_reason||''})`:`${d.pts_num||0} point(s)`;
-    parts.push(`DEMERIT ISSUED — ${fmtDate(d.date||'')}
-Program: ${cls?cls.program_name:'N/A'}
-Student: ${s?studentName(s):'Unknown'}
-
-Demerit Code ${d.code}: ${d.description||''}
-Points Assessed: ${ptsText}
-Running Total: ${rt} point(s)
-${d.incident?'\nIncident Description:\n'+d.incident:''}${d.excused?'\nExcused Reason: '+d.excuse_reason:''}
-Staff: ${d.staff||'Instructor'}
-Documentation: Student was informed and demerit slip presented for signature.${rt>=10?'\n\nACTION REQUIRED: Student has reached 10 demerit points and must be exited from the program.':rt>=7?'\n\nNOTE: Student has reached 7+ demerit points. A behavioral contract is required.':''}`);
-  });
-  // Selected case notes
-  sdCaseNotes.filter(n=>selectedNoteIds.has(n.id)).forEach(n=>parts.push(buildCaseNoteText(n)));
-  if(!parts.length){toast('Nothing selected',true);return;}
-  navigator.clipboard.writeText(parts.join('\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n')).then(()=>toast(`${parts.length} note${parts.length>1?'s':''} copied`));
-}
-
-
-// ── STUDENT PHOTO ──
-async function uploadStudentPhoto(input){
-  const file=input.files[0];if(!file)return;
-  if(file.size>10*1024*1024){toast('File too large (max 10MB)',true);return;}
-  toast('Uploading photo…');
-  try{
-    const b64=await fileToBase64(file);
-    const out=await api('uploadStudentPhoto',{studentId:sdStudentId,fileName:file.name,fileData:b64,contentType:file.type});
-    if(out.url){showProfilePhoto(out.url);}
-    toast('Photo saved');
-  }catch(e){toast(e.message,true);}
-  input.value='';
-}
-async function loadStudentPhoto(){
-  try{
-    const out=await api('getStudentPhoto',{studentId:sdStudentId});
-    if(out.url)showProfilePhoto(out.url);
-    else{document.getElementById('profilePhotoImg').style.display='none';document.getElementById('profilePhotoPlaceholder').style.display='block';}
-  }catch{}
-}
-function showProfilePhoto(url){
-  const img=document.getElementById('profilePhotoImg');
-  const ph=document.getElementById('profilePhotoPlaceholder');
-  img.src=url;img.style.display='block';ph.style.display='none';
-}
-
-// ── FILE HELPERS ──
-function fileToBase64(file){
-  return new Promise((res,rej)=>{
-    const r=new FileReader();
-    r.onload=()=>res(r.result.split(',')[1]);
-    r.onerror=rej;
-    r.readAsDataURL(file);
-  });
-}
-
-// ── CASE NOTE ATTACHMENTS ──
-let cnPendingFiles=[];
-function handleCaseNoteFiles(input){
-  const files=[...input.files];
-  files.forEach(f=>{
-    if(f.size>10*1024*1024){toast(`${f.name} too large (max 10MB)`,true);return;}
-    cnPendingFiles.push(f);
-  });
-  renderCnAttachmentList();
-  input.value='';
-}
-function renderCnAttachmentList(){
-  const el=document.getElementById('cnAttachmentList');
-  if(!cnPendingFiles.length){el.innerHTML='';return;}
-  el.innerHTML=cnPendingFiles.map((f,i)=>`
-    <div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:.5px solid var(--b1)">
-      <span style="font-size:13px;flex:1;color:var(--t2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(f.name)}</span>
-      <span class="note" style="display:inline">${(f.size/1024).toFixed(0)} KB</span>
-      <button class="btn btn-danger btn-sm" onclick="removeCnFile(${i})">✕</button>
-    </div>`).join('');
-}
-function removeCnFile(i){cnPendingFiles.splice(i,1);renderCnAttachmentList();}
-
-// ── SUPERVISOR CHECKBOX TOGGLE ──
-document.addEventListener('DOMContentLoaded',()=>{
-  document.getElementById('cnSupervisorNotified').addEventListener('change',function(){
-    document.getElementById('cnSupervisorDateGroup').style.display=this.checked?'block':'none';
-    if(this.checked&&!document.getElementById('cnSupervisorDate').value)
-      document.getElementById('cnSupervisorDate').value=todayStr();
-  });
-});
-
-// ── CASE NOTE ATTACHMENTS on existing note ──
-async function loadCaseAttachments(noteId){
-  try{
-    const out=await api('getCaseAttachments',{noteId});
-    return out.attachments||[];
-  }catch{return[];}
-}
-
-// ── PROFILE PHOTO LOADING ──
-const _origOpenStudentProfile=openStudentProfile;
-// (photo loads in openStudentProfile override below)
-
-// ── Modal plumbing ──
-function openModal(id){document.getElementById(id).classList.add('on');}
-function closeModal(id){document.getElementById(id).classList.remove('on');}
-document.querySelectorAll('.modal-bg').forEach(bg=>bg.addEventListener('click',e=>{if(e.target===bg)closeModal(bg.id);}));
-document.addEventListener('keydown',e=>{if(e.key==='Escape')document.querySelectorAll('.modal-bg.on').forEach(m=>closeModal(m.id));});
-let toastTimer;
-function toast(msg,err){const el=document.getElementById('toast');el.textContent=msg;el.classList.toggle('err',!!err);el.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.classList.remove('show'),2600);}
-
-// ── Boot: resume session if password remembered ──
-(function(){
-  const pw=sessionStorage.getItem('anew_pw');
-  if(!pw) return;
-  PW=pw;
-  const meRaw=sessionStorage.getItem('anew_me');
-  if(meRaw){
-    try{ ME=JSON.parse(meRaw); }catch{ ME=null; }
-  }
-  api('login').then(()=>{
-    if(ME && ME.id){
-      // refresh bootstrap to update lists
-      showApp();
-    } else {
-      showInstructorPicker();
-    }
-  }).catch(()=>{sessionStorage.removeItem('anew_pw');sessionStorage.removeItem('anew_me');PW='';ME=null;});
-})();
 </script>
 </body>
 </html>
