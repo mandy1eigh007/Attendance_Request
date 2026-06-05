@@ -370,16 +370,23 @@
   <h2 style="font-size:22px;font-weight:700;letter-spacing:-.03em;margin-bottom:18px">Assign Contract</h2>
   <label style="display:block;font-size:13px;color:var(--t2);margin:10px 0 4px">Issue date</label>
   <input type="date" id="ctIssueDate" style="width:100%;padding:11px 13px;background:var(--s4);border:.5px solid var(--b2);border-radius:12px;color:var(--t1);font-size:15px">
-  <label style="display:block;font-size:13px;color:var(--t2);margin:12px 0 4px">Reason</label>
+  <label style="display:block;font-size:13px;color:var(--t2);margin:12px 0 4px">Contract type</label>
   <select id="ctReason" style="width:100%;padding:11px 13px;background:var(--s4);border:.5px solid var(--b2);border-radius:12px;color:var(--t1);font-size:15px">
-    <option>Attendance</option>
-    <option>Behavior / Demerits</option>
-    <option>Academic Progress</option>
-    <option>Conduct</option>
-    <option>Other</option>
+    <option>Attendance Accountability Contract</option>
+    <option>Behavior Recovery Contract</option>
+    <option>Assignment Accountability Contract</option>
+    <option>ACE Station / Fitness Accountability Contract</option>
+    <option>Safety Violation Contract</option>
+    <option>Professional Conduct Contract</option>
+    <option>Site Visit / Certification Conduct Contract</option>
+    <option>Property & Equipment Accountability Contract</option>
+    <option>Support Plan Contract</option>
+    <option>Marijuana Accountability Contract</option>
+    <option>Certification Release Contingency Agreement</option>
+    <option>Last Chance Agreement</option>
   </select>
-  <label style="display:block;font-size:13px;color:var(--t2);margin:12px 0 4px">Contract terms / expectations</label>
-  <textarea id="ctTerms" rows="5" placeholder="What the student is agreeing to, and what happens if the terms are not met." style="width:100%;padding:11px 13px;background:var(--s4);border:.5px solid var(--b2);border-radius:12px;color:var(--t1);font-size:15px;line-height:1.5;resize:vertical"></textarea>
+  <label style="display:block;font-size:13px;color:var(--t2);margin:12px 0 4px">Specifics for the fill-in sections (optional)</label>
+  <textarea id="ctTerms" rows="5" placeholder="Notes for the contract's fill-in sections (behavior changes, identified barriers, etc.). Optional." style="width:100%;padding:11px 13px;background:var(--s4);border:.5px solid var(--b2);border-radius:12px;color:var(--t1);font-size:15px;line-height:1.5;resize:vertical"></textarea>
   <label style="display:block;font-size:13px;color:var(--t2);margin:12px 0 4px">Review date (optional)</label>
   <input type="date" id="ctReviewDate" style="width:100%;padding:11px 13px;background:var(--s4);border:.5px solid var(--b2);border-radius:12px;color:var(--t1);font-size:15px">
   <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px">
@@ -1664,6 +1671,7 @@ function renderProfileContracts(){
           ${c.terms?`<div style="margin-top:6px;font-size:13px;color:var(--t2);white-space:pre-wrap;line-height:1.5">${esc(c.terms)}</div>`:''}
         </div>
         <div class="flex-gap">
+          <button class="btn btn-ghost btn-sm" onclick="printContract('${esc(c.id)}')">Print</button>
           ${st==='active'?`<button class="btn btn-ghost btn-sm" onclick="completeContract('${esc(c.id)}')">Complete</button>`:''}
           <button class="btn btn-danger btn-sm" onclick="voidContract('${esc(c.id)}')">Remove</button>
         </div>
@@ -1675,7 +1683,7 @@ function renderProfileContracts(){
 function openAssignContract(){
   document.getElementById('ctIssueDate').value=new Date().toISOString().slice(0,10);
   const t=(typeof demeritTotals!=='undefined' && demeritTotals[sdStudentId])||0;
-  document.getElementById('ctReason').value = t>=7 ? 'Behavior / Demerits' : 'Attendance';
+  document.getElementById('ctReason').value = t>=7 ? 'Last Chance Agreement' : 'Attendance Accountability Contract';
   document.getElementById('ctTerms').value='';
   document.getElementById('ctReviewDate').value='';
   openModal('contractModal');
@@ -1686,7 +1694,6 @@ async function saveContract(){
   const reason=document.getElementById('ctReason').value;
   const terms=document.getElementById('ctTerms').value.trim();
   const reviewDate=document.getElementById('ctReviewDate').value||null;
-  if(!terms){toast('Contract terms are required',true);return;}
   const btn=document.getElementById('ctSaveBtn');btn.disabled=true;btn.textContent='Saving…';
   try{
     await api('assignContract',{studentId:sdStudentId,classId:curClass,reason,terms,issuedDate,reviewDate});
@@ -1706,6 +1713,216 @@ async function voidContract(id){
   if(!confirm('Remove this contract? It will be hidden from the list (record retained).'))return;
   try{ await api('voidContract',{id,classId:curClass}); toast('Contract removed'); await loadStudentContracts(); }
   catch(e){toast(e.message,true);}
+}
+
+</script>
+<script>
+// ── ANEW CONTRACT TEMPLATES + printable, signable forms ──
+const ANEW_APPEAL='Appeal Process: Written appeal within 3 business days to the Program Director or Executive Director.';
+const ANEW_APPEAL_FULL='Appeal Process: Written appeal within 3 business days to the Program Director or Executive Director. Contact: ANEW Main Office — 18338 Andover Park W, Tukwila, WA 98188 — (206) 381-1384';
+const ANEW_SIGS_DIR=['STUDENT SIGNATURE','INSTRUCTOR SIGNATURE','PROGRAM COORDINATOR','DIRECTOR SIGNATURE'];
+
+const CONTRACT_TEMPLATES=[
+ { label:'Attendance Accountability Contract', title:'ATTENDANCE ACCOUNTABILITY CONTRACT',
+   codes:'Demerit Codes 8 (Late/Early — 2pts) · 10 (Full Day Absent — 3pts) · 13 (No-Call No-Show — 5pts)', appeal:ANEW_APPEAL_FULL,
+   blocks:[
+    {k:'p',t:'Attendance is mandatory. The expectation is 100% attendance for all classes within the program period. "Ready to work" means proper attire, necessary tools/supplies, present at roll call. Students are allowed a maximum of three (3) excused absences. Any further absences may result in dismissal.'},
+    {k:'reasons',items:['Accumulated 3 or more absences (excused or unexcused)','One or more no-call/no-show incidents (Code 13 — 5 demerits each)','Excessive tardiness or early departures (Code 8 — 2 demerits each)','Pattern of Monday/Friday absences']},
+    {k:'table',title:'ATTENDANCE RECORD',cols:['DATE','CODE','POINTS','DESCRIPTION'],rows:6},
+    {k:'ul',title:'EXCUSED ABSENCE CRITERIA',items:['Death of immediate family member (parent, child, sibling, grandparent, in-law)','Birth of a child or grandchild','Mandatory court appearance','Mandatory probation/parole meetings','Jury duty','Job/apprenticeship interviews (with documentation)','Illness/injury (with doctor\u2019s note within 48 hours)']},
+    {k:'note',t:'Note: Even with excused reasons, students cannot miss more than three (3) combined days. Beyond three days, the student must drop and re-enroll.'},
+    {k:'ol',title:'TERMS',items:['I acknowledge that I have reached or exceeded the maximum number of allowed absences.','I agree to maintain full attendance moving forward and notify staff before any absence.','I understand that any additional unexcused absence or no-call/no-show may result in immediate dismissal.','I understand tardiness and early departures continue to accumulate demerits toward the 10-point exit threshold.']},
+   ]},
+ { label:'Behavior Recovery Contract', title:'BEHAVIOR RECOVERY CONTRACT',
+   codes:'Demerit Codes 2 (Unprofessional — 1pt) · 9 (Refusal to Participate — 2pts) · 12 (Mistreatment of Others — 3pts)',
+   blocks:[
+    {k:'p',t:'ANEW maintains a professional, respectful, and safe learning environment. Behavior that violates the Code of Conduct — including disruptive conduct, disrespect, aggression, or refusal to follow reasonable requests — undermines the program and puts fellow students and staff at risk.'},
+    {k:'reasons',items:['Repeated classroom disruptions (talking over instructor, horseplay, defiance)','Verbal aggression or outbursts toward staff, guests, or classmates','Pattern of refusal to participate in required activities','Pattern of apathy, disengagement, or insubordination']},
+    {k:'table',title:'INCIDENT DOCUMENTATION',cols:['DATE','CODE','DESCRIPTION OF INCIDENT'],rows:4},
+    {k:'staff',title:'REQUIRED BEHAVIOR CHANGES'},
+    {k:'ol',title:'TERMS',items:['I understand the behavior that led to this contract is a serious violation of program expectations.','I agree to demonstrate immediate and consistent improvement in my conduct.','I understand that any further behavioral violations may result in additional demerits or dismissal.','I agree to participate in check-ins and any behavior support as requested by staff.']},
+   ]},
+ { label:'Assignment Accountability Contract', title:'ASSIGNMENT ACCOUNTABILITY CONTRACT',
+   codes:'Demerit Code 3 (Failure to Submit Homework on Time — 1pt)',
+   blocks:[
+    {k:'p',t:'Timely completion of all required assignments is a critical expectation. Homework not turned in by the due date is considered late. Late assignments affect participation scores and will not be accepted past the grace period.'},
+    {k:'reasons',items:['Multiple missing or late homework assignments','Failure to meet written or hands-on project deadlines','Pattern of incomplete or substandard work submissions','Failure to complete required portfolio items']},
+    {k:'table',title:'MISSING / OUTSTANDING ASSIGNMENTS',cols:['DUE DATE','ASSIGNMENT','STATUS'],rows:5},
+    {k:'ol',title:'TERMS',items:['I acknowledge that I have failed to complete required coursework per program expectations.','I agree to submit all upcoming assignments on time and complete past-due work within _____ business days.','I will communicate in advance if I am experiencing barriers to assignment completion.','I understand continued failure to meet academic expectations will result in additional demerits or dismissal.']},
+   ]},
+ { label:'ACE Station / Fitness Accountability Contract', title:'ACE STATION / FITNESS ACCOUNTABILITY CONTRACT',
+   codes:'Demerit Code 9 (Refusal/Inability to Participate — 2pts) · Physical Fitness & ACES Performance Standards',
+   blocks:[
+    {k:'p',t:'ANEW\u2019s Pre-Apprenticeship Program includes daily physical fitness (60 minutes, Weeks 1–12) and ACES station circuit training (36 hours total). These are mandatory program components — not optional. Construction trades demand physical readiness, and apprenticeship programs test for it. Students must pass ACES at 70% or higher and demonstrate consistent effort in fitness activities.'},
+    {k:'reasons',items:['Refusal to participate in daily fitness activities','Repeated lack of effort during ACES circuit stations','Failure to meet minimum ACES benchmark scores after retest opportunity','Sitting out without a documented medical excuse','Refusing to attempt stations or quitting mid-circuit','Failure to meet mile run improvement standard']},
+    {k:'table',title:'CURRENT PERFORMANCE SNAPSHOT',cols:['ASSESSMENT','SCORE / TIME','PASSING STANDARD','STATUS'],prefill:[['ACES Overall','','70%',''],['Mile Run (Initial)','','Improvement req\u2019d',''],['Mile Run (Current)','','Improvement req\u2019d',''],['Fitness Participation','','Daily / consistent','']],rows:0},
+    {k:'staff',title:'SPECIFIC STATIONS / AREAS OF CONCERN'},
+    {k:'ol',title:'TERMS',items:['I understand that fitness and ACES performance are required components of the program, not electives.','I agree to participate fully in all daily fitness activities and ACES station circuits.','I understand that sitting out without a doctor\u2019s note will result in additional demerits (Code 9 — 2pts per occurrence).','I agree to work toward passing all ACES benchmarks at 70% or higher by the program deadline.','If I have a medical limitation, I will provide documentation and work with staff on a modified plan.','I understand that continued refusal to participate may result in dismissal from the program.']},
+   ]},
+ { label:'Safety Violation Contract', title:'SAFETY VIOLATION CONTRACT',
+   codes:'Demerit Code 4 (No PPE — 1pt) · Code 14 (Failure to Follow Safety Instructions — 5pts)',
+   blocks:[
+    {k:'p',t:'Safety is non-negotiable. Construction job sites have zero tolerance for safety violations — and so does ANEW. Failure to follow safety instructions or wear proper PPE puts you and everyone around you at risk of serious injury or death. This is the standard the industry holds, and it is the standard this program holds.'},
+    {k:'reasons',items:['Failure to wear required PPE (hard hat, safety glasses, gloves, steel-toed boots, high-vis)','Operating power tools without authorization or proper instruction','Ignoring instructor safety directions during shop or on-site activities','Horseplay in the shop or near equipment','Removing guards, barriers, or safety equipment','Working in an unsafe manner that endangered self or others']},
+    {k:'table',title:'INCIDENT DOCUMENTATION',cols:['DATE','CODE','DESCRIPTION OF SAFETY VIOLATION','INJURY? Y/N'],rows:4},
+    {k:'ol',title:'TERMS',items:['I understand that safety violations in construction can result in serious injury or death — to myself and others.','I agree to wear all required PPE at all times when in the shop, on job sites, or during any hands-on activity.','I agree to follow all safety instructions given by the instructor immediately and without argument.','I understand that a single Code 14 violation (5 demerits) can put me at or near the dismissal threshold.','I understand that any additional safety violation may result in immediate removal from the program.','I understand that on a real job site, this behavior would result in being sent home or fired on the spot.']},
+   ]},
+ { label:'Professional Conduct Contract', title:'PROFESSIONAL CONDUCT CONTRACT',
+   codes:'Demerit Code 1 (Phone/Visitor/Dress Policy — 1pt) · Code 2 (Unprofessional Behavior — 1pt)',
+   blocks:[
+    {k:'p',t:'ANEW prepares students for the professional standards of the construction industry. Cell phone use during class, dress code violations, unauthorized visitors, talking over instructors, and unprofessional demeanor are all documented in the Student Handbook and carry demerit consequences. These are the same standards employers and JATCs expect on Day 1.'},
+    {k:'reasons',items:['Repeated cell phone use during instruction (not for note-taking)','Dress code violations (baggy clothes, open-toed shoes, jewelry, tank tops, gang colors)','Unauthorized visitors during class time','Talking over the instructor or disrupting class flow','Not paying attention or sleeping during instruction','General unprofessional demeanor or attitude']},
+    {k:'table',title:'INCIDENT DOCUMENTATION',cols:['DATE','CODE','DESCRIPTION'],rows:4},
+    {k:'ol',title:'TERMS',items:['I agree to keep my phone stored and silent during all instruction time unless explicitly permitted by the instructor.','I agree to arrive each day in proper work attire with hair pulled back and no prohibited items.','I agree to be attentive, respectful, and engaged during all classroom and shop activities.','I understand that these are the exact standards construction employers hold on day one of an apprenticeship.','I understand continued violations will result in additional demerits toward the 10-point dismissal threshold.']},
+   ]},
+ { label:'Site Visit / Certification Conduct Contract', title:'SITE VISIT / CERTIFICATION CONDUCT CONTRACT',
+   codes:'Demerit Code 7 (Absent During Guest/Site/Cert — 1pt+) · Code 11 (Unprofessional at Site Visit/Cert — 3pts)',
+   blocks:[
+    {k:'p',t:'Site visits, JATC tours, guest speakers, and certification classes are where employers and apprenticeship programs see you. Your behavior during these events directly affects whether you get into an apprenticeship — and it reflects on ANEW, on your classmates, and on every future cohort that visits that site. This is not classroom time. This is your audition.'},
+    {k:'reasons',items:['Unprofessional behavior during a job site visit or JATC tour','Talking over speakers, wandering off, or being disruptive during guest presentations','Unprofessional conduct during OSHA 10, flagger, first aid, or other certification classes','Absence during a guest speaker, site visit, or certification without prior approval','Representing ANEW poorly in front of industry partners']},
+    {k:'table',title:'INCIDENT DOCUMENTATION',cols:['DATE','CODE','EVENT / LOCATION','DESCRIPTION'],rows:3},
+    {k:'ol',title:'TERMS',items:['I understand that site visits, tours, and guest speakers are professional events — not field trips.','I agree to follow all pre-visit conduct standards: dress, punctuality, questions prepared, phone away.','I understand that my behavior at these events directly impacts my reputation and ANEW\u2019s relationships with industry partners.','I agree to attend all remaining site visits and certification classes with full professional engagement.','I understand a Code 11 violation carries 3 demerit points and any further incident may result in dismissal.']},
+   ]},
+ { label:'Property & Equipment Accountability Contract', title:'PROPERTY & EQUIPMENT ACCOUNTABILITY CONTRACT',
+   codes:'Demerit Code 5 (Mistreatment of Property — 1pt)',
+   blocks:[
+    {k:'p',t:'ANEW tools, equipment, and materials are shared resources that every cohort depends on. Misuse, neglect, or intentional damage to program property — or the property of partner sites, guests, or classmates — is a violation of the Code of Conduct and a reflection of how you will treat employer equipment on a real job site.'},
+    {k:'reasons',items:['Misuse or negligent handling of tools or power equipment','Failure to clean, return, or properly store tools after use','Intentional or reckless damage to ANEW property, shop equipment, or materials','Damage to partner site property during site visits','Mistreatment of classmate personal property','Leaving work area unsecured, dirty, or hazardous']},
+    {k:'table',title:'INCIDENT DOCUMENTATION',cols:['DATE','ITEM / EQUIPMENT','DESCRIPTION OF INCIDENT','EST. COST'],rows:3},
+    {k:'ol',title:'TERMS',items:['I agree to treat all ANEW tools, equipment, and materials with care and respect.','I agree to follow all tool checkout, return, and storage procedures.','I agree to leave my work area clean, organized, and safe at the end of every session.','I understand that on a real job site, damaging employer tools or equipment can result in immediate termination and financial liability.','I understand continued violations will result in additional demerits and may result in dismissal.']},
+   ]},
+ { label:'Support Plan Contract', title:'SUPPORT PLAN CONTRACT',
+   codes:'Multi-Code Intervention — Wrap-Around Support for Identified Barriers',
+   blocks:[
+    {k:'p',t:'ANEW recognizes that students may face personal, family, or financial challenges during the program. This Support Plan provides structure and accountability while connecting students to resources for success. This is not punishment — this is ANEW investing in your ability to finish.'},
+    {k:'reasons',items:['Rapid accumulation of demerits over a short period','Emerging patterns across multiple areas (attendance + behavior + assignments)','Disclosed external barriers (housing, transportation, childcare, mental health, legal)','Student-requested support intervention']},
+    {k:'staff',title:'IDENTIFIED BARRIERS'},
+    {k:'ul',title:'SUPPORT RESOURCES OFFERED',items:['Transportation assistance (gas cards, bus passes)','Academic support / tutoring','Weekly goal-setting check-ins','Conflict resolution / mediation','External referral: ___________________________________','Other: ___________________________________']},
+    {k:'table',title:'FOLLOW-UP SCHEDULE',cols:['CHECK-IN DATE','STAFF MEMBER','NOTES / PROGRESS'],rows:4},
+    {k:'ol',title:'TERMS',items:['I will participate in weekly check-ins with ANEW staff to review progress and goals.','I agree to follow through on referrals, resources, or action items provided.','I agree to maintain open communication and reach out if I need additional support.','I understand that failure to follow this plan may result in additional demerits or removal from the program.']},
+   ]},
+ { label:'Marijuana Accountability Contract', title:'MARIJUANA ACCOUNTABILITY CONTRACT',
+   codes:'Drug Testing Compliance — Positive THC Initial Result Intervention', info4:{label:'INITIAL UA DATE',value:''},
+   closing:'By signing below, I acknowledge that I have read, understood, and agree to the terms of this Marijuana Accountability Contract. Violation of any term may result in immediate dismissal.',
+   blocks:[
+    {k:'p',t:'ANEW adheres to federal drug-free workplace regulations. Although marijuana is legal under Washington State law, federal workplace standards and registered apprenticeship entry requirements prohibit its use. This contract is issued because the student tested positive for THC on the initial program drug test.'},
+    {k:'ol',title:'CONTRACT TERMS',items:['I tested positive for THC on my initial UA. This contract is a condition of my continued participation.','I agree to abstain from all marijuana use — recreational, medical, and legal — for the remainder of the program.','I will not possess marijuana in any form on any ANEW premises, training sites, or during program activities.','I agree to submit to follow-up drug testing as scheduled. I must show a documented reduction in THC levels. Failure to show a decreasing trend may result in dismissal.','A positive THC result on the graduation UA will result in certifications being held until I submit a clean test at my own cost.','Appearing under the influence or emitting a detectable odor of marijuana or alcohol during training is grounds for immediate dismissal.','A positive result for any substance other than THC at any point will result in immediate dismissal.','Refusal to test or any attempt to tamper with a specimen will result in immediate dismissal.']},
+    {k:'table',title:'FOLLOW-UP TESTING SCHEDULE',cols:['DATE','RESULT','THC LEVEL (NG/ML)','STAFF INIT.'],prefill:[['Initial:','','',''],['Follow-up 1:','','',''],['Follow-up 2:','','',''],['Graduation:','','','']],rows:0},
+   ]},
+ { label:'Certification Release Contingency Agreement', title:'CERTIFICATION RELEASE CONTINGENCY AGREEMENT',
+   codes:'Drug Testing Compliance — Graduation Hold Document', info4:{label:'GRADUATION UA DATE',value:''},
+   blocks:[
+    {k:'p',t:'This agreement is issued because the student tested positive for THC on the graduation UA. The student may participate in the graduation ceremony, but all program credentials will be held until the conditions below are met.'},
+    {k:'ul',title:'MATERIALS BEING HELD',items:['Program completion certificate','OSHA 10 card','Flagger certification','First Aid / CPR card','Portfolio materials and letters of recommendation','Other: ___________________________________']},
+    {k:'ol',title:'RELEASE CONDITIONS',items:['I must submit a clean drug test from an ANEW-approved facility.','I am responsible for the cost of the follow-up test.','The clean test must be submitted within 60 days of graduation.','After 60 days, I must contact the Program Director to arrange release.','I may participate in the graduation ceremony regardless of this hold.']},
+    {k:'staff',title:'APPROVED TESTING FACILITIES'},
+   ]},
+ { label:'Last Chance Agreement', title:'LAST CHANCE AGREEMENT', warn:true, sigs:ANEW_SIGS_DIR,
+   codes:'7+ Demerits — Final Opportunity Before Program Dismissal',
+   closing:'By signing below, I acknowledge that I am at or near the dismissal threshold. I understand that this is my final opportunity and that any further violation may result in my immediate removal from the program.',
+   blocks:[
+    {k:'p',t:'This is a Last Chance Agreement. Under ANEW\u2019s Self-Eliminating Demerit System, accumulation of 10 demerits results in dismissal from the program. You are currently at or above 7 demerits. One more serious incident — or the accumulation of minor ones — will end your participation in this program.'},
+    {k:'p',t:'This agreement exists because ANEW believes in second chances. But this is the last one.'},
+    {k:'table',title:'DEMERIT HISTORY SUMMARY',cols:['DATE','CODE','POINTS','DESCRIPTION'],rows:7},
+    {k:'total'},
+    {k:'ol',title:'TERMS OF LAST CHANCE AGREEMENT',items:['I understand that I am at 7 or more demerits out of the 10-demerit dismissal threshold.','I understand that any additional demerit of any kind — attendance, behavior, safety, conduct, assignment, or otherwise — may trigger immediate dismissal review.','I agree to zero infractions from this point forward. No exceptions. No excuses.','I understand this is my final opportunity to demonstrate that I belong in this program.','I agree to weekly check-ins with staff for the remainder of the program.','I understand that if I am dismissed, I may re-apply for a future cohort after meeting with the Program Director.']},
+    {k:'staff',title:'WHAT SUCCESS LOOKS LIKE FROM HERE'},
+   ]},
+];
+
+function _ctBlocks(blocks, staffText){
+  return (blocks||[]).map(b=>{
+    if(b.k==='p') return `<p>${b.t}</p>`;
+    if(b.k==='note') return `<p class="cnote">${b.t}</p>`;
+    if(b.k==='reasons') return `<h2>REASON FOR CONTRACT</h2><ul>${b.items.map(i=>`<li>${i}</li>`).join('')}</ul>`;
+    if(b.k==='ul') return `<h2>${b.title}</h2><ul>${b.items.map(i=>`<li>${i}</li>`).join('')}</ul>`;
+    if(b.k==='ol') return `<h2>${b.title}</h2><ol>${b.items.map(i=>`<li>${i}</li>`).join('')}</ol>`;
+    if(b.k==='total') return `<p style="margin-top:8px"><strong>Total Demerits: _______ / 10</strong></p>`;
+    if(b.k==='staff'){
+      const body = staffText ? `<div class="fill">${esc(staffText).replace(/\n/g,'<br>')}</div>` : '<div class="bl"></div><div class="bl"></div><div class="bl"></div>';
+      return `<h2>${b.title}</h2>${body}`;
+    }
+    if(b.k==='table'){
+      const head=`<tr>${b.cols.map(c=>`<th>${c}</th>`).join('')}</tr>`;
+      let rows='';
+      (b.prefill||[]).forEach(r=>{ rows+=`<tr>${b.cols.map((c,i)=>`<td>${r[i]!==undefined&&r[i]!==''?r[i]:'&nbsp;'}</td>`).join('')}</tr>`; });
+      for(let i=0;i<(b.rows||0);i++) rows+=`<tr>${b.cols.map(()=>'<td>&nbsp;</td>').join('')}</tr>`;
+      return `<h2>${b.title}</h2><table>${head}${rows}</table>`;
+    }
+    return '';
+  }).join('');
+}
+
+function printContract(id){
+  const c=sdContracts.find(x=>x.id===id); if(!c){toast('Contract not found',true);return;}
+  const tpl=CONTRACT_TEMPLATES.find(t=>t.label===c.reason);
+  const s=students.find(x=>x.id===sdStudentId)||{};
+  const cls=classes.find(x=>x.id===curClass)||{};
+  const name=esc(studentName(s)||'');
+  const program=esc(cls.program_name||'');
+  const dem=(c.demerit_total_at_issue!=null?c.demerit_total_at_issue:(typeof demeritTotals!=='undefined'?(demeritTotals[sdStudentId]||''):''));
+  const dateIssued=esc(fmtDate(c.issued_date));
+  const title=tpl?tpl.title:esc((c.reason||'CONTRACT').toUpperCase());
+  const codes=tpl?tpl.codes:'';
+  const appeal=(tpl&&tpl.appeal)||ANEW_APPEAL;
+  const i4=(tpl&&tpl.info4)||{label:'CURRENT DEMERITS',value:String(dem)};
+  const info=[['STUDENT NAME',name],['PROGRAM / COHORT',program],['DATE ISSUED',dateIssued],[i4.label,(i4.value!==undefined?i4.value:String(dem))]];
+  const sigs=(tpl&&tpl.sigs)||['STUDENT SIGNATURE','INSTRUCTOR SIGNATURE','PROGRAM COORDINATOR'];
+  const closing=(tpl&&tpl.closing)||('By signing below, I acknowledge that I have read, understood, and agree to the terms of this '+(c.reason||'contract')+'.');
+  let body=_ctBlocks(tpl?tpl.blocks:[], c.terms);
+  const hasStaff=(tpl&&tpl.blocks||[]).some(b=>b.k==='staff');
+  if(!hasStaff && c.terms) body+=`<h2>STAFF NOTES</h2><div class="fill">${esc(c.terms).replace(/\n/g,'<br>')}</div>`;
+  const warn = tpl&&tpl.warn ? `<div class="warn">⚠ THIS STUDENT IS AT OR NEAR THE 10-DEMERIT DISMISSAL THRESHOLD ⚠</div>` : '';
+  const infoHtml=`<div class="grid">${info.map(f=>`<div class="fld"><div class="fl">${f[0]}</div><div class="fv">${f[1]||'&nbsp;'}</div></div>`).join('')}</div>`;
+  const sigHtml=`<div class="sigs">${sigs.map(r=>`<div class="sig"><div class="sigline"></div><div class="sl">${r}</div></div><div class="sig"><div class="sigline"></div><div class="sl">DATE</div></div>`).join('')}</div>`;
+  const html=`<!DOCTYPE html><html><head><title>${title}</title><meta charset="utf-8"><style>
+    *{box-sizing:border-box}
+    body{font-family:Arial,Helvetica,sans-serif;margin:0.6in;color:#1a1a1a;font-size:10.5pt;line-height:1.45}
+    .lh{text-align:center;border-bottom:3px solid #1a1a1a;padding-bottom:8px;margin-bottom:10px}
+    .lh .org{font-size:24pt;font-weight:800;letter-spacing:2px}
+    .lh .tag{font-size:8pt;letter-spacing:3px;color:#555;text-transform:uppercase}
+    h1{font-size:15pt;text-align:center;margin:10px 0 2px}
+    .codes{text-align:center;font-size:8.5pt;color:#555;margin-bottom:12px}
+    .grid{display:grid;grid-template-columns:1fr 1fr;gap:8px 18px;margin:12px 0 14px}
+    .fld{border-bottom:1px solid #999;padding-bottom:3px}
+    .fl{font-size:7.5pt;letter-spacing:1px;color:#777;text-transform:uppercase}
+    .fv{font-size:12pt;font-weight:700;min-height:18px}
+    h2{font-size:10.5pt;font-weight:800;text-transform:uppercase;letter-spacing:.5px;background:#f0f0f0;padding:4px 8px;margin:14px 0 6px;border-left:4px solid #1a1a1a}
+    ul,ol{margin:4px 0 4px 4px;padding-left:20px}
+    li{margin:3px 0}
+    p{margin:6px 0}
+    .cnote{font-size:9pt;color:#555;font-style:italic}
+    table{width:100%;border-collapse:collapse;margin:6px 0}
+    th{background:#1a1a1a;color:#fff;padding:5px 7px;text-align:left;font-size:8.5pt;text-transform:uppercase}
+    td{border:1px solid #bbb;padding:8px 7px;font-size:10pt;height:24px}
+    .bl{border-bottom:1px solid #999;height:22px;margin:8px 0}
+    .fill{border:1px solid #bbb;background:#fafafa;padding:8px;min-height:40px;white-space:pre-wrap}
+    .warn{background:#1a1a1a;color:#fff;text-align:center;font-weight:800;padding:8px;letter-spacing:1px;margin:10px 0}
+    .appeal{font-size:8.5pt;color:#555;margin:12px 0;border-top:1px solid #ccc;padding-top:8px}
+    .closing{font-size:9.5pt;margin:12px 0 16px}
+    .sigs{display:grid;grid-template-columns:1fr 1fr;gap:18px 24px;margin-top:6px}
+    .sigline{border-bottom:1px solid #1a1a1a;height:30px}
+    .sl{font-size:7.5pt;letter-spacing:1px;color:#777;text-transform:uppercase;margin-top:2px}
+    .ftr{text-align:center;font-size:7.5pt;color:#888;margin-top:18px;border-top:1px solid #ccc;padding-top:6px}
+    .bar{margin-bottom:14px}
+    @media print{.bar{display:none}body{margin:0.5in}}
+  </style></head><body>
+  <div class="bar"><button onclick="window.print()" style="padding:8px 16px;background:#1a1a1a;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:11pt">Print</button>
+  <button onclick="window.close()" style="padding:8px 16px;background:#888;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:11pt;margin-left:8px">Close</button></div>
+  <div class="lh"><div class="org">ANEW</div><div class="tag">Building People, Building Communities</div></div>
+  <h1>${title}</h1>
+  <div class="codes">${codes}</div>
+  ${warn}
+  ${infoHtml}
+  ${body}
+  <div class="appeal">${appeal}</div>
+  <div class="closing">${closing}</div>
+  ${sigHtml}
+  <div class="ftr">ANEW — ${tpl?tpl.label:'Contract'} — Confidential Student Record</div>
+  </body></html>`;
+  const win=window.open('','_blank');
+  if(!win){toast('Allow pop-ups to print',true);return;}
+  win.document.write(html); win.document.close();
 }
 
 </script>

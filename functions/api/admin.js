@@ -371,7 +371,7 @@ export async function onRequestPost(context) {
         const { studentId, classId, instructorId, reason, terms, issuedDate, reviewDate } = payload;
         if (!studentId || !classId) return bad('Missing studentId or classId');
         if (!instructorId) return bad('Missing instructorId');
-        if (!clean(terms)) return bad('Contract terms are required');
+        if (!clean(reason)) return bad('Choose a contract type');
         if (!(await instructorOwnsClass(sb, instructorId, classId))) {
           return bad('You are not assigned to this class', 403);
         }
