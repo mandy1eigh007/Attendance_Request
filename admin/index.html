@@ -1464,7 +1464,7 @@ async function openStudentProfile(id){
   document.getElementById('profilePhotoPlaceholder').style.display='block';
 
   updateBulkBar();
-  await Promise.all([loadProfileAttendance(),loadStudentDemerits(),loadStudentCaseNotes(),loadStudentPhoto()]);
+  await Promise.all([loadProfileAttendance(),loadStudentDemerits(),loadStudentCaseNotes(),loadStudentContracts(),loadStudentPhoto()]);
   renderProfileDemerits();
   renderProfileNotes();
 }
@@ -1605,11 +1605,7 @@ function bulkPrint(){
   const s=students.find(x=>x.id===sdStudentId);
   const cls=classes.find(c=>c.id===curClass);
   const selectedD=sdDemerits.filter(d=>selectedDemeritIds.has(d.id));
-  let html='<html><head><style>body{font-family:system-ui,sans-serif;padding:20px}@media print{.no-print{display:none}.pagebreak{page-break-before:always}}
-/* student profile: single-scroll */
-.profile-tab-pane { display: block !important; }
-.profile-tab-pane + .profile-tab-pane { margin-top: 24px; border-top: .5px solid var(--b2); padding-top: 20px; }
-</style></head><body>';
+  let html='<html><head><style>body{font-family:system-ui,sans-serif;padding:20px}@media print{.no-print{display:none}.pagebreak{page-break-before:always}}</style></head><body>';
   html+=`<p class="no-print" style="margin-bottom:20px"><button onclick="window.print()">Print All</button> <button onclick="window.close()">Close</button></p>`;
   selectedD.forEach((d,i)=>{
     const dc=DEMERIT_CODES.find(x=>x.code===Number(d.code));
@@ -2177,5 +2173,7 @@ function printIncidentReport(id){
 }
 
 </script>
+
+<style>.profile-tab-pane{display:block!important}.profile-tab-pane+.profile-tab-pane{margin-top:24px;border-top:.5px solid var(--b2);padding-top:20px}</style>
 </body>
 </html>
