@@ -25,6 +25,7 @@
     <div class="alert alert-danger" id="loginErr" style="display:none">Incorrect password.</div>
     <input type="password" id="pwInput" placeholder="Enter password" style="margin-bottom:14px;text-align:center" onkeydown="if(event.key==='Enter')doLogin()">
     <button class="btn btn-primary btn-block" id="loginBtn" onclick="doLogin()">Sign In</button>
+    <p class="note" style="margin-top:12px">Contact your lead instructor if you need the password.</p>
   </div>
 </div>
 
@@ -75,7 +76,7 @@
       <!-- Student List (shown when no student selected) -->
       <div id="studentListPane">
         <div class="page-header">
-          <div><div class="page-title">Students</div><div class="page-sub">Tap a name to open their profile</div></div>
+          <div><div class="page-title">Students</div><div class="page-sub">Tap a name to open their full dashboard — attendance, demerits, case notes, and contracts in one place.</div></div>
         </div>
         <div class="section-card">
           <input type="text" id="studentSearch" placeholder="Search students…" style="margin-bottom:14px" oninput="renderStudentList()">
@@ -165,7 +166,7 @@
     <!-- ATTENDANCE -->
     <div class="view active" id="view-attendance">
       <div class="page-header">
-        <div><div class="page-title">Attendance</div><div class="page-sub">Tap a status for each student</div></div>
+        <div><div class="page-title">Attendance</div><div class="page-sub">Select your class and date, then tap a status to mark each student. Changes save automatically.</div></div>
         <div class="flex-gap">
           <input type="date" id="attDate" style="width:auto" onchange="loadAttendance()">
         </div>
@@ -182,7 +183,7 @@
 
     <!-- DEMERIT -->
     <div class="view" id="view-demerit">
-      <div class="page-header"><div><div class="page-title">Issue Demerit</div><div class="page-sub">Generates a signable slip + Salesforce case note</div></div></div>
+      <div class="page-header"><div><div class="page-title">Issue Demerit</div><div class="page-sub">Select a student and demerit code. A printable slip and Salesforce case note are generated automatically.</div></div></div>
       <div id="demeritAlert"></div>
       <div class="section-card">
         <div class="field"><label>Student <span class="req">*</span></label><select id="dStudent" onchange="updateDemeritTotal()"></select></div>
@@ -225,7 +226,7 @@
     <!-- REQUESTS -->
     <div class="view" id="view-requests">
       <div class="page-header">
-        <div><div class="page-title">Requests</div><div class="page-sub">Student absence / appointment requests</div></div>
+        <div><div class="page-title">Requests</div><div class="page-sub">Review student absence and appointment requests. Approve or deny — the student gets a decision email automatically.</div></div>
         <div class="flex-gap">
           <select id="reqStatusFilter" style="width:auto" onchange="loadRequests()">
             <option value="pending">Pending</option><option value="approved">Approved</option>
@@ -239,7 +240,7 @@
     <!-- HISTORY -->
     <div class="view" id="view-history">
       <div class="page-header">
-        <div><div class="page-title">History</div><div class="page-sub">Attendance & demerit records</div></div>
+        <div><div class="page-title">History</div><div class="page-sub">All attendance and demerit records in one place. Filter by type or export to CSV for reports.</div></div>
         <div class="flex-gap">
           <select id="histType" style="width:auto" onchange="renderHistory()">
             <option value="">All Types</option><option value="attendance">Attendance</option><option value="demerit">Demerits</option>
@@ -257,7 +258,7 @@
 
     <!-- MANAGE -->
     <div class="view" id="view-manage">
-      <div class="page-header"><div><div class="page-title">Manage</div><div class="page-sub">Classes, students, instructors</div></div></div>
+      <div class="page-header"><div><div class="page-title">Manage</div><div class="page-sub">Add or edit classes, instructors, and students. New instructors can be added here and selected at login.</div></div></div>
       <div class="section-card">
         <div class="card-title">Classes <button class="btn btn-primary btn-sm" style="margin-left:auto" onclick="openClassModal()">+ Add</button></div>
         <div id="manageClasses"></div>
@@ -1446,7 +1447,7 @@ function renderStudentList(){
 }
 
 // ── STUDENT PROFILE ──
-let selectedDemeritIds=new Set(), selectedNoteIds=new Set(), curProfileTab='att';
+let selectedDemeritIds=new Set(), selectedNoteIds=new Set();
 let profileAttRows=[];
 
 async function openStudentProfile(id){
@@ -1790,9 +1791,8 @@ function toast(msg,err){const el=document.getElementById('toast');el.textContent
 })();
 </script>
 <script>
-// ── CONTRACT ASSIGNMENT (student profile sub-tab) ──
+// ── CONTRACT ASSIGNMENT ──
 let sdContracts=[];
-(function(){ const _spt=showProfileTab; showProfileTab=function(tab){ _spt(tab); if(tab==='contracts') loadStudentContracts(); }; })();
 
 async function loadStudentContracts(){
   const el=document.getElementById('profileContractBody');

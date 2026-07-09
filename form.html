@@ -165,6 +165,7 @@ function renderForm(){
   const today=new Date().toISOString().split('T')[0];
   document.getElementById('formBody').innerHTML=`
     <div class="body-wrap">
+    <p style="font-size:13.5px;color:var(--t2);line-height:1.55;margin-bottom:18px">Use this form to let your instructor know about an upcoming absence or appointment. No account needed — fill it out and submit. You will receive a confirmation email right away, and your instructor will follow up with an approval or denial within one business day.</p>
     <div class="err-msg" id="errMsg"></div>
     <form id="absenceForm" novalidate>
       <div class="sec">Student Information</div>
