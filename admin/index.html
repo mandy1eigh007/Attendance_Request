@@ -1633,7 +1633,6 @@ function bulkPrint(){
     </div>
     <p style="margin-top:20px;font-size:11px;color:#777;border-top:1px solid #e0ddd5;padding-top:12px">I acknowledge receipt of this demerit. Refusal to sign results in an additional demerit (Code 6). Accumulation of 10 demerit points results in dismissal from the program.</p>`;
   });
-  html+='</body></html>';
   const selectedN=sdCaseNotes.filter(n=>selectedNoteIds.has(n.id));
   selectedN.forEach((n,i)=>{
     if(selectedD.length>0||i>0)html+='<div class="pagebreak"></div>';
