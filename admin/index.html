@@ -25,6 +25,7 @@
     <div class="alert alert-danger" id="loginErr" style="display:none">Incorrect password.</div>
     <input type="password" id="pwInput" placeholder="Enter password" style="margin-bottom:14px;text-align:center" onkeydown="if(event.key==='Enter')doLogin()">
     <button class="btn btn-primary btn-block" id="loginBtn" onclick="doLogin()">Sign In</button>
+    <p class="note" style="margin-top:12px">Contact your lead instructor if you need the password.</p>
   </div>
 </div>
 
@@ -75,7 +76,7 @@
       <!-- Student List (shown when no student selected) -->
       <div id="studentListPane">
         <div class="page-header">
-          <div><div class="page-title">Students</div><div class="page-sub">Tap a name to open their profile</div></div>
+          <div><div class="page-title">Students</div><div class="page-sub">Tap a name to open their full dashboard — attendance, demerits, case notes, and contracts in one place.</div></div>
         </div>
         <div class="section-card">
           <input type="text" id="studentSearch" placeholder="Search students…" style="margin-bottom:14px" oninput="renderStudentList()">
@@ -107,13 +108,7 @@
           <button class="btn btn-ghost btn-sm" onclick="openStudentDetail(sdStudentId)">Edit Info</button>
         </div>
 
-        <!-- Profile sub-tabs -->
-        <div class="nav-tabs" id="profileTabs" style="margin-bottom:16px">
-          <button class="nav-tab active" data-ptab="att" onclick="showProfileTab('att')">Attendance</button>
-          <button class="nav-tab" data-ptab="dem" onclick="showProfileTab('dem')">Demerits</button>
-          <button class="nav-tab" data-ptab="notes" onclick="showProfileTab('notes')">Case Notes</button>
-          <button class="nav-tab" data-ptab="contracts" onclick="showProfileTab('contracts')">Contracts</button>
-        </div>
+
 
         <!-- Bulk action bar -->
         <div id="bulkBar" style="display:none;position:sticky;bottom:16px;z-index:30;margin-bottom:12px">
@@ -133,27 +128,30 @@
           </div>
         </div>
 
-        <!-- Demerits tab -->
+        <!-- Demerits section -->
         <div class="profile-tab-pane" id="ptab-dem">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-            <span class="note">Check rows to print slips or copy to Salesforce</span>
-            <button class="btn btn-ghost btn-sm" onclick="selectAllDemerits()">Select All</button>
+            <div class="card-title" style="margin:0">Demerits</div>
+            <div class="flex-gap">
+              <button class="btn btn-ghost btn-sm" onclick="selectAllDemerits()">Select All</button>
+              <button class="btn btn-ghost btn-sm" onclick="showView('demerit')">+ Add</button>
+            </div>
           </div>
           <div id="profileDemBody"><div class="empty-state"><p>Loading…</p></div></div>
         </div>
 
-        <!-- Contracts tab -->
+        <!-- Contracts section -->
         <div class="profile-tab-pane" id="ptab-contracts">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-            <span class="note">Behavioral / program contracts on file for this student</span>
+            <div class="card-title" style="margin:0">Contracts</div>
             <button class="btn btn-primary btn-sm" onclick="openAssignContract()">+ Assign Contract</button>
           </div>
           <div id="profileContractBody"><div class="empty-state"><p>Loading…</p></div></div>
         </div>
-        <!-- Case Notes tab -->
+        <!-- Case Notes section -->
         <div class="profile-tab-pane" id="ptab-notes">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-            <span class="note">Check rows to copy to Salesforce</span>
+            <div class="card-title" style="margin:0">Case Notes</div>
             <div class="flex-gap">
               <button class="btn btn-ghost btn-sm" onclick="selectAllNotes()">Select All</button>
               <button class="btn btn-ghost btn-sm" onclick="printIncidentReport()">Incident Report</button>
@@ -168,7 +166,7 @@
     <!-- ATTENDANCE -->
     <div class="view active" id="view-attendance">
       <div class="page-header">
-        <div><div class="page-title">Attendance</div><div class="page-sub">Tap a status for each student</div></div>
+        <div><div class="page-title">Attendance</div><div class="page-sub">Select your class and date, then tap a status to mark each student. Changes save automatically.</div></div>
         <div class="flex-gap">
           <input type="date" id="attDate" style="width:auto" onchange="loadAttendance()">
         </div>
@@ -185,7 +183,7 @@
 
     <!-- DEMERIT -->
     <div class="view" id="view-demerit">
-      <div class="page-header"><div><div class="page-title">Issue Demerit</div><div class="page-sub">Generates a signable slip + Salesforce case note</div></div></div>
+      <div class="page-header"><div><div class="page-title">Issue Demerit</div><div class="page-sub">Select a student and demerit code. A printable slip and Salesforce case note are generated automatically.</div></div></div>
       <div id="demeritAlert"></div>
       <div class="section-card">
         <div class="field"><label>Student <span class="req">*</span></label><select id="dStudent" onchange="updateDemeritTotal()"></select></div>
@@ -228,7 +226,7 @@
     <!-- REQUESTS -->
     <div class="view" id="view-requests">
       <div class="page-header">
-        <div><div class="page-title">Requests</div><div class="page-sub">Student absence / appointment requests</div></div>
+        <div><div class="page-title">Requests</div><div class="page-sub">Review student absence and appointment requests. Approve or deny — the student gets a decision email automatically.</div></div>
         <div class="flex-gap">
           <select id="reqStatusFilter" style="width:auto" onchange="loadRequests()">
             <option value="pending">Pending</option><option value="approved">Approved</option>
@@ -242,7 +240,7 @@
     <!-- HISTORY -->
     <div class="view" id="view-history">
       <div class="page-header">
-        <div><div class="page-title">History</div><div class="page-sub">Attendance & demerit records</div></div>
+        <div><div class="page-title">History</div><div class="page-sub">All attendance and demerit records in one place. Filter by type or export to CSV for reports.</div></div>
         <div class="flex-gap">
           <select id="histType" style="width:auto" onchange="renderHistory()">
             <option value="">All Types</option><option value="attendance">Attendance</option><option value="demerit">Demerits</option>
@@ -260,7 +258,7 @@
 
     <!-- MANAGE -->
     <div class="view" id="view-manage">
-      <div class="page-header"><div><div class="page-title">Manage</div><div class="page-sub">Classes, students, instructors</div></div></div>
+      <div class="page-header"><div><div class="page-title">Manage</div><div class="page-sub">Add or edit classes, instructors, and students. New instructors can be added here and selected at login.</div></div></div>
       <div class="section-card">
         <div class="card-title">Classes <button class="btn btn-primary btn-sm" style="margin-left:auto" onclick="openClassModal()">+ Add</button></div>
         <div id="manageClasses"></div>
@@ -1449,7 +1447,7 @@ function renderStudentList(){
 }
 
 // ── STUDENT PROFILE ──
-let selectedDemeritIds=new Set(), selectedNoteIds=new Set(), curProfileTab='att';
+let selectedDemeritIds=new Set(), selectedNoteIds=new Set();
 let profileAttRows=[];
 
 async function openStudentProfile(id){
@@ -1465,9 +1463,9 @@ async function openStudentProfile(id){
   // reset photo
   document.getElementById('profilePhotoImg').style.display='none';
   document.getElementById('profilePhotoPlaceholder').style.display='block';
-  showProfileTab('att');
+
   updateBulkBar();
-  await Promise.all([loadProfileAttendance(),loadStudentDemerits(),loadStudentCaseNotes(),loadStudentPhoto()]);
+  await Promise.all([loadProfileAttendance(),loadStudentDemerits(),loadStudentCaseNotes(),loadStudentContracts(),loadStudentPhoto()]);
   renderProfileDemerits();
   renderProfileNotes();
 }
@@ -1479,13 +1477,7 @@ function closeStudentProfile(){
   renderStudentList();
 }
 
-function showProfileTab(tab){
-  curProfileTab=tab;
-  document.querySelectorAll('.profile-tab-pane').forEach(p=>p.classList.remove('active'));
-  document.getElementById('ptab-'+tab).classList.add('active');
-  document.querySelectorAll('#profileTabs .nav-tab').forEach(t=>t.classList.toggle('active',t.dataset.ptab===tab));
-  updateBulkBar();
-}
+function showProfileTab(tab){ /* no-op: all sections visible in scroll */ updateBulkBar(); }
 
 async function loadProfileAttendance(){
   const el=document.getElementById('profileAttBody');
@@ -1600,7 +1592,7 @@ function updateBulkBar(){
   if(total===0){bar.style.display='none';return;}
   bar.style.display='block';
   document.getElementById('bulkCount').textContent=`${total} selected`;
-  document.getElementById('bulkPrintBtn').style.display=demCount>0?'inline-flex':'none';
+  document.getElementById('bulkPrintBtn').style.display=(demCount>0||noteCount>0)?'inline-flex':'none';
   document.getElementById('bulkCopyBtn').style.display=total>0?'inline-flex':'none';
 }
 function clearSelection(){
@@ -1609,7 +1601,7 @@ function clearSelection(){
 }
 
 function bulkPrint(){
-  if(!selectedDemeritIds.size){toast('No demerits selected',true);return;}
+  
   // Build a multi-slip print page
   const s=students.find(x=>x.id===sdStudentId);
   const cls=classes.find(c=>c.id===curClass);
@@ -1641,6 +1633,25 @@ function bulkPrint(){
       <div style="flex:1"><div style="border-bottom:1.5px solid #1a1a1a;height:30px;margin-bottom:5px"></div><small style="color:#666;text-transform:uppercase">Date Signed</small></div>
     </div>
     <p style="margin-top:20px;font-size:11px;color:#777;border-top:1px solid #e0ddd5;padding-top:12px">I acknowledge receipt of this demerit. Refusal to sign results in an additional demerit (Code 6). Accumulation of 10 demerit points results in dismissal from the program.</p>`;
+  });
+  const selectedN=sdCaseNotes.filter(n=>selectedNoteIds.has(n.id));
+  selectedN.forEach((n,i)=>{
+    if(selectedD.length>0||i>0)html+='<div class="pagebreak"></div>';
+    html+=`<h2 style="font-size:26px;font-weight:800;color:#10201c">ANEW</h2>
+    <p style="font-size:11px;color:#666;margin-bottom:14px">Building People, Building Communities — Case Note</p>
+    <table style="width:100%;border-collapse:collapse;margin-bottom:14px"><tr>
+      <td style="padding:8px;border:1px solid #ddd"><small style="color:#888;display:block">STUDENT</small>${esc(studentName(s))}</td>
+      <td style="padding:8px;border:1px solid #ddd"><small style="color:#888;display:block">DATE</small>${fmtDate(n.note_date||'')}</td>
+      <td style="padding:8px;border:1px solid #ddd"><small style="color:#888;display:block">AUTHOR</small>${esc(n.author_name||'')}</td>
+    </tr></table>
+    <div style="margin-bottom:12px"><strong>${esc(n.subject||'(no subject)')}</strong>${n.category?` <span style="font-size:11px;color:#888">[${esc(n.category)}]</span>`:''}</div>
+    <div style="background:#f6f5f1;border-left:3px solid #2dd4a7;padding:11px 14px;margin-bottom:16px;white-space:pre-wrap">${esc(n.body||'')}</div>
+    ${n.followup_date?`<p style="font-size:12px;color:#555">Follow-up: ${fmtDate(n.followup_date)}</p>`:''}
+    ${n.supervisor_notified?`<p style="font-size:12px;color:#555">Supervisor notified: ${n.supervisor_notified_date?fmtDate(n.supervisor_notified_date):'yes'}</p>`:''}
+    <div style="display:flex;gap:20px;margin-top:28px">
+      <div style="flex:1"><div style="border-bottom:1.5px solid #1a1a1a;height:30px;margin-bottom:5px"></div><small style="color:#666;text-transform:uppercase">Instructor Signature</small></div>
+      <div style="flex:1"><div style="border-bottom:1.5px solid #1a1a1a;height:30px;margin-bottom:5px"></div><small style="color:#666;text-transform:uppercase">Date</small></div>
+    </div>`;
   });
   html+='</body></html>';
   const w=window.open('','_blank');w.document.write(html);w.document.close();
@@ -1780,9 +1791,8 @@ function toast(msg,err){const el=document.getElementById('toast');el.textContent
 })();
 </script>
 <script>
-// ── CONTRACT ASSIGNMENT (student profile sub-tab) ──
+// ── CONTRACT ASSIGNMENT ──
 let sdContracts=[];
-(function(){ const _spt=showProfileTab; showProfileTab=function(tab){ _spt(tab); if(tab==='contracts') loadStudentContracts(); }; })();
 
 async function loadStudentContracts(){
   const el=document.getElementById('profileContractBody');
@@ -2162,5 +2172,7 @@ function printIncidentReport(id){
 }
 
 </script>
+
+<style>.profile-tab-pane{display:block!important}.profile-tab-pane+.profile-tab-pane{margin-top:24px;border-top:.5px solid var(--b2);padding-top:20px}</style>
 </body>
 </html>
