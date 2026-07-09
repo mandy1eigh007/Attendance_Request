@@ -105,7 +105,10 @@
               <div class="page-sub" id="profileMeta"></div>
             </div>
           </div>
-          <button class="btn btn-ghost btn-sm" onclick="openStudentDetail(sdStudentId)">Edit Info</button>
+          <div class="flex-gap">
+            <button class="btn btn-ghost btn-sm" onclick="printStudentSheet()">Print Sheet</button>
+            <button class="btn btn-ghost btn-sm" onclick="openStudentDetail(sdStudentId)">Edit Info</button>
+          </div>
         </div>
 
 
@@ -1655,6 +1658,56 @@ function bulkPrint(){
   });
   html+='</body></html>';
   const w=window.open('','_blank');w.document.write(html);w.document.close();
+}
+
+function printStudentSheet(){
+  const s=students.find(x=>x.id===sdStudentId);
+  const cls=classes.find(c=>c.id===curClass);
+  const totalPts=sdDemerits.filter(d=>!d.voided).reduce((sum,d)=>sum+(d.pts_num||0),0);
+  const printed=new Date().toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'});
+  let html=`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Student Sheet — ${esc(studentName(s))}</title>
+  <style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:Arial,sans-serif;font-size:12px;color:#111;padding:28px 32px;background:#fff}
+  h1{font-size:22px;font-weight:800;letter-spacing:-.02em;margin-bottom:2px}.meta{font-size:11px;color:#666;margin-bottom:18px}
+  .sec{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;border-bottom:2px solid #111;padding-bottom:4px;margin:20px 0 10px}
+  table{width:100%;border-collapse:collapse;font-size:11.5px}th{text-align:left;font-weight:600;padding:5px 8px;background:#f0f0f0;border:1px solid #ccc}
+  td{padding:5px 8px;border:1px solid #ddd;vertical-align:top}.badge{display:inline-block;padding:1px 6px;border-radius:10px;font-weight:700;font-size:10px}
+  .exc{background:#d1fae5;color:#065f46}.pts{background:#fee2e2;color:#991b1b}
+  .note-body{white-space:pre-wrap;font-size:11px;color:#333;line-height:1.4}.empty{color:#888;font-style:italic;font-size:11px;padding:4px 0}
+  .row{padding:8px 0;border-bottom:1px solid #e5e5e5}.sub{font-size:10.5px;color:#666;margin:3px 0}
+  @media print{body{padding:16px 20px}}</style></head><body>`;
+  html+=`<h1>${esc(studentName(s))}</h1>`;
+  html+=`<div class="meta">Class: ${esc(cls?cls.program_name:'—')} &nbsp;|&nbsp; Total demerit points: <strong>${totalPts}</strong> &nbsp;|&nbsp; Printed: ${printed}</div>`;
+  // Demerits
+  html+=`<div class="sec">Demerits</div>`;
+  const dems=sdDemerits.filter(d=>!d.voided);
+  if(!dems.length){html+=`<div class="empty">No demerits on record.</div>`;}
+  else{
+    html+=`<table><thead><tr><th>Date</th><th>Code / Description</th><th>Points</th><th>Staff</th><th>Incident Notes</th></tr></thead><tbody>`;
+    dems.forEach(d=>{
+      const badge=d.excused?`<span class="badge exc">Excused</span>`:`<span class="badge pts">${d.pts_num||0} pts</span>`;
+      html+=`<tr><td style="white-space:nowrap">${esc(fmtDate(d.date))}</td><td>Code ${esc(String(d.code))} — ${esc(d.description||'')}</td><td>${badge}</td><td>${esc(d.staff||'')}</td><td><span class="note-body">${esc(d.incident||'')}</span></td></tr>`;
+    });
+    html+=`</tbody></table>`;
+  }
+  // Case Notes
+  html+=`<div class="sec">Case Notes</div>`;
+  if(!sdCaseNotes.length){html+=`<div class="empty">No case notes on file.</div>`;}
+  else{sdCaseNotes.forEach(n=>{
+    html+=`<div class="row"><div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:3px"><strong>${esc(n.subject||'(no subject)')}</strong>${n.category?`<span style="font-size:10px;color:#555;border:1px solid #ccc;border-radius:8px;padding:1px 7px">${esc(n.category)}</span>`:''}</div>`;
+    html+=`<div class="sub">${esc(fmtDate(n.note_date))} · ${esc(n.author_name||'Instructor')}${n.followup_date?` · follow-up: ${esc(fmtDate(n.followup_date))}`:''}${n.supervisor_notified?' · supervisor notified':''}</div>`;
+    html+=`<div class="note-body">${esc(n.body||'')}</div></div>`;
+  });}
+  // Contracts
+  html+=`<div class="sec">Contracts</div>`;
+  if(!sdContracts.length){html+=`<div class="empty">No contracts on file.</div>`;}
+  else{sdContracts.forEach(c=>{
+    html+=`<div class="row"><div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:3px"><strong>${esc(fmtDate(c.issued_date))}</strong><span style="text-transform:capitalize;font-weight:600">${esc(c.status||'active')}</span>${c.reason?`<span style="font-size:10px;color:#555">${esc(c.reason)}</span>`:''}</div>`;
+    html+=`<div class="sub">Issued by ${esc(c.issued_by||'Instructor')}${c.demerit_total_at_issue!=null?` · ${c.demerit_total_at_issue} pts at issue`:''}${c.review_date?` · review: ${esc(fmtDate(c.review_date))}`:''}${c.resolved_date?` · completed: ${esc(fmtDate(c.resolved_date))}`:''}</div>`;
+    if(c.terms)html+=`<div class="note-body">${esc(c.terms)}</div>`;
+    html+=`</div>`;
+  });}
+  html+=`</body></html>`;
+  const w=window.open('','_blank');w.document.write(html);w.document.close();w.print();
 }
 
 function bulkCopySalesforce(){
