@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>ANEW — Cohotrack Gradebook</title>
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#0e1413">
+<link rel="stylesheet" href="/app.css">
+<style>
+  body{min-height:100vh}
+  .gb-login{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
+  .gb-login .card{max-width:430px;width:100%;padding:32px}
+  .gb-shell{display:none}
+  .gb-header{display:flex;align-items:center;gap:12px;padding:13px 18px;background:var(--mat-chrome);
+    backdrop-filter:saturate(180%) blur(22px);border-bottom:.5px solid var(--b1);position:sticky;top:0;z-index:50}
+  .gb-brand{display:flex;align-items:center;gap:9px;font-weight:700}
+  .gb-dot{width:9px;height:9px;border-radius:50%;background:var(--ac);box-shadow:0 0 8px var(--ac)}
+  .gb-header-actions{margin-left:auto;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .gb-save{font-size:12px;color:var(--t3);min-width:78px;text-align:right}
+  .gb-context{max-width:1400px;margin:14px auto 0;padding:0 16px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .gb-context select{width:auto;min-width:190px;padding:8px 34px 8px 11px;font-size:14px}
+  .gb-tabs-wrap{max-width:1400px;margin:12px auto 0;padding:0 16px}
+  .gb-main{max-width:1400px;margin:0 auto;padding:18px 16px 60px}
+  .gb-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;margin-bottom:16px}
+  .gb-stat{padding:16px;background:var(--s2);border:.5px solid var(--b1);border-radius:var(--rlg)}
+  .gb-stat span{display:block;color:var(--t3);font-size:11px;text-transform:uppercase;letter-spacing:.06em}
+  .gb-stat strong{display:block;font-size:26px;margin-top:3px}
+  .gb-table-wrap{overflow:auto;border-radius:var(--r)}
+  .gb-table{width:100%;border-collapse:collapse;min-width:760px;font-size:13px}
+  .gb-table th{position:sticky;top:0;background:var(--s3);z-index:2;text-align:left;font-size:10.5px;text-transform:uppercase;
+    letter-spacing:.05em;color:var(--t3);padding:9px;border-bottom:.5px solid var(--b2);white-space:nowrap}
+  .gb-table td{padding:9px;border-bottom:.5px solid var(--b1);vertical-align:top}
+  .gb-table tr:hover td{background:rgba(255,255,255,.018)}
+  .gb-table input,.gb-table select,.gb-table textarea{font-size:13px;padding:8px 9px;min-width:90px}
+  .gb-table textarea{min-width:180px;min-height:54px}
+  .gb-name{font-weight:650;white-space:nowrap}
+  .gb-pill{display:inline-flex;align-items:center;padding:4px 8px;border-radius:999px;font-size:11px;font-weight:700;white-space:nowrap}
+  .gb-good{background:var(--grd);color:var(--gr)}
+  .gb-warn{background:var(--amd);color:var(--am)}
+  .gb-bad{background:var(--rdd);color:var(--rd)}
+  .gb-neutral{background:var(--s4);color:var(--t2)}
+  .gb-section-title{font-size:20px;font-weight:700;margin-bottom:4px}
+  .gb-section-sub{font-size:13px;color:var(--t3);margin-bottom:16px}
+  .gb-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .gb-row>div{flex:1 1 180px}
+  .gb-checklist{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:10px}
+  .gb-check{display:flex;gap:12px;align-items:flex-start;padding:13px;background:var(--s3);border:.5px solid var(--b1);border-radius:var(--r)}
+  .gb-check strong{font-size:14px}
+  .gb-check p{font-size:12px;color:var(--t3);margin-top:2px}
+  .gb-risk{margin-top:14px;padding:13px;border-radius:var(--r);background:var(--rdd);color:var(--rd)}
+  .gb-success{margin-top:14px;padding:13px;border-radius:var(--r);background:var(--grd);color:var(--gr)}
+  .gb-details{background:var(--s2);border:.5px solid var(--b1);border-radius:var(--rlg);margin-bottom:10px;overflow:hidden}
+  .gb-details summary{cursor:pointer;padding:15px 17px;display:flex;gap:10px;align-items:center;list-style:none}
+  .gb-details summary::-webkit-details-marker{display:none}
+  .gb-details summary .grow{flex:1}
+  .gb-details-body{padding:0 17px 17px;border-top:.5px solid var(--b1)}
+  .gb-rubric-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:10px;margin:14px 0}
+  .gb-mini{background:var(--s3);border:.5px solid var(--b1);border-radius:var(--r);padding:12px}
+  .gb-mini label{margin-bottom:5px}
+  .gb-criteria{width:100%;border-collapse:collapse;font-size:12px;min-width:900px}
+  .gb-criteria th,.gb-criteria td{padding:8px;border:.5px solid var(--b1);vertical-align:top}
+  .gb-criteria th{background:var(--s3);color:var(--t2)}
+  .gb-link{color:var(--ac2);text-decoration:none}
+  .gb-link:hover{text-decoration:underline}
+  .gb-modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.65);display:none;align-items:center;justify-content:center;z-index:100;padding:18px}
+  .gb-modal-bg.on{display:flex}
+  .gb-modal{width:min(920px,100%);max-height:92vh;overflow:auto;background:var(--s2);border:.5px solid var(--b3);border-radius:var(--rxl);padding:20px;box-shadow:var(--sh3)}
+  .gb-attempt{padding:12px;border:.5px solid var(--b1);border-radius:var(--r);background:var(--s3);margin-bottom:10px}
+  .gb-filter{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+  .gb-filter input{flex:2 1 260px}.gb-filter select{flex:1 1 180px}
+  .gb-progress{height:7px;background:var(--s4);border-radius:99px;overflow:hidden;margin-top:6px}
+  .gb-progress>span{display:block;height:100%;background:var(--ac)}
+  .gb-report{background:#fff;color:#111;padding:28px;border-radius:12px}
+  .gb-report table{width:100%;border-collapse:collapse;font-size:12px}.gb-report th,.gb-report td{border:1px solid #ccc;padding:6px;text-align:left}
+  .gb-report h1,.gb-report h2,.gb-report h3{color:#111}
+  .gb-report .gb-pill{border:1px solid #bbb;background:#f5f5f5;color:#222}
+  @media(max-width:700px){
+    .gb-header{align-items:flex-start;flex-wrap:wrap}.gb-header-actions{width:100%;margin-left:0}
+    .gb-context select{width:100%}.gb-context>*{flex:1 1 100%}
+    .gb-table{min-width:920px}.gb-main{padding-left:10px;padding-right:10px}
+  }
+  @media print{
+    body{background:#fff}.gb-header,.gb-context,.gb-tabs-wrap,.no-print{display:none!important}.gb-main{max-width:none;padding:0}
+    #gbView>*:not(.gb-report){display:none!important}.gb-report{display:block!important;padding:0}
+  }
+</style>
+</head>
+<body>
+<div id="gbLogin" class="gb-login">
+  <div class="card">
+    <div style="text-align:center;margin-bottom:22px">
+      <div style="width:58px;height:58px;border-radius:16px;background:linear-gradient(160deg,var(--ac2),var(--ac));display:flex;align-items:center;justify-content:center;margin:0 auto 14px;color:var(--on-ac);font-size:28px;font-weight:900">G</div>
+      <h1 style="font-size:24px">Cohotrack Gradebook</h1>
+      <p class="note">Rubrics, ACES, program requirements, and graduation readiness.</p>
+    </div>
+    <div id="gbLoginError" class="alert alert-danger" style="display:none"></div>
+    <div class="field"><label>Admin password</label><input type="password" id="gbPassword" onkeydown="if(event.key==='Enter')gradebookLogin()"></div>
+    <button class="btn btn-primary btn-block" id="gbLoginBtn" onclick="gradebookLogin()">Sign In</button>
+    <a class="btn btn-ghost btn-block" href="/admin/" style="margin-top:9px">Back to Instructor Hub</a>
+  </div>
+</div>
+
+<div id="gbShell" class="gb-shell">
+  <header class="gb-header">
+    <div class="gb-brand"><span class="gb-dot"></span>Cohotrack <span style="color:var(--t3);font-weight:500">Gradebook</span></div>
+    <div class="gb-header-actions">
+      <span class="gb-save" id="gbSaveStatus">Ready</span>
+      <button class="btn btn-ghost btn-sm" onclick="exportGradebook()">Export</button>
+      <a class="btn btn-ghost btn-sm" href="/admin/">Instructor Hub</a>
+      <button class="btn btn-ghost btn-sm" onclick="gradebookLogout()">Sign Out</button>
+    </div>
+  </header>
+
+  <div class="gb-context">
+    <div><label>Instructor</label><select id="gbInstructor" onchange="onGradebookContextChange()"></select></div>
+    <div><label>Class</label><select id="gbClass" onchange="onGradebookContextChange()"></select></div>
+    <div style="align-self:end"><button class="btn btn-primary btn-sm" onclick="loadGradebookClass()">Load Class</button></div>
+  </div>
+
+  <div class="gb-tabs-wrap"><div class="nav-tabs" id="gbTabs"></div></div>
+  <main class="gb-main"><div id="gbView"></div></main>
+</div>
+
+<div class="gb-modal-bg" id="aceModal" onclick="if(event.target===this)closeAceModal()">
+  <div class="gb-modal">
+    <div class="gb-row" style="margin-bottom:14px">
+      <div><h2 id="aceModalTitle" style="font-size:20px">ACE Attempts</h2><p class="note" id="aceModalSub"></p></div>
+      <button class="btn btn-ghost btn-sm" onclick="closeAceModal()">Close</button>
+    </div>
+    <div id="aceModalBody"></div>
+    <button class="btn btn-primary" onclick="addAceAttempt()">+ Add Attempt</button>
+  </div>
+</div>
+
+<div class="toast" id="gbToast"></div>
+<script src="/gradebook/rubrics.js"></script>
+<script src="/gradebook/app.js"></script>
+</body>
+</html>
