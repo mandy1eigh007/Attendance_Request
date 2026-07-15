@@ -3,7 +3,3 @@
 # collides with that auto-redirect and causes ERR_TOO_MANY_REDIRECTS, so
 # there is intentionally NO rewrite rule here.
 # /form and /form?class=<slug> are served correctly without it.
-
-# Explicit rewrite for gradebook subdirectory (Pages sometimes misses index.html resolution)
-/gradebook /gradebook/index.html 200
-/gradebook/ /gradebook/index.html 200
