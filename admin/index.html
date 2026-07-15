@@ -189,7 +189,7 @@
       <div class="page-header"><div><div class="page-title">Issue Demerit</div><div class="page-sub">Select a student and demerit code. A printable slip and Salesforce case note are generated automatically.</div></div></div>
       <div id="demeritAlert"></div>
       <div class="section-card">
-        <div class="field"><label>Student <span class="req">*</span></label><select id="dStudent" onchange="updateDemeritTotal()"></select></div>
+        <div class="field"><label for="dStudent">Student <span class="req">*</span></label><select id="dStudent" name="student" onchange="updateDemeritTotal()"></select></div>
         <div class="grid2">
           <div class="field"><label>Date <span class="req">*</span></label><input type="date" id="dDate"></div>
           <div class="field"><label>Issuing staff <span class="req">*</span></label><input type="text" id="dStaff" placeholder="Your name"></div>
