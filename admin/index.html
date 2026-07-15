@@ -47,7 +47,7 @@
     <span class="app-sub" id="appSub">Instructor</span>
     <div class="header-right">
       <a class="btn btn-ghost btn-sm" href="/" title="Home">Home</a>
-      <a class="btn btn-ghost btn-sm" href="/gradebook/" title="Gradebook">Gradebook</a>
+      <a class="btn btn-ghost btn-sm" href="#" onclick="openGradebook();return false;" title="Gradebook">Gradebook</a>
       <button class="btn btn-ghost btn-sm" onclick="switchInstructor()" title="Switch instructor">Switch</button>
       <button class="btn btn-ghost btn-sm" onclick="doLogout()">Sign Out</button>
     </div>
@@ -571,6 +571,15 @@ async function doLogin(){
     el.style.display='block';
     document.getElementById('pwInput').value='';PW='';
   }finally{btn.disabled=false;btn.textContent='Sign In';}
+}
+function openGradebook(){
+  const pw=PW||sessionStorage.getItem('anew_pw')||'';
+  const classId=document.getElementById('classSelect')?.value||'';
+  const instructorId=ME?.id||'';
+  if(pw) sessionStorage.setItem('cohotrack_gradebook_pw',pw);
+  if(classId) sessionStorage.setItem('cohotrack_gradebook_classId',classId);
+  if(instructorId) sessionStorage.setItem('cohotrack_gradebook_instructorId',instructorId);
+  window.location.href='/gradebook/';
 }
 function doLogout(){
   sessionStorage.removeItem('anew_pw');

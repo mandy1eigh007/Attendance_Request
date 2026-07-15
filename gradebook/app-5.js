@@ -120,5 +120,12 @@ function exportGradebook(){
 }
 (async function init(){
   const saved=sessionStorage.getItem("cohotrack_gradebook_pw");
-  if(saved){document.getElementById("gbPassword").value=saved;await gradebookLogin();}
+  if(saved){
+    const classId=sessionStorage.getItem("cohotrack_gradebook_classId");
+    const instructorId=sessionStorage.getItem("cohotrack_gradebook_instructorId");
+    if(classId) currentClassId=classId;
+    if(instructorId) currentInstructorId=instructorId;
+    document.getElementById("gbPassword").value=saved;
+    await gradebookLogin();
+  }
 })();
