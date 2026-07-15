@@ -9,10 +9,7 @@ function demeritSummary(studentId){
   const rows=demeritsFor(studentId), total=rows.reduce((s,r)=>s+(Number(r.pts_num)||0),0);
   return {rows,total};
 }
-function tradeMathThreshold(state){
-  const t=(state.targetTrade||"").toLowerCase();
-  return /electric|plumb/.test(t)?80:70;
-}
+function tradeMathThreshold(){ return 70; }
 function rubricConfig(rubricId){ return classConfig.rubrics[rubricId] || {active:true,assignedDimensions:[],dueDate:""}; }
 function rubricScores(state,rubricId){
   const v=state.rubricRatings?.[rubricId];
@@ -110,7 +107,7 @@ function requirementRows(studentId){
   return [
     {key:"attendance",label:"Attendance",complete:att.records>0,pass:att.absences<=3,detail:`${att.absences} day(s) absent · ${att.late} late`},
     {key:"demerits",label:"Demerits",complete:true,pass:dem.total<10,detail:`${dem.total} / 10 points`},
-    {key:"math",label:"Math",complete:math.complete&&math.percentage!==null,pass:math.percentage!==null&&math.percentage>=math.threshold,detail:`${fmt(math.percentage)} · ${math.threshold}% required for ${state.targetTrade||"current target"}`},
+    {key:"math",label:"Math",complete:math.complete&&math.percentage!==null,pass:math.percentage!==null&&math.percentage>=math.threshold,detail:`${fmt(math.percentage)} · 70% required to graduate`},
     {key:"shop",label:"Construction projects",complete:shop.complete&&shop.percentage!==null,pass:shop.percentage!==null&&shop.percentage>=Number(classConfig.shopThreshold||70),detail:`${fmt(shop.percentage)} · ${classConfig.shopThreshold||70}% required`},
     {key:"aces",label:"ACEs",complete:ace.complete,pass:ace.pass,detail:`${ace.passed}/${ace.total} passed · ${fmt(ace.percentage)}`},
     {key:"fitness",label:"Physical fitness test",complete:!!state.fitnessTest,pass:state.fitnessTest==="Pass",detail:state.fitnessTest||"Not recorded"},

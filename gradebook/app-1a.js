@@ -113,7 +113,7 @@ async function api(action,payload={}){
 
 function freshConfig(){
   const rubrics={};
-  RUBRICS.forEach(r=>rubrics[r.id]={active:true,assignedDimensions:[],dueDate:""});
+  RUBRICS.forEach(r=>rubrics[r.id]={active:true,assignedDimensions:[r.sourceDimension].filter(d=>DIMENSIONS.includes(d)),dueDate:""});
   return {version:1,rubrics,aceThreshold:70,shopThreshold:70,serviceHours:8,mentoringHours:2};
 }
 function freshStudent(){
@@ -155,7 +155,7 @@ function normalizeConfig(raw){
     const saved=cfg.rubrics?.[r.id]||{};
     out.rubrics[r.id]={
       active:saved.active!==false,
-      assignedDimensions:Array.isArray(saved.assignedDimensions)?saved.assignedDimensions.filter(x=>DIMENSIONS.includes(x)):[],
+      assignedDimensions:Array.isArray(saved.assignedDimensions)&&saved.assignedDimensions.length?saved.assignedDimensions.filter(x=>DIMENSIONS.includes(x)):[r.sourceDimension].filter(d=>DIMENSIONS.includes(d)),
       dueDate:saved.dueDate||""
     };
   });

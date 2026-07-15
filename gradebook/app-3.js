@@ -71,12 +71,12 @@ function renderRequirements(){
         <div><label>Manual Shop grade fallback</label><input type="number" min="0" max="100" data-student="${attr(selectedStudentId)}" data-path="manualGrades.shop" value="${attr(st.manualGrades.shop)}"></div>
         <div><label>Manual Math override</label><input type="number" min="0" max="100" data-student="${attr(selectedStudentId)}" data-path="manualGrades.math" value="${attr(st.manualGrades.math)}"></div>
       </div>
-      <p class="note">Mapped rubric grades replace the manual fallback for that dimension. Math requires 80% when the target contains Electrical or Plumbing; otherwise 70%.</p>
+      <p class="note">Mapped rubric grades replace the manual fallback for that dimension. Math requires 70% to graduate; 80% to receive a recommendation letter.</p>
     </div>
     <div class="gb-grid">
       ${stat("Professional Development",fmt(pd.percentage))}
       ${stat("Shop",fmt(shop.percentage))}
-      ${stat("Math",`${fmt(math.percentage)} / ${tradeMathThreshold(st)}%`)}
+      ${stat("Math",`${fmt(math.percentage)} / 70%`)}
       ${stat("Readiness",ready.label)}
     </div>
     <div class="section-card">
