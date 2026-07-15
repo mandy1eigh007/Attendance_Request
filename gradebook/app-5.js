@@ -5,7 +5,7 @@ function rubricGradeTable(rubric){
       const st=getStudent(s.id),scores=rubricScores(st,rubric.id),res=rubricResult(st,rubric),track=st.assignmentTracking[rubric.id]||{};
       return `<tr><td class="gb-name">${esc(s.first+" "+s.last)}</td>
         ${rubric.criteria.map((c,i)=>`<td><select data-rubric-score="${attr(rubric.id)}" data-score-index="${i}" data-student="${attr(s.id)}">
-          <option value="">—</option>${[1,2,3,4,5].map(n=>`<option value="${n}" ${Number(scores[i])===n?"selected":""}>${n}</option>`).join("")}</select></td>`).join("")}
+          <option value="">—</option>${[[1,"Incomplete"],[2,"Developing"],[3,"Proficient"],[4,"Professional"]].map(([n,l])=>`<option value="${n}" ${Number(scores[i])===n?"selected":""}>${n} – ${l}</option>`).join("")}</select></td>`).join("")}
         <td>${res.percentage===null?"—":fmt(res.percentage)}<div class="gb-progress"><span style="width:${Math.max(0,Math.min(100,res.percentage||0))}%"></span></div></td>
         <td><input type="date" data-student="${attr(s.id)}" data-path="assignmentTracking.${rubric.id}.submittedDate" value="${attr(track.submittedDate||"")}"></td>
         <td><select data-student="${attr(s.id)}" data-path="assignmentTracking.${rubric.id}.status">${ASSIGNMENT_STATUS.map(x=>`<option ${track.status===x?"selected":""}>${esc(x||"Select")}</option>`).join("")}</select></td>
@@ -25,7 +25,7 @@ function renderRubrics(){
   });
   const sourceDims=[...new Set(RUBRICS.map(r=>r.sourceDimension))].sort();
   return `
-    <div class="page-header"><div><div class="page-title">Assignment Rubrics</div><div class="page-sub">46 fixed curriculum rubrics. Grade each criterion 1–5; weights calculate the assignment percentage. Map each rubric to the dimension it should feed.</div></div></div>
+    <div class="page-header"><div><div class="page-title">Assignment Rubrics</div><div class="page-sub">46 fixed curriculum rubrics. Grade each criterion 1–4 (Incomplete → Professional); weights calculate the assignment percentage. Map each rubric to the dimension it should feed.</div></div></div>
     <div class="section-card">
       <div class="gb-filter">
         <input type="text" placeholder="Search rubric…" value="${attr(rubricFilter.search)}" oninput="rubricFilter.search=this.value;renderActive()">
@@ -46,7 +46,7 @@ function renderRubrics(){
           </div>
           <div class="gb-mini"><strong>Deliverables</strong><ul style="margin:7px 0 0 18px">${r.deliverables.map(x=>`<li>${esc(x)}</li>`).join("")}</ul><p class="note"><strong>Completion standard:</strong> ${esc(r.completionStandard)}</p></div>
           <div class="gb-table-wrap" style="margin:12px 0"><table class="gb-criteria">
-            <thead><tr><th>Criterion</th><th>Does Not Meet (1–2)</th><th>Approaching (3)</th><th>Meets (4)</th><th>Exceeds (5)</th><th>Weight</th></tr></thead>
+            <thead><tr><th>Criterion</th><th>Incomplete</th><th>Developing</th><th>Proficient</th><th>Professional</th><th>Weight</th></tr></thead>
             <tbody>${r.criteria.map(c=>`<tr><td><strong>${esc(c.Criteria)}</strong></td><td>${esc(c["Does Not Meet (1–2)"])}</td><td>${esc(c["Approaching (3)"])}</td><td>${esc(c["Meets (4)"])}</td><td>${esc(c["Exceeds (5)"])}</td><td>${esc(c.Weight)}</td></tr>`).join("")}</tbody>
           </table></div>
           ${rubricGradeTable(r)}

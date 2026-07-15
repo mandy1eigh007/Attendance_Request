@@ -24,8 +24,8 @@ function rubricResult(state,rubric){
   let earned=0,total=0,count=0;
   rubric.criteria.forEach((c,i)=>{
     const sc=num(scores[i]);
-    if(sc===null||sc<1||sc>5)return;
-    const w=weightOf(c); earned+=(sc/5)*w; total+=w; count++;
+    if(sc===null||sc<1||sc>4)return;
+    const w=weightOf(c); earned+=(sc/4)*w; total+=w; count++;
   });
   return {percentage:total?earned/total*100:null,complete:rubric.criteria.length>0&&count===rubric.criteria.length,count,totalCriteria:rubric.criteria.length};
 }
