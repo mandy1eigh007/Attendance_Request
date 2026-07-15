@@ -1,731 +1,161 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Interactive hand tool and power tool study card bank.">
-  <title>Hand & Power Tool Study Cards</title>
-  <style>
-    :root {
-      --ink: #152128;
-      --muted: #5e6b72;
-      --paper: #f4f1e9;
-      --surface: #fffdf8;
-      --line: #d6d0c4;
-      --accent: #f4a300;
-      --accent-dark: #9b5e00;
-      --steel: #263d49;
-      --shadow: 0 14px 35px rgba(29, 39, 44, .13);
-      --radius: 18px;
-    }
-
-    * { box-sizing: border-box; }
-    html { scroll-behavior: smooth; }
-
-    body {
-      margin: 0;
-      color: var(--ink);
-      background:
-        linear-gradient(rgba(255,255,255,.45), rgba(255,255,255,.45)),
-        repeating-linear-gradient(0deg, transparent 0 31px, rgba(21,33,40,.035) 31px 32px),
-        var(--paper);
-      font-family: Arial, Helvetica, sans-serif;
-      min-height: 100vh;
-    }
-
-    button, input, select { font: inherit; }
-
-    .app-shell {
-      width: min(1180px, calc(100% - 28px));
-      margin: 0 auto;
-      padding: 24px 0 54px;
-    }
-
-    .hero {
-      position: relative;
-      overflow: hidden;
-      border-radius: 24px;
-      padding: clamp(24px, 5vw, 52px);
-      color: #fff;
-      background:
-        linear-gradient(120deg, rgba(18,35,44,.97), rgba(39,65,77,.94)),
-        var(--steel);
-      box-shadow: var(--shadow);
-    }
-
-    .hero::after {
-      content: "";
-      position: absolute;
-      right: -80px;
-      top: -110px;
-      width: 320px;
-      height: 320px;
-      border: 34px solid rgba(244,163,0,.22);
-      border-radius: 50%;
-    }
-
-    .eyebrow {
-      display: inline-flex;
-      gap: 8px;
-      align-items: center;
-      margin: 0 0 12px;
-      color: #ffd478;
-      font-weight: 800;
-      letter-spacing: .08em;
-      text-transform: uppercase;
-      font-size: .82rem;
-    }
-
-    h1 {
-      position: relative;
-      z-index: 1;
-      margin: 0;
-      max-width: 720px;
-      font-size: clamp(2rem, 6vw, 4.5rem);
-      line-height: .96;
-      letter-spacing: -.045em;
-    }
-
-    .hero p {
-      position: relative;
-      z-index: 1;
-      max-width: 680px;
-      margin: 18px 0 0;
-      color: #dce7eb;
-      line-height: 1.55;
-      font-size: 1.03rem;
-    }
-
-    .summary {
-      position: relative;
-      z-index: 1;
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      margin-top: 24px;
-    }
-
-    .summary span {
-      padding: 9px 12px;
-      border: 1px solid rgba(255,255,255,.2);
-      border-radius: 999px;
-      background: rgba(255,255,255,.08);
-      font-weight: 700;
-      font-size: .9rem;
-    }
-
-    .controls {
-      position: sticky;
-      top: 10px;
-      z-index: 20;
-      display: grid;
-      grid-template-columns: minmax(220px, 1fr) auto auto auto;
-      gap: 10px;
-      margin: 18px 0;
-      padding: 12px;
-      border: 1px solid rgba(214,208,196,.9);
-      border-radius: 16px;
-      background: rgba(255,253,248,.94);
-      backdrop-filter: blur(14px);
-      box-shadow: 0 8px 25px rgba(29,39,44,.09);
-    }
-
-    .control {
-      min-height: 46px;
-      border: 1px solid var(--line);
-      border-radius: 11px;
-      background: #fff;
-      color: var(--ink);
-      padding: 0 13px;
-    }
-
-    input.control { width: 100%; }
-    button.control { cursor: pointer; font-weight: 800; }
-    button.control:hover { border-color: var(--accent-dark); }
-    button.primary {
-      border-color: var(--accent);
-      background: var(--accent);
-      color: #271a00;
-    }
-
-    .status-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 14px;
-      margin: 17px 2px;
-      color: var(--muted);
-      font-size: .92rem;
-    }
-
-    .status-row strong { color: var(--ink); }
-
-    .card-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-      gap: 18px;
-    }
-
-    .flashcard {
-      min-height: 340px;
-      perspective: 1100px;
-      cursor: pointer;
-      outline: none;
-    }
-
-    .flashcard:focus-visible {
-      border-radius: var(--radius);
-      box-shadow: 0 0 0 4px rgba(244,163,0,.4);
-    }
-
-    .card-inner {
-      position: relative;
-      width: 100%;
-      height: 100%;
-      min-height: 340px;
-      transform-style: preserve-3d;
-      transition: transform .5s cubic-bezier(.2,.8,.2,1);
-    }
-
-    .flashcard.is-flipped .card-inner { transform: rotateY(180deg); }
-
-    .card-face {
-      position: absolute;
-      inset: 0;
-      display: flex;
-      flex-direction: column;
-      min-height: 340px;
-      padding: 20px;
-      border: 1px solid var(--line);
-      border-radius: var(--radius);
-      background: var(--surface);
-      box-shadow: 0 11px 28px rgba(29,39,44,.1);
-      backface-visibility: hidden;
-      -webkit-backface-visibility: hidden;
-    }
-
-    .card-back {
-      transform: rotateY(180deg);
-      background: #fff9e8;
-      border-color: #e5c983;
-    }
-
-    .tool-type {
-      align-self: flex-start;
-      padding: 6px 9px;
-      border-radius: 999px;
-      color: #fff;
-      background: var(--steel);
-      font-size: .75rem;
-      font-weight: 800;
-      letter-spacing: .04em;
-      text-transform: uppercase;
-    }
-
-    .tool-type.power { background: #8e5600; }
-
-    .tool-photo-wrap {
-      position: relative;
-      display: grid;
-      place-items: center;
-      width: 100%;
-      height: 195px;
-      margin: 14px 0 10px;
-      overflow: hidden;
-      border: 1px solid #d7d7d2;
-      border-radius: 14px;
-      background:
-        linear-gradient(135deg, rgba(38,61,73,.05), rgba(244,163,0,.08)),
-        #f6f6f2;
-    }
-
-    .tool-photo {
-      display: none;
-      width: 100%;
-      height: 100%;
-      object-fit: contain;
-      padding: 9px;
-      background: #fff;
-    }
-
-    .tool-photo.is-loaded { display: block; }
-
-    .photo-loading {
-      display: grid;
-      justify-items: center;
-      gap: 9px;
-      color: var(--muted);
-      font-size: .77rem;
-      font-weight: 700;
-      text-align: center;
-    }
-
-    .loader {
-      width: 28px;
-      height: 28px;
-      border: 3px solid rgba(38,61,73,.18);
-      border-top-color: var(--accent-dark);
-      border-radius: 50%;
-      animation: spin .8s linear infinite;
-    }
-
-    @keyframes spin { to { transform: rotate(360deg); } }
-
-    .photo-fallback {
-      display: none;
-      place-items: center;
-      width: 92px;
-      height: 92px;
-      border: 5px solid var(--ink);
-      border-radius: 22px;
-      background:
-        linear-gradient(135deg, transparent 45%, rgba(244,163,0,.35) 45% 58%, transparent 58%);
-      font-size: 2.1rem;
-      font-weight: 900;
-      letter-spacing: -.08em;
-    }
-
-    .tool-photo-wrap.has-fallback .photo-loading { display: none; }
-    .tool-photo-wrap.has-fallback .photo-fallback { display: grid; }
-    .tool-photo-wrap.has-image .photo-loading,
-    .tool-photo-wrap.has-image .photo-fallback { display: none; }
-
-    .study-question {
-      margin: 5px 0 6px;
-      font-size: 1.25rem;
-      line-height: 1.15;
-      text-align: center;
-    }
-
-    .image-credit {
-      min-height: 14px;
-      margin-top: 6px;
-      color: #78858b;
-      text-align: center;
-      font-size: .62rem;
-      line-height: 1.2;
-    }
-
-    .image-credit a {
-      color: inherit;
-      text-decoration: underline;
-    }
-
-    .category {
-      margin: 0;
-      color: var(--muted);
-      text-align: center;
-      font-size: .9rem;
-    }
-
-    .flip-hint {
-      margin-top: auto;
-      padding-top: 16px;
-      color: var(--muted);
-      text-align: center;
-      font-size: .8rem;
-      font-weight: 700;
-    }
-
-    .card-back h2 {
-      margin: 14px 0 10px;
-      font-size: 1.3rem;
-    }
-
-    .label {
-      margin: 16px 0 5px;
-      color: var(--accent-dark);
-      font-size: .76rem;
-      font-weight: 900;
-      letter-spacing: .07em;
-      text-transform: uppercase;
-    }
-
-    .card-back p {
-      margin: 0;
-      line-height: 1.48;
-      font-size: .93rem;
-    }
-
-    .empty {
-      display: none;
-      padding: 44px 20px;
-      text-align: center;
-      color: var(--muted);
-      border: 1px dashed var(--line);
-      border-radius: var(--radius);
-      background: rgba(255,255,255,.58);
-    }
-
-    .empty.visible { display: block; }
-
-    .help {
-      margin-top: 28px;
-      padding: 18px 20px;
-      border-left: 5px solid var(--accent);
-      border-radius: 10px;
-      background: rgba(255,255,255,.62);
-      color: var(--muted);
-      line-height: 1.55;
-      font-size: .92rem;
-    }
-
-    @media (max-width: 800px) {
-      .controls { grid-template-columns: 1fr 1fr; }
-      .controls input { grid-column: 1 / -1; }
-      .card-grid { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
-    }
-
-    @media (max-width: 500px) {
-      .app-shell { width: min(100% - 18px, 1180px); padding-top: 9px; }
-      .hero { border-radius: 18px; padding: 25px 20px; }
-      .controls { top: 5px; grid-template-columns: 1fr; }
-      .controls input { grid-column: auto; }
-      .status-row { align-items: flex-start; flex-direction: column; }
-      .card-grid { grid-template-columns: 1fr; }
-    }
-
-    @media (prefers-reduced-motion: reduce) {
-      * { scroll-behavior: auto !important; }
-      .card-inner { transition: none; }
-    }
-
-    @media print {
-      body { background: #fff; }
-      .app-shell { width: 100%; padding: 0; }
-      .hero, .controls, .status-row, .help, .empty { display: none !important; }
-      .card-grid {
-        display: grid;
-        grid-template-columns: 1fr;
-        gap: .25in;
-      }
-      .flashcard, .card-inner, .card-face {
-        min-height: 3.2in;
-        break-inside: avoid;
-      }
-      .card-inner { transform: none !important; }
-      .card-face {
-        position: relative;
-        box-shadow: none;
-        border: 1px solid #555;
-      }
-      .card-inner {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: .12in;
-      }
-      .card-face {
-        position: relative;
-        inset: auto;
-      }
-      .card-front { display: flex; }
-      .card-back {
-        transform: none;
-        background: #fff;
-      }
-      .tool-photo-wrap { height: 1.75in; }
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hand &amp; Power Tool Study Cards</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,sans-serif;background:#111;color:#fff;min-height:100vh}
+header{padding:20px 24px 12px;border-bottom:1px solid #2a2a2a}
+header h1{font-size:1.3rem;font-weight:700}
+header p{font-size:0.82rem;color:#666;margin-top:4px}
+.controls{padding:14px 24px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;border-bottom:1px solid #1e1e1e}
+.tab-btn{padding:7px 18px;border:1px solid #3a3a3a;background:transparent;color:#888;border-radius:4px;cursor:pointer;font-size:0.88rem;transition:all 0.15s}
+.tab-btn:hover{border-color:#666;color:#ccc}
+.tab-btn.active{background:#fff;color:#000;border-color:#fff}
+.shuffle-btn{padding:7px 18px;border:1px solid #3a3a3a;background:transparent;color:#888;border-radius:4px;cursor:pointer;font-size:0.88rem;margin-left:4px}
+.shuffle-btn:hover{border-color:#666;color:#ccc}
+.count{color:#555;font-size:0.82rem;margin-left:auto}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px;padding:20px 24px 48px}
+.card-wrap{perspective:900px;cursor:pointer;user-select:none}
+.card-wrap:focus-visible{outline:2px solid #888;outline-offset:2px;border-radius:8px}
+.card-ratio{position:relative;width:100%;padding-top:57.09%}
+.card-inner{position:absolute;inset:0;transform-style:preserve-3d;transition:transform 0.38s ease}
+.card-wrap.flipped .card-inner{transform:rotateY(180deg)}
+.card-face{position:absolute;inset:0;backface-visibility:hidden;border-radius:8px;overflow:hidden}
+.card-front{background:#1a1a1a;border:1px solid #2a2a2a}
+.card-front img{width:100%;height:100%;object-fit:cover;display:block}
+.card-back{background:#1c1c1c;border:1px solid #2d2d2d;transform:rotateY(180deg);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px;text-align:center}
+.card-back .name{font-size:1.05rem;font-weight:700;line-height:1.35;color:#f0f0f0}
+.card-back .cat-label{font-size:0.7rem;color:#444;margin-top:8px;text-transform:uppercase;letter-spacing:0.07em}
+</style>
 </head>
 <body>
-  <main class="app-shell">
-    <section class="hero">
-      <p class="eyebrow">Construction Fundamentals</p>
-      <h1>Hand & Power Tool Study Cards</h1>
-      <p>Study the tool photo first, then tap or click the card to reveal its name, use, and safety reminder. Photos load only as you reach them so the bank stays fast.</p>
-      <div class="summary">
-        <span>42 hand tools</span>
-        <span>22 power tools</span>
-        <span>64 cards total</span>
-        <span>Photo identification</span>
-      </div>
-    </section>
 
-    <section class="controls" aria-label="Study card controls">
-      <input id="searchInput" class="control" type="search" placeholder="Search tools, uses, or categories…" aria-label="Search study cards">
-      <select id="typeFilter" class="control" aria-label="Filter by tool type">
-        <option value="All">All tools</option>
-        <option value="Hand Tool">Hand tools</option>
-        <option value="Power Tool">Power tools</option>
-      </select>
-      <button id="shuffleButton" class="control primary" type="button">Shuffle</button>
-      <button id="printButton" class="control" type="button">Print</button>
-    </section>
+<header>
+  <h1>Hand &amp; Power Tool Study Cards</h1>
+  <p>Click a card to reveal the tool name</p>
+</header>
 
-    <div class="status-row">
-      <div><strong id="resultCount">64</strong> cards shown</div>
-      <div>Keyboard: Tab to a card, then press Enter or Space to flip.</div>
-    </div>
+<div class="controls">
+  <button class="tab-btn active" onclick="setFilter('all',this)">All Tools</button>
+  <button class="tab-btn" onclick="setFilter('hand',this)">Hand Tools</button>
+  <button class="tab-btn" onclick="setFilter('power',this)">Power Tools</button>
+  <button class="shuffle-btn" onclick="shuffle()">Shuffle</button>
+  <span class="count" id="count"></span>
+</div>
 
-    <section id="cardGrid" class="card-grid" aria-live="polite"></section>
-    <div id="emptyState" class="empty">No tools match your current search and filter.</div>
+<div class="grid" id="grid"></div>
 
-    <aside class="help">
-      <strong>Study method:</strong> Identify the tool from the photo, say its name and primary use out loud, then flip the card to check your answer. Tool photos load from Wikimedia Commons and require internet access. Safety notes are intentionally brief and do not replace hands-on instruction, manufacturer guidance, or site rules.
-    </aside>
-  </main>
+<script>
+const TOOLS = [
+  {cat:'hand',img:'images/ht-1.jpg',name:'String Line'},
+  {cat:'hand',img:'images/ht-3.jpg',name:'Drywall Saw'},
+  {cat:'hand',img:'images/ht-5.jpg',name:'C-Clamp'},
+  {cat:'hand',img:'images/ht-7.jpg',name:'Framing Square'},
+  {cat:'hand',img:'images/ht-9.jpg',name:'Spirit Level'},
+  {cat:'hand',img:'images/ht-11.jpg',name:'Box-End Wrench / Closed-End Wrench'},
+  {cat:'hand',img:'images/ht-13.jpg',name:'Open-End Wrench'},
+  {cat:'hand',img:'images/ht-15.jpg',name:'Combination Wrench'},
+  {cat:'hand',img:'images/ht-17.jpg',name:"Linemen's Pliers"},
+  {cat:'hand',img:'images/ht-19.jpg',name:'Torpedo Level'},
+  {cat:'hand',img:'images/ht-21.jpg',name:'Ratchet Wrench & Socket'},
+  {cat:'hand',img:'images/ht-23.jpg',name:'Hacksaw'},
+  {cat:'hand',img:'images/ht-25.jpg',name:'Chalk Line'},
+  {cat:'hand',img:'images/ht-27.jpg',name:'Plumb Bob'},
+  {cat:'hand',img:'images/ht-29.jpg',name:'Tenon Saw (Back Saw)'},
+  {cat:'hand',img:'images/ht-31.jpg',name:'Handsaw'},
+  {cat:'hand',img:'images/ht-33.jpg',name:'Cats Paw Nail Bar'},
+  {cat:'hand',img:'images/ht-35.jpg',name:'Duplex Nail'},
+  {cat:'hand',img:'images/ht-37.jpg',name:'Pipe Wrench'},
+  {cat:'hand',img:'images/ht-39.jpg',name:'Cold Chisel'},
+  {cat:'hand',img:'images/ht-41.jpg',name:'Adjustable Wrench'},
+  {cat:'hand',img:'images/ht-43.jpg',name:'Mason Chisel'},
+  {cat:'hand',img:'images/ht-45.jpg',name:'Wood Chisel'},
+  {cat:'hand',img:'images/ht-47.jpg',name:'Paddle Bit'},
+  {cat:'hand',img:'images/ht-49.jpg',name:'Tie Wire Reel'},
+  {cat:'hand',img:'images/ht-51.jpg',name:'Margin Trowel'},
+  {cat:'hand',img:'images/ht-53.jpg',name:'Hex Head Snap Tie'},
+  {cat:'hand',img:'images/ht-55.jpg',name:'Nail Punch Set'},
+  {cat:'hand',img:'images/ht-57.jpg',name:'Sledge Hammer'},
+  {cat:'hand',img:'images/ht-59.jpg',name:'Line Level'},
+  {cat:'hand',img:'images/ht-61.jpg',name:'Straight Cutting Snips'},
+  {cat:'hand',img:'images/ht-63.jpg',name:'Speed Square'},
+  {cat:'hand',img:'images/ht-65.jpg',name:'Drywall T-Square'},
+  {cat:'hand',img:'images/ht-67.jpg',name:'Post Level'},
+  {cat:'hand',img:'images/ht-69.jpg',name:'Locking Pliers'},
+  {cat:'hand',img:'images/ht-71.jpg',name:'Ball-Peen Hammer'},
+  {cat:'hand',img:'images/ht-73.jpg',name:'Crowbar'},
+  {cat:'hand',img:'images/ht-75.jpg',name:'Needle Nose Pliers'},
+  {cat:'hand',img:'images/ht-77.jpg',name:'Combination Square'},
+  {cat:'hand',img:'images/ht-79.jpg',name:'Slip Joint Pliers'},
+  {cat:'hand',img:'images/ht-81.jpg',name:'Straight Claw Framing Hammer'},
+  {cat:'hand',img:'images/ht-83.jpg',name:'Curved Claw Hammer'},
+  {cat:'power',img:'images/pt-1.jpg',name:'Drill Motor'},
+  {cat:'power',img:'images/pt-3.jpg',name:'Jig Saw'},
+  {cat:'power',img:'images/pt-5.jpg',name:'Impact Drill / Driver'},
+  {cat:'power',img:'images/pt-7.jpg',name:'Hammer Drill'},
+  {cat:'power',img:'images/pt-9.jpg',name:'Reciprocating Saw (Sawzall)'},
+  {cat:'power',img:'images/pt-11.jpg',name:'Hole Saw'},
+  {cat:'power',img:'images/pt-13.jpg',name:'Chop Saw'},
+  {cat:'power',img:'images/pt-15.jpg',name:'Miter Saw'},
+  {cat:'power',img:'images/pt-17.jpg',name:'Circular Saw'},
+  {cat:'power',img:'images/pt-19.jpg',name:'Circular Saw Worm-Drive'},
+  {cat:'power',img:'images/pt-21.jpg',name:'Table Saw'},
+  {cat:'power',img:'images/pt-23.jpg',name:'Portable Band Saw (Portaband)'},
+  {cat:'power',img:'images/pt-25.jpg',name:'Angle Grinder'},
+  {cat:'power',img:'images/pt-27.jpg',name:'Ground Fault Circuit Interrupter (GFCI)'},
+  {cat:'power',img:'images/pt-29.jpg',name:'Belt Sander'},
+  {cat:'power',img:'images/pt-31.jpg',name:'Orbital Sander'},
+  {cat:'power',img:'images/pt-33.jpg',name:'Router'},
+  {cat:'power',img:'images/pt-35.jpg',name:'Nail Gun'},
+  {cat:'power',img:'images/pt-37.jpg',name:'Cordless Gas Cut-Off Saw'},
+  {cat:'power',img:'images/pt-39.jpg',name:'Jack Hammer'},
+  {cat:'power',img:'images/pt-41.jpg',name:'Oscillating Multi-Tool'},
+  {cat:'power',img:'images/pt-43.jpg',name:'Chain Saw'},
+];
 
-  <script>
-    const tools = [{"name": "String Line", "type": "Hand Tool", "category": "Layout & Measuring", "use": "Creates a straight reference line between two points for layout, alignment, and grade work.", "safety": "Keep the line visible and out of walkways; release tension carefully.", "imageQuery": "construction string line tool"}, {"name": "Drywall Saw", "type": "Hand Tool", "category": "Cutting", "use": "Cuts openings and irregular shapes in drywall and other soft sheet materials.", "safety": "Cut away from your body and check for wiring or plumbing behind the surface.", "imageQuery": "drywall jab saw tool"}, {"name": "C-Clamp", "type": "Hand Tool", "category": "Holding & Clamping", "use": "Temporarily holds workpieces together or secures material to a work surface.", "safety": "Do not overtighten; confirm the clamp is fully seated before working.", "imageQuery": "C clamp tool"}, {"name": "Framing Square", "type": "Hand Tool", "category": "Layout & Measuring", "use": "Checks and lays out 90-degree angles, rafters, stairs, and framing cuts.", "safety": "Keep edges free of damage so measurements remain accurate.", "imageQuery": "carpenter framing square"}, {"name": "Spirit Level", "type": "Hand Tool", "category": "Layout & Measuring", "use": "Checks whether a surface is level horizontally or plumb vertically.", "safety": "Protect the vials from impact and verify the tool is clean before reading.", "imageQuery": "spirit level tool"}, {"name": "Box-End Wrench (Closed-End Wrench)", "type": "Hand Tool", "category": "Fastening", "use": "Turns nuts and bolts with a closed ring that grips more sides of the fastener.", "safety": "Use the correct size and pull rather than push when practical.", "imageQuery": "box end wrench tool"}, {"name": "Open-End Wrench", "type": "Hand Tool", "category": "Fastening", "use": "Turns nuts and bolts where access prevents using a socket or closed wrench.", "safety": "Use the correct size and keep the wrench square to the fastener.", "imageQuery": "open end wrench tool"}, {"name": "Combination Wrench", "type": "Hand Tool", "category": "Fastening", "use": "Combines an open end and box end of the same size for turning nuts and bolts.", "safety": "Do not use a cheater bar unless the wrench is designed for one.", "imageQuery": "combination wrench tool"}, {"name": "Lineman’s Pliers", "type": "Hand Tool", "category": "Pliers & Gripping", "use": "Grips, twists, bends, and cuts wire and small metal components.", "safety": "Use insulated-rated pliers only when electrical protection is required.", "imageQuery": "lineman pliers tool"}, {"name": "Torpedo Level", "type": "Hand Tool", "category": "Layout & Measuring", "use": "Checks level, plumb, and sometimes 45-degree angles in confined spaces.", "safety": "Keep magnetic models away from sensitive equipment and pinch points.", "imageQuery": "torpedo level tool"}, {"name": "Ratchet Wrench & Socket", "type": "Hand Tool", "category": "Fastening", "use": "Tightens or loosens nuts and bolts without removing the tool after each turn.", "safety": "Select the correct socket and confirm the ratchet direction before applying force.", "imageQuery": "ratchet socket wrench tool"}, {"name": "Hacksaw", "type": "Hand Tool", "category": "Cutting", "use": "Cuts metal, plastic pipe, bolts, and other materials using a fine-tooth blade.", "safety": "Install the blade in the correct direction and secure the material before cutting.", "imageQuery": "hacksaw tool"}, {"name": "Chalk Line", "type": "Hand Tool", "category": "Layout & Measuring", "use": "Snaps a long, straight temporary line onto a surface for layout.", "safety": "Wear eye protection and avoid snapping the line toward another person.", "imageQuery": "chalk line reel tool"}, {"name": "Plumb Bob", "type": "Hand Tool", "category": "Layout & Measuring", "use": "Transfers a point vertically and establishes a true plumb reference.", "safety": "Keep people clear below the suspended weight.", "imageQuery": "plumb bob tool"}, {"name": "Tenon Saw (Back Saw)", "type": "Hand Tool", "category": "Cutting", "use": "Makes controlled, accurate straight cuts in wood, especially joinery cuts.", "safety": "Clamp the work and keep your free hand away from the cut line.", "imageQuery": "tenon backsaw tool"}, {"name": "Handsaw", "type": "Hand Tool", "category": "Cutting", "use": "Makes general straight cuts in lumber and wood sheet products.", "safety": "Support the material and begin with short controlled strokes.", "imageQuery": "hand saw carpentry tool"}, {"name": "Cat’s Paw Nail Bar", "type": "Hand Tool", "category": "Demolition & Pulling", "use": "Digs around and pulls embedded nails from wood.", "safety": "Wear eye protection and keep hands clear of the striking area.", "imageQuery": "cat paw nail puller tool"}, {"name": "Duplex Nail", "type": "Hand Tool", "category": "Fasteners", "use": "Temporarily fastens forms and bracing; the raised second head allows easy removal.", "safety": "Drive only to the lower head and remove protruding nails promptly.", "imageQuery": "duplex head nail"}, {"name": "Pipe Wrench", "type": "Hand Tool", "category": "Plumbing", "use": "Grips and turns threaded metal pipe and round fittings.", "safety": "Face the movable jaw in the direction of rotation and do not use it on finished fittings.", "imageQuery": "pipe wrench tool"}, {"name": "Cold Chisel", "type": "Hand Tool", "category": "Chisels & Shaping", "use": "Cuts, chips, or shapes cold metal when struck with a hammer.", "safety": "Wear eye protection and replace chisels with mushroomed striking heads.", "imageQuery": "cold chisel tool"}, {"name": "Adjustable Wrench", "type": "Hand Tool", "category": "Fastening", "use": "Turns different sizes of nuts and bolts using an adjustable jaw.", "safety": "Place force on the fixed jaw and keep the adjustment tight.", "imageQuery": "adjustable wrench tool"}, {"name": "Mason Chisel", "type": "Hand Tool", "category": "Masonry", "use": "Cuts and shapes brick, block, stone, and mortar.", "safety": "Wear eye protection and use a hand guard when available.", "imageQuery": "masonry chisel tool"}, {"name": "Wood Chisel", "type": "Hand Tool", "category": "Chisels & Shaping", "use": "Cuts, pares, and shapes wood for joints, recesses, and fitting work.", "safety": "Keep the edge sharp and always cut away from hands and body.", "imageQuery": "wood chisel tool"}, {"name": "Paddle Bit", "type": "Hand Tool", "category": "Drilling Accessories", "use": "Drills large, rough holes in wood using a drill or impact-rated driver.", "safety": "Secure the work and expect the bit to grab as it breaks through.", "imageQuery": "spade paddle drill bit"}, {"name": "Tie Wire Reel", "type": "Hand Tool", "category": "Concrete & Rebar", "use": "Stores and dispenses tie wire used to secure reinforcing steel.", "safety": "Control cut wire ends and wear gloves to prevent punctures.", "imageQuery": "rebar tie wire reel"}, {"name": "Margin Trowel", "type": "Hand Tool", "category": "Masonry", "use": "Mixes, scoops, places, and shapes small amounts of mortar, grout, or patching material.", "safety": "Clean the blade after use and protect hands from sharp edges and cement exposure.", "imageQuery": "margin trowel tool"}, {"name": "Hex Head Snap Tie", "type": "Hand Tool", "category": "Concrete Forming", "use": "Holds concrete formwork at the correct spacing while resisting concrete pressure.", "safety": "Install with the specified hardware and never exceed the manufacturer’s load rating.", "imageQuery": "concrete form snap tie"}, {"name": "Nail Punch Set", "type": "Hand Tool", "category": "Striking & Finishing", "use": "Sets nail heads below the wood surface for filling or finish work.", "safety": "Use the correct punch size and keep fingers clear of the hammer strike.", "imageQuery": "nail punch set tool"}, {"name": "Sledge Hammer", "type": "Hand Tool", "category": "Striking & Demolition", "use": "Delivers heavy blows for demolition, driving stakes, and breaking material.", "safety": "Inspect the handle and head, establish a clear swing zone, and wear eye protection.", "imageQuery": "sledgehammer tool"}, {"name": "Line Level", "type": "Hand Tool", "category": "Layout & Measuring", "use": "Hangs on a string line to establish a level reference over distance.", "safety": "Keep the string tight and verify the level is centered and not damaged.", "imageQuery": "string line level tool"}, {"name": "Straight Cutting Snips", "type": "Hand Tool", "category": "Cutting", "use": "Cuts straight lines and gentle curves in sheet metal and similar thin materials.", "safety": "Wear gloves and eye protection; cut edges can be extremely sharp.", "imageQuery": "straight tin snips tool"}, {"name": "Speed Square", "type": "Hand Tool", "category": "Layout & Measuring", "use": "Marks square and angled cuts, guides circular saw cuts, and assists rafter layout.", "safety": "Keep the square firmly against the material and away from the blade path.", "imageQuery": "speed square tool"}, {"name": "Drywall T-Square", "type": "Hand Tool", "category": "Layout & Measuring", "use": "Marks long square cut lines across drywall sheets.", "safety": "Support the sheet and keep the tool edge free of damage.", "imageQuery": "drywall T square tool"}, {"name": "Post Level", "type": "Hand Tool", "category": "Layout & Measuring", "use": "Checks two sides of a post at once to confirm it is plumb.", "safety": "Secure the post before making adjustments.", "imageQuery": "post level tool"}, {"name": "Locking Pliers", "type": "Hand Tool", "category": "Pliers & Gripping", "use": "Locks onto material for gripping, clamping, turning, or temporarily holding parts.", "safety": "Adjust the locking pressure and protect hands when releasing the jaws.", "imageQuery": "locking pliers tool"}, {"name": "Ball-Peen Hammer", "type": "Hand Tool", "category": "Striking & Shaping", "use": "Strikes punches and chisels and shapes or peens metal.", "safety": "Use the correct face and inspect the head and handle before use.", "imageQuery": "ball peen hammer tool"}, {"name": "Crowbar", "type": "Hand Tool", "category": "Demolition & Pulling", "use": "Provides leverage for prying, lifting, separating, and demolition work.", "safety": "Use stable footing and never place your body in the bar’s release path.", "imageQuery": "crowbar pry bar tool"}, {"name": "Needle-Nose Pliers", "type": "Hand Tool", "category": "Pliers & Gripping", "use": "Grips, bends, and positions small parts or wire in tight spaces.", "safety": "Do not twist beyond the jaw capacity or use as a substitute for a wrench.", "imageQuery": "needle nose pliers tool"}, {"name": "Combination Square", "type": "Hand Tool", "category": "Layout & Measuring", "use": "Checks and marks 90-degree and 45-degree angles, depth, and short level lines.", "safety": "Lock the head securely before marking or measuring.", "imageQuery": "combination square tool"}, {"name": "Slip-Joint Pliers", "type": "Hand Tool", "category": "Pliers & Gripping", "use": "Grips and turns objects using two adjustable jaw positions.", "safety": "Use the proper jaw setting and avoid damaging finished fasteners.", "imageQuery": "slip joint pliers tool"}, {"name": "Straight-Claw Framing Hammer", "type": "Hand Tool", "category": "Striking & Pulling", "use": "Drives framing nails and uses the straight claw for prying and demolition.", "safety": "Wear eye protection and confirm the hammer face and handle are undamaged.", "imageQuery": "straight claw framing hammer"}, {"name": "Curved-Claw Hammer", "type": "Hand Tool", "category": "Striking & Pulling", "use": "Drives nails and uses the curved claw to pull nails with leverage.", "safety": "Strike squarely and keep your free hand clear of the nail.", "imageQuery": "curved claw hammer"}, {"name": "Drill Motor", "type": "Power Tool", "category": "Drilling & Driving", "use": "Rotates drill bits and accessories to drill holes or drive fasteners.", "safety": "Secure the work, remove the chuck key, and keep loose clothing away from rotation.", "imageQuery": "electric hand drill tool"}, {"name": "Jig Saw", "type": "Power Tool", "category": "Saws & Cutting", "use": "Makes curved, irregular, and interior cuts in wood, metal, or plastic with the correct blade.", "safety": "Keep the base flat, use the correct blade, and wait for the blade to stop before setting it down.", "imageQuery": "jigsaw power tool"}, {"name": "Impact Drill / Driver", "type": "Power Tool", "category": "Drilling & Driving", "use": "Drives screws and fasteners using rotary force plus rapid impacts.", "safety": "Use impact-rated bits and sockets and control the high torque.", "imageQuery": "impact driver power tool"}, {"name": "Hammer Drill", "type": "Power Tool", "category": "Drilling & Driving", "use": "Drills into masonry by combining rotation with a hammering action.", "safety": "Use masonry bits, hearing and eye protection, and check for hidden utilities.", "imageQuery": "hammer drill power tool"}, {"name": "Reciprocating Saw", "type": "Power Tool", "category": "Saws & Cutting", "use": "Performs rough demolition and cutting with a back-and-forth blade; Sawzall is a brand name.", "safety": "Check behind the cut, use the correct blade, and keep both hands clear.", "imageQuery": "reciprocating saw power tool"}, {"name": "Hole Saw", "type": "Power Tool", "category": "Drilling Accessories", "use": "Cuts large round holes for pipe, conduit, hardware, and penetrations.", "safety": "Secure the material and brace for torque or binding.", "imageQuery": "hole saw drill bit"}, {"name": "Chop Saw", "type": "Power Tool", "category": "Saws & Cutting", "use": "Makes straight crosscuts in metal or other materials using the correct abrasive wheel or blade.", "safety": "Clamp the work, use the correct wheel, and keep sparks away from combustibles.", "imageQuery": "metal chop saw power tool"}, {"name": "Miter Saw", "type": "Power Tool", "category": "Saws & Cutting", "use": "Makes accurate crosscuts, miter cuts, and bevel cuts in lumber and trim.", "safety": "Keep hands outside the marked danger zone and let the blade stop before raising it.", "imageQuery": "compound miter saw power tool"}, {"name": "Circular Saw", "type": "Power Tool", "category": "Saws & Cutting", "use": "Makes straight cuts in lumber and sheet materials using a rotating blade.", "safety": "Set proper blade depth, support the cut, and keep the cord and body out of the blade path.", "imageQuery": "circular saw power tool"}, {"name": "Worm-Drive Circular Saw", "type": "Power Tool", "category": "Saws & Cutting", "use": "A circular saw with worm-drive gearing that provides high torque and an in-line blade orientation.", "safety": "Control the added weight and torque and verify the lower guard moves freely.", "imageQuery": "worm drive circular saw"}, {"name": "Table Saw", "type": "Power Tool", "category": "Saws & Cutting", "use": "Makes controlled rip cuts and crosscuts by feeding material past a stationary blade.", "safety": "Use the guard, riving knife, fence, and push stick; stay out of the kickback line.", "imageQuery": "table saw power tool"}, {"name": "Portable Band Saw (Portaband)", "type": "Power Tool", "category": "Saws & Cutting", "use": "Cuts metal pipe, conduit, rod, and structural shapes using a continuous band blade.", "safety": "Support both sides of the cut and keep the blade square to the material.", "imageQuery": "portable band saw power tool"}, {"name": "Angle Grinder", "type": "Power Tool", "category": "Grinding & Cutting", "use": "Grinds, cuts, cleans, and finishes metal or masonry with the correct wheel.", "safety": "Use the guard and side handle, match wheel speed ratings, and control sparks.", "imageQuery": "angle grinder power tool"}, {"name": "Ground-Fault Circuit Interrupter (GFCI)", "type": "Power Tool", "category": "Electrical Safety", "use": "Quickly interrupts power when it detects current leaking to ground.", "safety": "Test before use and never treat a GFCI as a substitute for proper grounding and inspection.", "imageQuery": "portable GFCI electrical safety"}, {"name": "Belt Sander", "type": "Power Tool", "category": "Sanding & Finishing", "use": "Removes material quickly and levels large wood surfaces with a moving sanding belt.", "safety": "Start with the sander clear of the work and keep the cord and dust collection secure.", "imageQuery": "belt sander power tool"}, {"name": "Orbital Sander", "type": "Power Tool", "category": "Sanding & Finishing", "use": "Smooths surfaces and prepares finishes using a small orbital sanding motion.", "safety": "Use dust collection and respiratory protection appropriate for the material.", "imageQuery": "random orbital sander power tool"}, {"name": "Router", "type": "Power Tool", "category": "Shaping & Joinery", "use": "Cuts grooves, profiles edges, trims material, and forms joinery with rotating bits.", "safety": "Unplug before changing bits, tighten the collet, and feed against bit rotation.", "imageQuery": "wood router power tool"}, {"name": "Nail Gun", "type": "Power Tool", "category": "Fastening", "use": "Rapidly drives specified nails into wood or other approved materials.", "safety": "Keep the trigger finger off until positioned, never bypass safeties, and avoid line-of-fire exposure.", "imageQuery": "construction nail gun"}, {"name": "Cordless Gas Cut-Off Saw", "type": "Power Tool", "category": "Grinding & Cutting", "use": "Cuts concrete, masonry, asphalt, or metal using a high-speed abrasive or diamond wheel.", "safety": "Use the correct wheel, control dust and sparks, and operate with the guard in place.", "imageQuery": "cordless concrete cut off saw"}, {"name": "Jackhammer", "type": "Power Tool", "category": "Demolition", "use": "Breaks concrete, asphalt, masonry, and other hard materials using repeated impacts.", "safety": "Use hearing, eye, respiratory, and vibration protection and check for buried utilities.", "imageQuery": "jackhammer demolition tool"}, {"name": "Oscillating Multi-Tool", "type": "Power Tool", "category": "Cutting & Detail Work", "use": "Performs plunge cuts, flush cuts, scraping, sanding, and detail work with interchangeable accessories.", "safety": "Use the correct accessory and keep hands away from the oscillating edge.", "imageQuery": "oscillating multi tool"}, {"name": "Chain Saw", "type": "Power Tool", "category": "Saws & Cutting", "use": "Cuts trees, limbs, and wood using a driven cutting chain.", "safety": "Use chainsaw PPE, maintain two-hand control, avoid the kickback zone, and work only with proper training.", "imageQuery": "chainsaw power tool"}];
-    let currentOrder = [...tools];
+let current = [...TOOLS];
 
-    const cardGrid = document.getElementById("cardGrid");
-    const searchInput = document.getElementById("searchInput");
-    const typeFilter = document.getElementById("typeFilter");
-    const shuffleButton = document.getElementById("shuffleButton");
-    const printButton = document.getElementById("printButton");
-    const resultCount = document.getElementById("resultCount");
-    const emptyState = document.getElementById("emptyState");
+function setFilter(f, btn) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  current = f === 'all' ? [...TOOLS] : TOOLS.filter(t => t.cat === f);
+  render();
+}
 
-    function initials(name) {
-      const clean = name.replace(/\([^)]*\)/g, "").replace(/[^A-Za-z0-9 ]/g, " ");
-      const words = clean.trim().split(/\s+/).filter(Boolean);
-      if (words.length === 1) return words[0].slice(0, 2).toUpperCase();
-      return (words[0][0] + words[words.length - 1][0]).toUpperCase();
-    }
+function shuffle() {
+  for (let i = current.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [current[i], current[j]] = [current[j], current[i]];
+  }
+  render();
+}
 
-    function escapeHtml(value) {
-      return String(value)
-        .replaceAll("&", "&amp;")
-        .replaceAll("<", "&lt;")
-        .replaceAll(">", "&gt;")
-        .replaceAll('"', "&quot;")
-        .replaceAll("'", "&#039;");
-    }
-
-    function cardTemplate(tool, index) {
-      const isPower = tool.type === "Power Tool";
-      const searchText = `${tool.name} ${tool.type} ${tool.category} ${tool.use} ${tool.safety}`.toLowerCase();
-
-      return `
-        <article class="flashcard"
-          tabindex="0"
-          role="button"
-          aria-label="Flip study card for ${escapeHtml(tool.name)}"
-          aria-pressed="false"
-          data-type="${escapeHtml(tool.type)}"
-          data-search="${escapeHtml(searchText)}"
-          data-index="${index}">
-          <div class="card-inner">
-            <section class="card-face card-front">
-              <span class="tool-type ${isPower ? "power" : ""}">${escapeHtml(tool.type)}</span>
-              <div class="tool-photo-wrap">
-                <div class="photo-loading" aria-hidden="true">
-                  <span class="loader"></span>
-                  <span>Loading tool photo…</span>
-                </div>
-                <img class="tool-photo"
-                  alt=""
-                  loading="lazy"
-                  referrerpolicy="no-referrer"
-                  data-query="${escapeHtml(tool.imageQuery)}"
-                  data-tool-name="${escapeHtml(tool.name)}">
-                <div class="photo-fallback" aria-hidden="true">${initials(tool.name)}</div>
-              </div>
-              <h2 class="study-question">What tool is this?</h2>
-              <p class="category">${escapeHtml(tool.category)}</p>
-              <div class="image-credit" aria-live="polite"></div>
-              <div class="flip-hint">Tap to reveal the answer</div>
-            </section>
-            <section class="card-face card-back">
-              <span class="tool-type ${isPower ? "power" : ""}">${escapeHtml(tool.type)}</span>
-              <h2>${escapeHtml(tool.name)}</h2>
-              <p class="label">Primary use</p>
-              <p>${escapeHtml(tool.use)}</p>
-              <p class="label">Safety reminder</p>
-              <p>${escapeHtml(tool.safety)}</p>
-              <div class="flip-hint">Tap to see the photo again</div>
-            </section>
-          </div>
-        </article>`;
-    }
-
-
-    const imageCache = new Map();
-    const blockedTitleWords = [
-      "logo", "icon", "symbol", "diagram", "drawing", "patent", "clipart",
-      "coat of arms", "map", "flag", "emoji", "screenshot", "manual page"
-    ];
-
-    function normalizedWords(value) {
-      return String(value)
-        .toLowerCase()
-        .replace(/[’']/g, "")
-        .replace(/[^a-z0-9]+/g, " ")
-        .trim()
-        .split(/\s+/)
-        .filter(word => word.length > 2 && !["tool", "power", "construction", "electric"].includes(word));
-    }
-
-    function candidateScore(page, query) {
-      const title = String(page.title || "").toLowerCase();
-      const queryWords = normalizedWords(query);
-      let score = 0;
-
-      queryWords.forEach(word => {
-        if (title.includes(word)) score += 5;
-      });
-
-      blockedTitleWords.forEach(word => {
-        if (title.includes(word)) score -= 18;
-      });
-
-      const info = page.imageinfo?.[0] || {};
-      const url = String(info.thumburl || info.url || "").toLowerCase();
-
-      if (/\.(jpe?g)(\?|$)/.test(url)) score += 7;
-      if (/\.(png|webp)(\?|$)/.test(url)) score += 4;
-      if (/\.svg(\?|$)/.test(url)) score -= 2;
-
-      return score;
-    }
-
-    async function findCommonsImage(query) {
-      if (imageCache.has(query)) return imageCache.get(query);
-
-      const search = `${query} -logo -icon -diagram`;
-      const endpoint = new URL("https://commons.wikimedia.org/w/api.php");
-      endpoint.search = new URLSearchParams({
-        action: "query",
-        generator: "search",
-        gsrsearch: search,
-        gsrnamespace: "6",
-        gsrlimit: "12",
-        prop: "imageinfo",
-        iiprop: "url",
-        iiurlwidth: "700",
-        format: "json",
-        origin: "*"
-      }).toString();
-
-      const promise = fetch(endpoint)
-        .then(response => {
-          if (!response.ok) throw new Error(`Image search failed: ${response.status}`);
-          return response.json();
-        })
-        .then(data => {
-          const pages = Object.values(data.query?.pages || {})
-            .filter(page => page.imageinfo?.[0]?.thumburl || page.imageinfo?.[0]?.url)
-            .sort((a, b) => candidateScore(b, query) - candidateScore(a, query));
-
-          const best = pages[0];
-          if (!best) return null;
-
-          const info = best.imageinfo[0];
-          return {
-            src: info.thumburl || info.url,
-            source: info.descriptionurl || `https://commons.wikimedia.org/wiki/${encodeURIComponent(best.title.replaceAll(" ", "_"))}`,
-            title: best.title.replace(/^File:/i, "")
-          };
-        })
-        .catch(() => null);
-
-      imageCache.set(query, promise);
-      return promise;
-    }
-
-    async function loadPhoto(img) {
-      if (img.dataset.loaded === "true") return;
-      img.dataset.loaded = "true";
-
-      const wrap = img.closest(".tool-photo-wrap");
-      const credit = img.closest(".card-front").querySelector(".image-credit");
-      const result = await findCommonsImage(img.dataset.query);
-
-      if (!result) {
-        wrap.classList.add("has-fallback");
-        credit.textContent = "Photo unavailable";
-        return;
-      }
-
-      img.addEventListener("load", () => {
-        img.classList.add("is-loaded");
-        wrap.classList.add("has-image");
-        img.alt = `${img.dataset.toolName} reference photo`;
-        credit.innerHTML = `Image: <a href="${escapeHtml(result.source)}" target="_blank" rel="noopener noreferrer">Wikimedia Commons</a>`;
-      }, { once: true });
-
-      img.addEventListener("error", () => {
-        wrap.classList.add("has-fallback");
-        credit.textContent = "Photo unavailable";
-      }, { once: true });
-
-      img.src = result.src;
-    }
-
-    function setupPhotoObserver() {
-      const images = [...document.querySelectorAll(".tool-photo")];
-
-      if (!("IntersectionObserver" in window)) {
-        images.forEach(loadPhoto);
-        return;
-      }
-
-      const observer = new IntersectionObserver(entries => {
-        entries.forEach(entry => {
-          if (!entry.isIntersecting) return;
-          observer.unobserve(entry.target);
-          loadPhoto(entry.target);
-        });
-      }, { rootMargin: "500px 0px" });
-
-      images.forEach(image => observer.observe(image));
-    }
-
-    function filteredTools() {
-      const query = searchInput.value.trim().toLowerCase();
-      const selectedType = typeFilter.value;
-
-      return currentOrder.filter(tool => {
-        const matchesType = selectedType === "All" || tool.type === selectedType;
-        const haystack = `${tool.name} ${tool.type} ${tool.category} ${tool.use} ${tool.safety}`.toLowerCase();
-        return matchesType && (!query || haystack.includes(query));
-      });
-    }
-
-    function render() {
-      const visible = filteredTools();
-      cardGrid.innerHTML = visible.map(cardTemplate).join("");
-      resultCount.textContent = visible.length;
-      emptyState.classList.toggle("visible", visible.length === 0);
-
-      document.querySelectorAll(".flashcard").forEach(card => {
-        const flip = () => {
-          const flipped = card.classList.toggle("is-flipped");
-          card.setAttribute("aria-pressed", String(flipped));
-        };
-
-        card.addEventListener("click", flip);
-        card.addEventListener("keydown", event => {
-          if (event.key === "Enter" || event.key === " ") {
-            event.preventDefault();
-            flip();
-          }
-        });
-      });
-
-      setupPhotoObserver();
-    }
-
-    function shuffle(array) {
-      const copy = [...array];
-      for (let i = copy.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [copy[i], copy[j]] = [copy[j], copy[i]];
-      }
-      return copy;
-    }
-
-    searchInput.addEventListener("input", render);
-    typeFilter.addEventListener("change", render);
-    shuffleButton.addEventListener("click", () => {
-      currentOrder = shuffle(currentOrder);
-      render();
-      cardGrid.scrollIntoView({ behavior: "smooth", block: "start" });
+function render() {
+  const grid = document.getElementById('grid');
+  document.getElementById('count').textContent = current.length + ' cards';
+  grid.innerHTML = '';
+  current.forEach(tool => {
+    const wrap = document.createElement('div');
+    wrap.className = 'card-wrap';
+    wrap.tabIndex = 0;
+    wrap.innerHTML =
+      '<div class="card-ratio"><div class="card-inner">' +
+      '<div class="card-face card-front"><img src="' + tool.img + '" alt="' + tool.name + '" loading="lazy"></div>' +
+      '<div class="card-face card-back"><div class="name">' + tool.name + '</div>' +
+      '<div class="cat-label">' + (tool.cat === 'hand' ? 'Hand Tool' : 'Power Tool') + '</div></div>' +
+      '</div></div>';
+    wrap.addEventListener('click', () => wrap.classList.toggle('flipped'));
+    wrap.addEventListener('keydown', e => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); wrap.classList.toggle('flipped'); }
     });
-    printButton.addEventListener("click", () => window.print());
+    grid.appendChild(wrap);
+  });
+}
 
-    render();
-  </script>
+render();
+</script>
 </body>
 </html>
