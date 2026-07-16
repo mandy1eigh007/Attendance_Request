@@ -10,10 +10,9 @@ body{font-family:system-ui,sans-serif;background:#111;color:#fff;min-height:100v
 header{padding:18px 24px 12px;border-bottom:1px solid #1e1e1e}
 header h1{font-size:1.2rem;font-weight:700}
 .controls{padding:12px 24px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;border-bottom:1px solid #1a1a1a}
-.filter-btn,.mode-btn{padding:7px 18px;border:1px solid #333;background:transparent;color:#777;border-radius:4px;cursor:pointer;font-size:0.88rem;transition:all 0.15s}
-.filter-btn:hover,.mode-btn:hover{border-color:#666;color:#ccc}
+.filter-btn{padding:7px 18px;border:1px solid #333;background:transparent;color:#777;border-radius:4px;cursor:pointer;font-size:0.88rem;transition:all 0.15s}
+.filter-btn:hover{border-color:#666;color:#ccc}
 .filter-btn.active{background:#fff;color:#000;border-color:#fff}
-.mode-btn.active{background:#4a9eff;color:#000;border-color:#4a9eff}
 .shuffle-btn{padding:7px 18px;border:1px solid #333;background:transparent;color:#777;border-radius:4px;cursor:pointer;font-size:0.88rem}
 .shuffle-btn:hover{border-color:#666;color:#ccc}
 .ctrl-divider{width:1px;background:#2a2a2a;align-self:stretch;margin:0 2px}
@@ -45,12 +44,10 @@ header h1{font-size:1.2rem;font-weight:700}
 </header>
 
 <div class="controls">
-  <button class="filter-btn active" onclick="setFilter('all',this)">All Tools</button>
-  <button class="filter-btn" onclick="setFilter('hand',this)">Hand Tools</button>
-  <button class="filter-btn" onclick="setFilter('power',this)">Power Tools</button>
-  <span class="ctrl-divider"></span>
-  <button class="mode-btn active" onclick="setMode('images',this)">Images</button>
-  <button class="mode-btn" onclick="setMode('functions',this)">Functions</button>
+  <button class="filter-btn active" onclick="setFilter('all','images',this)">All Tools</button>
+  <button class="filter-btn" onclick="setFilter('hand','images',this)">Hand Tools Only</button>
+  <button class="filter-btn" onclick="setFilter('power','images',this)">Power Tools Only</button>
+  <button class="filter-btn" onclick="setFilter('all','functions',this)">Tool Functions</button>
   <button class="shuffle-btn" onclick="shuffle()">Shuffle</button>
   <button class="shuffle-btn" onclick="shuffleAll()">Shuffle All</button>
   <span class="count" id="count"></span>
@@ -154,18 +151,11 @@ let current = [...TOOLS];
 let index = 0;
 let mode = 'images';
 
-function setFilter(f, btn) {
+function setFilter(f, m, btn) {
   document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
-  current = f === 'all' ? [...TOOLS] : TOOLS.filter(t => t.cat === f);
-  index = 0;
-  render();
-}
-
-function setMode(m, btn) {
   mode = m;
-  document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
+  current = f === 'all' ? [...TOOLS] : TOOLS.filter(t => t.cat === f);
   index = 0;
   render();
 }
