@@ -260,7 +260,7 @@ function render() {
     desc.style.display = 'block';
   }
 
-  document.getElementById('cardCat').textContent = tool.cat === 'hand' ? 'Hand Tool' : 'Power Tool';
+  document.getElementById('cardCat').textContent = tool.cat === 'hand' ? 'Hand Tool' : tool.cat === 'power' ? 'Power Tool' : 'Tape Measure';
   document.getElementById('counter').textContent = `${index + 1} of ${current.length}`;
   document.getElementById('count').textContent = `${current.length} cards`;
 }
