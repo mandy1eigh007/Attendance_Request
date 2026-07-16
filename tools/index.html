@@ -173,7 +173,9 @@ function setMode(m, btn) {
 function shuffleAll() {
   document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
   document.querySelectorAll('.filter-btn')[0].classList.add('active');
-  current = [...TOOLS];
+  const imageDeck = TOOLS.map(t => ({...t, _type:'images'}));
+  const funcDeck = TOOLS.map(t => ({...t, _type:'functions'}));
+  current = [...imageDeck, ...funcDeck];
   for (let i = current.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
     [current[i], current[j]] = [current[j], current[i]];
@@ -216,8 +218,9 @@ function render() {
   const nameFront = document.getElementById('cardNameFront');
   const nameBack = document.getElementById('cardName');
   const desc = document.getElementById('cardDesc');
+  const cardMode = tool._type || mode;
 
-  if (mode === 'images') {
+  if (cardMode === 'images') {
     imgEl.src = tool.img;
     imgEl.alt = tool.name;
     imgEl.style.display = 'block';
