@@ -52,6 +52,7 @@ header h1{font-size:1.2rem;font-weight:700}
   <button class="mode-btn active" onclick="setMode('images',this)">Images</button>
   <button class="mode-btn" onclick="setMode('functions',this)">Functions</button>
   <button class="shuffle-btn" onclick="shuffle()">Shuffle</button>
+  <button class="shuffle-btn" onclick="shuffleAll()">Shuffle All</button>
   <span class="count" id="count"></span>
 </div>
 
@@ -165,6 +166,18 @@ function setMode(m, btn) {
   mode = m;
   document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
+  index = 0;
+  render();
+}
+
+function shuffleAll() {
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.filter-btn')[0].classList.add('active');
+  current = [...TOOLS];
+  for (let i = current.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [current[i], current[j]] = [current[j], current[i]];
+  }
   index = 0;
   render();
 }
