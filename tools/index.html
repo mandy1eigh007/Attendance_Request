@@ -48,6 +48,7 @@ header h1{font-size:1.2rem;font-weight:700}
   <button class="filter-btn" onclick="setFilter('hand','images',this)">Hand Tools Only</button>
   <button class="filter-btn" onclick="setFilter('power','images',this)">Power Tools Only</button>
   <button class="filter-btn" onclick="setFilter('all','functions',this)">Tool Functions</button>
+  <button class="filter-btn" onclick="setFilter('tape','functions',this)">Tape Measure</button>
   <button class="shuffle-btn" onclick="shuffle()">Shuffle</button>
   <button class="shuffle-btn" onclick="shuffleAll()">Shuffle All</button>
   <span class="count" id="count"></span>
@@ -147,6 +148,38 @@ const TOOLS = [
   {cat:'power',img:'images/pt-43.jpg',name:'Chain Saw',func:'Gas or electric powered chain of cutting teeth for felling trees, clearing brush, and cutting rough timber.'},
 ];
 
+const TAPE = [
+  {cat:'tape',name:'Blade',func:'Flexible steel ribbon with measurement markings; the slight curve gives it rigidity and allows it to stand out horizontally without collapsing.'},
+  {cat:'tape',name:'Case',func:'Housing for the coiled blade and return spring; case length is stamped on the side and added when taking inside measurements.'},
+  {cat:'tape',name:'Return Spring',func:'Spring inside the case that automatically pulls the blade back after use.'},
+  {cat:'tape',name:'Blade Hook',func:'Metal hook at the blade tip with intentional play equal to its own thickness — slides in or out so both push and pull measurements are accurate.'},
+  {cat:'tape',name:'Floating Blade Hook',func:'The hook is engineered to slide slightly — forward for outside (pull) measurements, inward for inside (push) measurements — so both are accurate.'},
+  {cat:'tape',name:'Locking Mechanism',func:'Thumb-slide button on the case that holds the blade at any extended length.'},
+  {cat:'tape',name:'Nail Catch Hole',func:'Hole in the blade hook that catches a nail or screw head so you can pull the tape solo on long measurements.'},
+  {cat:'tape',name:'Blade Standout',func:'How far the blade extends horizontally before it collapses under its own weight; wider and stiffer blades have more standout.'},
+  {cat:'tape',name:'Inch Marks',func:'The longest lines on the blade, marking every full inch.'},
+  {cat:'tape',name:'Half-Inch Marks',func:'Second-longest marks appearing at the halfway point between each inch (1/2", 1-1/2", 2-1/2", etc.).'},
+  {cat:'tape',name:'Quarter-Inch Marks',func:'Lines indicating the 1/4" and 3/4" positions within each inch.'},
+  {cat:'tape',name:'Eighth-Inch Marks',func:'Lines marking the 1/8", 3/8", 5/8", and 7/8" positions within each inch.'},
+  {cat:'tape',name:'Sixteenth-Inch Marks',func:'The shortest marks on the blade, filling the remaining spaces between all other fraction lines.'},
+  {cat:'tape',name:'Fraction Reading by Line Length',func:'Read fractions by mark height — the longer the mark, the larger the fraction (1/2 > 1/4 > 1/8 > 1/16).'},
+  {cat:'tape',name:'Foot Indicators',func:'Color, arrows, or bold numbers marking every 12 inches on the blade to show foot boundaries at a glance.'},
+  {cat:'tape',name:'16 On-Center Marking',func:'Red diamond or rectangle at every 16 inches on the blade indicating standard framing stud spacing.'},
+  {cat:'tape',name:'16 On Center (16" OC)',func:'Standard 16-inch center-to-center spacing for wall studs, floor joists, and roof rafters in residential construction.'},
+  {cat:'tape',name:'19.2-Inch Mark (Black Diamond)',func:'Mark appearing every 19.2 inches; used for joist or rafter spacing that places five members within an 8-foot span.'},
+  {cat:'tape',name:'Case Addition Method',func:'Inside measurement technique: butt the case against one wall, read the blade at the far wall, then add the case length for the total.'},
+  {cat:'tape',name:'Burn an Inch Technique',func:'Start measuring at the 1-inch mark instead of the hook, then subtract 1 inch from the final reading — used when extra precision is needed.'},
+  {cat:'tape',name:'Inside Measurement',func:'Measuring the distance between two surfaces from the inside, such as wall to wall inside a room.'},
+  {cat:'tape',name:'Outside Measurement',func:'Measuring across the outer edges of an object by hooking the blade over an edge and pulling.'},
+  {cat:'tape',name:'Magnetic Blade Tip',func:'Magnet embedded in the hook that attaches to steel studs and metal surfaces for hands-free solo measuring.'},
+  {cat:'tape',name:'Serrated Hook Edge',func:'Sharpened edges on the hook of some tapes for scoring or marking wood and drywall when a pencil is not available.'},
+  {cat:'tape',name:'25-Foot Tape',func:'The most common size for general construction and carpentry; compact enough for a belt clip with 7-10 feet of standout.'},
+  {cat:'tape',name:'16-Foot Tape',func:'Smaller, lighter tape for tight spaces and detail work; shorter standout than a 25-foot tape.'},
+  {cat:'tape',name:'Controlled Blade Retraction',func:'Always guide the blade back into the case slowly rather than letting it snap — prevents hook bending and blade kinking.'},
+  {cat:'tape',name:'Hook Damage',func:'Bent hook or loose rivets cause measurement errors; the most common failure point, usually from dropping the tape.'},
+  {cat:'tape',name:'Never Disassemble Tape',func:'Opening the case releases a pressurized spring that is nearly impossible to reassemble — always replace rather than attempt to repair.'},
+];
+
 let current = [...TOOLS];
 let index = 0;
 let mode = 'images';
@@ -155,7 +188,7 @@ function setFilter(f, m, btn) {
   document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
   mode = m;
-  current = f === 'all' ? [...TOOLS] : TOOLS.filter(t => t.cat === f);
+  current = f === 'tape' ? [...TAPE] : f === 'all' ? [...TOOLS] : TOOLS.filter(t => t.cat === f);
   index = 0;
   render();
 }
