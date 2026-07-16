@@ -9,7 +9,13 @@
 body{font-family:system-ui,sans-serif;background:#111;color:#fff;min-height:100vh;display:flex;flex-direction:column}
 header{padding:18px 24px 12px;border-bottom:1px solid #1e1e1e}
 header h1{font-size:1.2rem;font-weight:700}
-.controls{padding:12px 24px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;border-bottom:1px solid #1a1a1a}
+.trade-bar{padding:14px 24px 0;display:flex;gap:0;border-bottom:1px solid #1a1a1a}
+.trade-btn{padding:8px 22px;border:none;border-bottom:2px solid transparent;background:transparent;color:#555;cursor:pointer;font-size:0.9rem;font-weight:600;transition:all 0.15s}
+.trade-btn:hover{color:#aaa}
+.trade-btn.active{color:#fff;border-bottom-color:#fff}
+.controls{padding:10px 24px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;border-bottom:1px solid #1a1a1a}
+.btn-group{display:contents}
+.btn-group.hidden{display:none}
 .filter-btn{padding:7px 18px;border:1px solid #333;background:transparent;color:#777;border-radius:4px;cursor:pointer;font-size:0.88rem;transition:all 0.15s}
 .filter-btn:hover{border-color:#666;color:#ccc}
 .filter-btn.active{background:#fff;color:#000;border-color:#fff}
@@ -44,14 +50,26 @@ header h1{font-size:1.2rem;font-weight:700}
   <h1>Tool Study Cards</h1>
 </header>
 
+<div class="trade-bar">
+  <button class="trade-btn active" onclick="setTrade('pre',this)">Pre-Apprenticeship</button>
+  <button class="trade-btn" onclick="setTrade('laborers',this)">Laborers</button>
+</div>
 <div class="controls">
-  <button class="filter-btn active" onclick="setFilter('all','images',this)">All Tools</button>
-  <button class="filter-btn" onclick="setFilter('hand','images',this)">Hand Tools Only</button>
-  <button class="filter-btn" onclick="setFilter('power','images',this)">Power Tools Only</button>
-  <button class="filter-btn" onclick="setFilter('all','functions',this)">Tool Functions</button>
-  <button class="filter-btn" onclick="setFilter('tape','functions',this)">Tape Measure</button>
-  <button class="shuffle-btn" onclick="shuffle()">Shuffle</button>
-  <button class="shuffle-btn" onclick="shuffleAll()">Shuffle All</button>
+  <div class="btn-group" id="btns-pre">
+    <button class="filter-btn active" onclick="setFilter('all','images',this)">All Tools</button>
+    <button class="filter-btn" onclick="setFilter('hand','images',this)">Hand Tools Only</button>
+    <button class="filter-btn" onclick="setFilter('power','images',this)">Power Tools Only</button>
+    <button class="filter-btn" onclick="setFilter('all','functions',this)">Tool Functions</button>
+    <button class="filter-btn" onclick="setFilter('tape','functions',this)">Tape Measure</button>
+    <button class="shuffle-btn" onclick="shuffle()">Shuffle</button>
+    <button class="shuffle-btn" onclick="shuffleAll()">Shuffle All</button>
+  </div>
+  <div class="btn-group hidden" id="btns-laborers">
+    <button class="filter-btn active" onclick="setFilterL('materials',this)">PCT Materials</button>
+    <button class="filter-btn" onclick="setFilterL('tools',this)">PCT Tools</button>
+    <button class="shuffle-btn" onclick="shuffle()">Shuffle</button>
+    <button class="shuffle-btn" onclick="shuffleAllL()">Shuffle All</button>
+  </div>
   <span class="count" id="count"></span>
 </div>
 
@@ -182,12 +200,131 @@ const TAPE = [
   {cat:'tape',img:'images/tm-replace.png',name:'Never Disassemble Tape',func:'Opening the case releases a pressurized spring that is nearly impossible to reassemble — always replace rather than attempt to repair.'},
 ];
 
+const PCT_MATERIALS = [
+  {cat:'material',img:'images/pct-m-01.png',name:'3/4" Plywood'},
+  {cat:'material',img:'images/pct-m-02.png',name:'2"x 6"'},
+  {cat:'material',img:'images/pct-m-03.png',name:'1"x 6"'},
+  {cat:'material',img:'images/pct-m-04.png',name:'2"x 10"'},
+  {cat:'material',img:'images/pct-m-05.png',name:'2"x12"'},
+  {cat:'material',img:'images/pct-m-06.png',name:'Expansion Material'},
+  {cat:'material',img:'images/pct-m-07.png',name:'Duct Tape'},
+  {cat:'material',img:'images/pct-m-08.png',name:'Tie Wire'},
+  {cat:'material',img:'images/pct-m-09.png',name:'Snap Tie Wedge "Flat Shoe"'},
+  {cat:'material',img:'images/pct-m-10.png',name:'String Line & Stake'},
+  {cat:'material',img:'images/pct-m-11.png',name:'Rolling "D" Gasket'},
+  {cat:'material',img:'images/pct-m-12.png',name:'Common Brick'},
+  {cat:'material',img:'images/pct-m-13.png',name:'Chamfer Strip'},
+  {cat:'material',img:'images/pct-m-14.png',name:'Surveyors Tape'},
+  {cat:'material',img:'images/pct-m-15.png',name:'1"x 4" Cleat'},
+  {cat:'material',img:'images/pct-m-16.png',name:'Turnbuckle'},
+  {cat:'material',img:'images/pct-m-17.png',name:'Hub Stake'},
+  {cat:'material',img:'images/pct-m-18.png',name:'Jahn Shoe'},
+  {cat:'material',img:'images/pct-m-19.png',name:'Snap Tie'},
+  {cat:'material',img:'images/pct-m-20.png',name:'1/2" or #4 Rebar'},
+  {cat:'material',img:'images/pct-m-21.png',name:'Screed Stake & Saddle'},
+  {cat:'material',img:'images/pct-m-22.png',name:'2" x 4"'},
+  {cat:'material',img:'images/pct-m-23.png',name:'8d Duplex'},
+  {cat:'material',img:'images/pct-m-24.png',name:'16d Duplex'},
+  {cat:'material',img:'images/pct-m-25.png',name:'8d Common Nail'},
+  {cat:'material',img:'images/pct-m-26.png',name:'8d Galvanized'},
+  {cat:'material',img:'images/pct-m-27.png',name:'Powder Actuated Fastener'},
+  {cat:'material',img:'images/pct-m-28.png',name:'2 1/2" Deck Screw'},
+  {cat:'material',img:'images/pct-m-29.png',name:'Wire Staple'},
+  {cat:'material',img:'images/pct-m-30.png',name:'1/2" Conduit'},
+  {cat:'material',img:'images/pct-m-31.png',name:'2" Polyethylene Pipe'},
+  {cat:'material',img:'images/pct-m-32.png',name:'8" Ductile Iron Pipe'},
+  {cat:'material',img:'images/pct-m-33.png',name:'4" Perforated PVC Sewage Pipe'},
+  {cat:'material',img:'images/pct-m-34.png',name:'8" PVC Bell End'},
+  {cat:'material',img:'images/pct-m-35.png',name:'1 1/2" PVC Pipe'},
+  {cat:'material',img:'images/pct-m-36.png',name:'Standard Block'},
+  {cat:'material',img:'images/pct-m-37.png',name:'Partition Block'},
+  {cat:'material',img:'images/pct-m-38.png',name:'Bond Beam Block'},
+  {cat:'material',img:'images/pct-m-39.png',name:'Half Block'},
+  {cat:'material',img:'images/pct-m-40.png',name:'8" PVC Spigot End'},
+];
+
+const PCT_TOOLS = [
+  {cat:'pct-tool',img:'images/pct-t-01.png',name:'Cold Chisel'},
+  {cat:'pct-tool',img:'images/pct-t-02.png',name:'Ripping Hammer'},
+  {cat:'pct-tool',img:'images/pct-t-03.png',name:'Wood Chisel'},
+  {cat:'pct-tool',img:'images/pct-t-04.png',name:'Claw Hammer'},
+  {cat:'pct-tool',img:'images/pct-t-05.png',name:'Spud Wrench'},
+  {cat:'pct-tool',img:'images/pct-t-06.png',name:"Lineman's Pliers"},
+  {cat:'pct-tool',img:'images/pct-t-07.png',name:'Steel Trowel'},
+  {cat:'pct-tool',img:'images/pct-t-08.png',name:'Magnesium Float'},
+  {cat:'pct-tool',img:'images/pct-t-09.png',name:'Margin Trowel'},
+  {cat:'pct-tool',img:'images/pct-t-10.png',name:'Brick Trowel'},
+  {cat:'pct-tool',img:'images/pct-t-11.png',name:'Brick Joiner'},
+  {cat:'pct-tool',img:'images/pct-t-12.png',name:'Brick Chisel'},
+  {cat:'pct-tool',img:'images/pct-t-13.png',name:'Brick Tongs'},
+  {cat:'pct-tool',img:'images/pct-t-14.png',name:'Brick Hammer'},
+  {cat:'pct-tool',img:'images/pct-t-15.png',name:'Cats Paw Nail Puller'},
+  {cat:'pct-tool',img:'images/pct-t-16.png',name:'Burke Bar'},
+  {cat:'pct-tool',img:'images/pct-t-17.png',name:'Digging Bar'},
+  {cat:'pct-tool',img:'images/pct-t-18.png',name:"2' Aluminum Level"},
+  {cat:'pct-tool',img:'images/pct-t-19.png',name:'Pipe Wrench'},
+  {cat:'pct-tool',img:'images/pct-t-20.png',name:'Goose Neck Bar'},
+  {cat:'pct-tool',img:'images/pct-t-21.png',name:'8 LB. Sledge Hammer - Double Jack'},
+  {cat:'pct-tool',img:'images/pct-t-22.png',name:'3 LB. Sledge Hammer - Single Jack'},
+  {cat:'pct-tool',img:'images/pct-t-23.png',name:'Lute'},
+  {cat:'pct-tool',img:'images/pct-t-24.png',name:'12" Adjustable Wrench'},
+  {cat:'pct-tool',img:'images/pct-t-25.png',name:'Circular Saw Blade'},
+  {cat:'pct-tool',img:'images/pct-t-26.png',name:'Cut-Off Saw Blade'},
+  {cat:'pct-tool',img:'images/pct-t-27.png',name:'Utility Knife'},
+  {cat:'pct-tool',img:'images/pct-t-28.png',name:'Flat File'},
+  {cat:'pct-tool',img:'images/pct-t-29.png',name:"100' Tape Measure"},
+  {cat:'pct-tool',img:'images/pct-t-30.png',name:"25' Tape Measure"},
+  {cat:'pct-tool',img:'images/pct-t-31.png',name:"25' Engineers Tape Measure"},
+  {cat:'pct-tool',img:'images/pct-t-32.png',name:'Plumb Bob'},
+  {cat:'pct-tool',img:'images/pct-t-33.png',name:'Chipping Hammer'},
+  {cat:'pct-tool',img:'images/pct-t-34.png',name:'Rivet Buster'},
+  {cat:'pct-tool',img:'images/pct-t-35.png',name:'Pavement Breaker'},
+  {cat:'pct-tool',img:'images/pct-t-36.png',name:'Jack Hammer'},
+  {cat:'pct-tool',img:'images/pct-t-37.png',name:'#2 Square Point Shovel'},
+  {cat:'pct-tool',img:'images/pct-t-38.png',name:'Sidewalk Scraper'},
+  {cat:'pct-tool',img:'images/pct-t-39.png',name:'#2 Point Shovel'},
+  {cat:'pct-tool',img:'images/pct-t-40.png',name:'Torpedo Level'},
+];
+
 let current = [...TOOLS];
 let index = 0;
 let mode = 'images';
 
+function setTrade(t, btn) {
+  document.querySelectorAll('.trade-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('btns-pre').classList.toggle('hidden', t !== 'pre');
+  document.getElementById('btns-laborers').classList.toggle('hidden', t !== 'laborers');
+  if (t === 'pre') {
+    setFilter('all', 'images', document.querySelector('#btns-pre .filter-btn'));
+  } else {
+    setFilterL('materials', document.querySelector('#btns-laborers .filter-btn'));
+  }
+}
+
+function setFilterL(f, btn) {
+  document.querySelectorAll('#btns-laborers .filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  mode = 'images';
+  current = f === 'materials' ? [...PCT_MATERIALS] : [...PCT_TOOLS];
+  index = 0;
+  render();
+}
+
+function shuffleAllL() {
+  document.querySelectorAll('#btns-laborers .filter-btn').forEach(b => b.classList.remove('active'));
+  current = [...PCT_MATERIALS, ...PCT_TOOLS];
+  for (let i = current.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [current[i], current[j]] = [current[j], current[i]];
+  }
+  mode = 'images';
+  index = 0;
+  render();
+}
+
 function setFilter(f, m, btn) {
-  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('#btns-pre .filter-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
   mode = m;
   current = f === 'tape' ? [...TAPE] : f === 'all' ? [...TOOLS] : TOOLS.filter(t => t.cat === f);
@@ -196,8 +333,8 @@ function setFilter(f, m, btn) {
 }
 
 function shuffleAll() {
-  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-  document.querySelectorAll('.filter-btn')[0].classList.add('active');
+  document.querySelectorAll('#btns-pre .filter-btn').forEach(b => b.classList.remove('active'));
+  document.querySelector('#btns-pre .filter-btn').classList.add('active');
   const imageDeck = TOOLS.map(t => ({...t, _type:'images'}));
   const funcDeck = TOOLS.map(t => ({...t, _type:'functions'}));
   current = [...imageDeck, ...funcDeck];
@@ -266,7 +403,7 @@ function render() {
     desc.textContent = tool.func; desc.style.display = 'block';
   }
 
-  document.getElementById('cardCat').textContent = tool.cat === 'hand' ? 'Hand Tool' : tool.cat === 'power' ? 'Power Tool' : 'Tape Measure';
+  document.getElementById('cardCat').textContent = tool.cat === 'hand' ? 'Hand Tool' : tool.cat === 'power' ? 'Power Tool' : tool.cat === 'material' ? 'Material' : tool.cat === 'pct-tool' ? 'Tool' : 'Tape Measure';
   document.getElementById('counter').textContent = `${index + 1} of ${current.length}`;
   document.getElementById('count').textContent = `${current.length} cards`;
 }
