@@ -1,6 +1,6 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "studentracker",
+  "name": "cohotrack",
   "main": "worker.js",
   "compatibility_date": "2026-06-04",
   "observability": {
