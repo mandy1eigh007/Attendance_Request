@@ -10,11 +10,13 @@ body{font-family:system-ui,sans-serif;background:#111;color:#fff;min-height:100v
 header{padding:18px 24px 12px;border-bottom:1px solid #1e1e1e}
 header h1{font-size:1.2rem;font-weight:700}
 .controls{padding:12px 24px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;border-bottom:1px solid #1a1a1a}
-.tab-btn{padding:7px 18px;border:1px solid #333;background:transparent;color:#777;border-radius:4px;cursor:pointer;font-size:0.88rem;transition:all 0.15s}
-.tab-btn:hover{border-color:#666;color:#ccc}
-.tab-btn.active{background:#fff;color:#000;border-color:#fff}
+.filter-btn,.mode-btn{padding:7px 18px;border:1px solid #333;background:transparent;color:#777;border-radius:4px;cursor:pointer;font-size:0.88rem;transition:all 0.15s}
+.filter-btn:hover,.mode-btn:hover{border-color:#666;color:#ccc}
+.filter-btn.active{background:#fff;color:#000;border-color:#fff}
+.mode-btn.active{background:#4a9eff;color:#000;border-color:#4a9eff}
 .shuffle-btn{padding:7px 18px;border:1px solid #333;background:transparent;color:#777;border-radius:4px;cursor:pointer;font-size:0.88rem}
 .shuffle-btn:hover{border-color:#666;color:#ccc}
+.ctrl-divider{width:1px;background:#2a2a2a;align-self:stretch;margin:0 2px}
 .count{color:#444;font-size:0.82rem;margin-left:auto}
 .viewer{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px 16px 40px}
 .card-counter{font-size:0.82rem;color:#444;margin-bottom:16px}
@@ -25,8 +27,10 @@ header h1{font-size:1.2rem;font-weight:700}
 .card-face{position:absolute;inset:0;backface-visibility:hidden;border-radius:12px;overflow:hidden}
 .card-front{background:transparent;display:flex;align-items:center;justify-content:center}
 .card-front img{max-width:100%;max-height:100%;object-fit:contain;display:block;border-radius:8px}
-.card-back{background:#1c1c1c;border:1px solid #2d2d2d;transform:rotateY(180deg);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:28px;text-align:center}
+.fn-name{width:100%;height:100%;display:none;flex-direction:column;align-items:center;justify-content:center;font-size:1.5rem;font-weight:700;color:#f0f0f0;text-align:center;padding:24px;line-height:1.4;background:#1c1c1c;border:1px solid #2d2d2d}
+.card-back{background:#1c1c1c;border:1px solid #2d2d2d;transform:rotateY(180deg);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:28px;text-align:center;gap:0}
 .card-back .name{font-size:1.5rem;font-weight:700;line-height:1.4;color:#f0f0f0}
+.fn-func{font-size:1rem;color:#d0d0d0;line-height:1.65;display:none;text-align:center}
 .card-back .cat-label{font-size:0.78rem;color:#555;margin-top:12px;text-transform:uppercase;letter-spacing:0.08em}
 .hint{font-size:0.75rem;color:#333;margin-top:14px}
 .nav{display:flex;gap:16px;align-items:center;margin-top:22px}
@@ -41,9 +45,12 @@ header h1{font-size:1.2rem;font-weight:700}
 </header>
 
 <div class="controls">
-  <button class="tab-btn active" onclick="setFilter('all',this)">All Tools</button>
-  <button class="tab-btn" onclick="setFilter('hand',this)">Hand Tools</button>
-  <button class="tab-btn" onclick="setFilter('power',this)">Power Tools</button>
+  <button class="filter-btn active" onclick="setFilter('all',this)">All Tools</button>
+  <button class="filter-btn" onclick="setFilter('hand',this)">Hand Tools</button>
+  <button class="filter-btn" onclick="setFilter('power',this)">Power Tools</button>
+  <span class="ctrl-divider"></span>
+  <button class="mode-btn active" onclick="setMode('images',this)">Images</button>
+  <button class="mode-btn" onclick="setMode('functions',this)">Functions</button>
   <button class="shuffle-btn" onclick="shuffle()">Shuffle</button>
   <span class="count" id="count"></span>
 </div>
@@ -53,9 +60,13 @@ header h1{font-size:1.2rem;font-weight:700}
   <div class="card-wrap" id="card" onclick="flip()">
     <div class="card-ratio">
       <div class="card-inner" id="cardInner">
-        <div class="card-face card-front"><img id="cardImg" src="" alt=""></div>
+        <div class="card-face card-front">
+          <img id="cardImg" src="" alt="">
+          <div class="fn-name" id="cardNameFront"></div>
+        </div>
         <div class="card-face card-back">
           <div class="name" id="cardName"></div>
+          <div class="fn-func" id="cardDesc"></div>
           <div class="cat-label" id="cardCat"></div>
         </div>
       </div>
@@ -70,79 +81,90 @@ header h1{font-size:1.2rem;font-weight:700}
 
 <script>
 const TOOLS = [
-  {cat:'hand',img:'images/ht-1.jpg',name:'String Line'},
-  {cat:'hand',img:'images/ht-3.jpg',name:'Drywall Saw'},
-  {cat:'hand',img:'images/ht-5.jpg',name:'C-Clamp'},
-  {cat:'hand',img:'images/ht-7.jpg',name:'Framing Square'},
-  {cat:'hand',img:'images/ht-9.jpg',name:'Spirit Level'},
-  {cat:'hand',img:'images/ht-11.jpg',name:'Box-End Wrench / Closed-End Wrench'},
-  {cat:'hand',img:'images/ht-13.jpg',name:'Open-End Wrench'},
-  {cat:'hand',img:'images/ht-15.jpg',name:'Combination Wrench'},
-  {cat:'hand',img:'images/ht-17.jpg',name:"Linemen's Pliers"},
-  {cat:'hand',img:'images/ht-19.jpg',name:'Torpedo Level'},
-  {cat:'hand',img:'images/ht-21.jpg',name:'Ratchet Wrench & Socket'},
-  {cat:'hand',img:'images/ht-23.jpg',name:'Hacksaw'},
-  {cat:'hand',img:'images/ht-25.jpg',name:'Chalk Line'},
-  {cat:'hand',img:'images/ht-27.jpg',name:'Plumb Bob'},
-  {cat:'hand',img:'images/ht-29.jpg',name:'Tenon Saw (Back Saw)'},
-  {cat:'hand',img:'images/ht-31.jpg',name:'Handsaw'},
-  {cat:'hand',img:'images/ht-33.jpg',name:'Cats Paw Nail Bar'},
-  {cat:'hand',img:'images/ht-35.jpg',name:'Duplex Nail'},
-  {cat:'hand',img:'images/ht-37.jpg',name:'Pipe Wrench'},
-  {cat:'hand',img:'images/ht-39.jpg',name:'Cold Chisel'},
-  {cat:'hand',img:'images/ht-41.jpg',name:'Adjustable Wrench'},
-  {cat:'hand',img:'images/ht-43.jpg',name:'Mason Chisel'},
-  {cat:'hand',img:'images/ht-45.jpg',name:'Wood Chisel'},
-  {cat:'hand',img:'images/ht-47.jpg',name:'Paddle Bit'},
-  {cat:'hand',img:'images/ht-49.jpg',name:'Tie Wire Reel'},
-  {cat:'hand',img:'images/ht-51.jpg',name:'Margin Trowel'},
-  {cat:'hand',img:'images/ht-53.jpg',name:'Hex Head Snap Tie'},
-  {cat:'hand',img:'images/ht-55.jpg',name:'Nail Punch Set'},
-  {cat:'hand',img:'images/ht-57.jpg',name:'Sledge Hammer'},
-  {cat:'hand',img:'images/ht-59.jpg',name:'Line Level'},
-  {cat:'hand',img:'images/ht-61.jpg',name:'Straight Cutting Snips'},
-  {cat:'hand',img:'images/ht-63.jpg',name:'Speed Square'},
-  {cat:'hand',img:'images/ht-65.jpg',name:'Drywall T-Square'},
-  {cat:'hand',img:'images/ht-67.jpg',name:'Post Level'},
-  {cat:'hand',img:'images/ht-69.jpg',name:'Locking Pliers'},
-  {cat:'hand',img:'images/ht-71.jpg',name:'Ball-Peen Hammer'},
-  {cat:'hand',img:'images/ht-73.jpg',name:'Crowbar'},
-  {cat:'hand',img:'images/ht-75.jpg',name:'Needle Nose Pliers'},
-  {cat:'hand',img:'images/ht-77.jpg',name:'Combination Square'},
-  {cat:'hand',img:'images/ht-79.jpg',name:'Slip Joint Pliers'},
-  {cat:'hand',img:'images/ht-81.jpg',name:'Straight Claw Framing Hammer'},
-  {cat:'hand',img:'images/ht-83.jpg',name:'Curved Claw Hammer'},
-  {cat:'power',img:'images/pt-1.jpg',name:'Drill Motor'},
-  {cat:'power',img:'images/pt-3.jpg',name:'Jig Saw'},
-  {cat:'power',img:'images/pt-5.jpg',name:'Impact Drill / Driver'},
-  {cat:'power',img:'images/pt-7.jpg',name:'Hammer Drill'},
-  {cat:'power',img:'images/pt-9.jpg',name:'Reciprocating Saw (Sawzall)'},
-  {cat:'power',img:'images/pt-11.jpg',name:'Hole Saw'},
-  {cat:'power',img:'images/pt-13.jpg',name:'Chop Saw'},
-  {cat:'power',img:'images/pt-15.jpg',name:'Miter Saw'},
-  {cat:'power',img:'images/pt-17.jpg',name:'Circular Saw'},
-  {cat:'power',img:'images/pt-19.jpg',name:'Circular Saw Worm-Drive'},
-  {cat:'power',img:'images/pt-21.jpg',name:'Table Saw'},
-  {cat:'power',img:'images/pt-23.jpg',name:'Portable Band Saw (Portaband)'},
-  {cat:'power',img:'images/pt-25.jpg',name:'Angle Grinder'},
-  {cat:'power',img:'images/pt-27.jpg',name:'Ground Fault Circuit Interrupter (GFCI)'},
-  {cat:'power',img:'images/pt-29.jpg',name:'Belt Sander'},
-  {cat:'power',img:'images/pt-31.jpg',name:'Orbital Sander'},
-  {cat:'power',img:'images/pt-33.jpg',name:'Router'},
-  {cat:'power',img:'images/pt-35.jpg',name:'Nail Gun'},
-  {cat:'power',img:'images/pt-37.jpg',name:'Cordless Gas Cut-Off Saw'},
-  {cat:'power',img:'images/pt-39.jpg',name:'Jack Hammer'},
-  {cat:'power',img:'images/pt-41.jpg',name:'Oscillating Multi-Tool'},
-  {cat:'power',img:'images/pt-43.jpg',name:'Chain Saw'},
+  // HAND TOOLS
+  {cat:'hand',img:'images/ht-1.jpg',name:'String Line',func:'Cotton and nylon cord stretched tight between stakes or pins to establish a straight reference line for layout and alignment.'},
+  {cat:'hand',img:'images/ht-3.jpg',name:'Drywall Saw',func:'Short stiff-bladed saw with a pointed tip for piercing and cutting holes or openings in drywall.'},
+  {cat:'hand',img:'images/ht-5.jpg',name:'C-Clamp',func:'C-shaped clamp with a threaded screw for holding workpieces firmly to a bench or together during cutting, gluing, or assembly.'},
+  {cat:'hand',img:'images/ht-7.jpg',name:'Framing Square',func:'L-shaped steel tool with a 24-inch blade and 16-inch tongue used for laying out right angles, rafter cuts, and stair stringers.'},
+  {cat:'hand',img:'images/ht-9.jpg',name:'Spirit Level',func:'Alcohol-filled glass vials check whether a surface is level (horizontal) or plumb (vertical) by centering an air bubble between two lines.'},
+  {cat:'hand',img:'images/ht-11.jpg',name:'Box-End Wrench / Closed-End Wrench',func:'Closed-loop wrench that surrounds the fastener completely, distributing force evenly for maximum torque without slipping off.'},
+  {cat:'hand',img:'images/ht-13.jpg',name:'Open-End Wrench',func:'U-shaped jaws slip over a fastener from the side, allowing access from any angle — especially useful in tight or confined spaces.'},
+  {cat:'hand',img:'images/ht-15.jpg',name:'Combination Wrench',func:'One open end and one box end of the same size on a single tool — open end for speed, box end for final secure tightening.'},
+  {cat:'hand',img:'images/ht-17.jpg',name:"Linemen's Pliers",func:'Heavy-duty pliers with flat serrated jaws for gripping and hardened cutting edges near the pivot for cutting copper and steel wire.'},
+  {cat:'hand',img:'images/ht-19.jpg',name:'Torpedo Level',func:'Compact 9-inch level that fits in a tool pouch, used for quick level and plumb checks in tight or elevated spaces.'},
+  {cat:'hand',img:'images/ht-21.jpg',name:'Ratchet Wrench & Socket',func:'Ratcheting handle with interchangeable sockets for continuously turning fasteners without repositioning the wrench.'},
+  {cat:'hand',img:'images/ht-23.jpg',name:'Hacksaw',func:'Fine-tooth replaceable blade saw for cutting metal pipe, rebar, bolts, and hard plastics by hand.'},
+  {cat:'hand',img:'images/ht-25.jpg',name:'Chalk Line',func:'String coated in colored chalk that is stretched and snapped against a surface to mark a perfectly straight reference line.'},
+  {cat:'hand',img:'images/ht-27.jpg',name:'Plumb Bob',func:'Weighted cone suspended on a string that hangs perfectly vertical to establish a plumb reference or transfer a point straight down.'},
+  {cat:'hand',img:'images/ht-29.jpg',name:'Tenon Saw (Back Saw)',func:'Fine-tooth saw with a rigid reinforced spine keeping the blade perfectly straight for precision cuts in trim and finish carpentry.'},
+  {cat:'hand',img:'images/ht-31.jpg',name:'Handsaw',func:'General-purpose crosscut saw for cutting lumber, plywood, and framing materials by hand.'},
+  {cat:'hand',img:'images/ht-33.jpg',name:'Cats Paw Nail Bar',func:'Small pry bar with curved forked claws for extracting nails that are flush with or driven below the wood surface.'},
+  {cat:'hand',img:'images/ht-35.jpg',name:'Duplex Nail',func:'Double-headed nail used for temporary formwork and concrete forms — the second head stays exposed so the nail can be pulled out when forms are stripped.'},
+  {cat:'hand',img:'images/ht-37.jpg',name:'Pipe Wrench',func:'Toothed adjustable wrench that grips round pipe and conduit, biting harder as more turning force is applied.'},
+  {cat:'hand',img:'images/ht-39.jpg',name:'Cold Chisel',func:'Hardened steel chisel for cutting, chipping, or breaking concrete, masonry, brick, and metal without power tools.'},
+  {cat:'hand',img:'images/ht-41.jpg',name:'Adjustable Wrench',func:'A single wrench with a moveable jaw that adjusts to fit various fastener sizes, eliminating the need for multiple fixed wrenches.'},
+  {cat:'hand',img:'images/ht-43.jpg',name:'Mason Chisel',func:'Wide-bladed chisel used with a hammer to score and split brick, block, and stone along a clean straight line.'},
+  {cat:'hand',img:'images/ht-45.jpg',name:'Wood Chisel',func:'Beveled cutting edge for shaping wood — used to cut mortises, clean joints, and remove waste material from notches.'},
+  {cat:'hand',img:'images/ht-47.jpg',name:'Paddle Bit',func:'Flat spade bit that bores large-diameter holes in wood quickly; requires a drill with substantial torque.'},
+  {cat:'hand',img:'images/ht-49.jpg',name:'Tie Wire Reel',func:'Dispenses annealed steel wire for tying rebar intersections together to hold reinforcement in place before concrete is poured.'},
+  {cat:'hand',img:'images/ht-51.jpg',name:'Margin Trowel',func:'Small rectangular trowel for spreading mortar, plaster, or concrete in corners, edges, and areas too tight for a standard trowel.'},
+  {cat:'hand',img:'images/ht-53.jpg',name:'Hex Head Snap Tie',func:'Concrete formwork hardware that holds opposing form panels at a fixed distance; the hex head breaks off flush after forms are stripped.'},
+  {cat:'hand',img:'images/ht-55.jpg',name:'Nail Punch Set',func:'Set of tapered steel punches used to drive nail heads below the wood surface for a clean, finished appearance.'},
+  {cat:'hand',img:'images/ht-57.jpg',name:'Sledge Hammer',func:'Heavy long-handled hammer for driving stakes, breaking concrete, and demolishing masonry with maximum force.'},
+  {cat:'hand',img:'images/ht-59.jpg',name:'Line Level',func:'Small level that clips onto a taut string line to check levelness across long distances during layout and grading work.'},
+  {cat:'hand',img:'images/ht-61.jpg',name:'Straight Cutting Snips',func:'Aviation-style shears for making straight cuts through sheet metal, flashing, and roofing material.'},
+  {cat:'hand',img:'images/ht-63.jpg',name:'Speed Square',func:'Triangular aluminum tool combining a 90-degree square, 45-degree miter guide, protractor, and rafter angle reference in one compact tool.'},
+  {cat:'hand',img:'images/ht-65.jpg',name:'Drywall T-Square',func:'T-shaped aluminum square, 48 inches long, used to mark and guide straight cuts across full sheets of drywall or plywood.'},
+  {cat:'hand',img:'images/ht-67.jpg',name:'Post Level',func:'L-shaped level that straps onto a post and checks plumb in two perpendicular directions at once, keeping both hands free.'},
+  {cat:'hand',img:'images/ht-69.jpg',name:'Locking Pliers',func:'Adjustable pliers whose jaws lock onto a workpiece with a vice-like grip; a squeeze lever releases them instantly.'},
+  {cat:'hand',img:'images/ht-71.jpg',name:'Ball-Peen Hammer',func:'Metalworking hammer with a rounded peen face used for setting rivets, shaping metal, and striking punches and chisels.'},
+  {cat:'hand',img:'images/ht-73.jpg',name:'Crowbar',func:'Long steel pry bar used to pry apart nailed materials, lift heavy objects, and pull large nails during demolition.'},
+  {cat:'hand',img:'images/ht-75.jpg',name:'Needle Nose Pliers',func:'Long tapered jaws reach into confined spaces for bending wire, holding small parts, and fine detail work.'},
+  {cat:'hand',img:'images/ht-77.jpg',name:'Combination Square',func:'Sliding 12-inch rule with a head that references 90 and 45 degree angles plus a built-in spirit level for precise layout work.'},
+  {cat:'hand',img:'images/ht-79.jpg',name:'Slip Joint Pliers',func:'General-purpose pliers with an adjustable pivot that shifts to grip larger objects — handles both round and flat shapes.'},
+  {cat:'hand',img:'images/ht-81.jpg',name:'Straight Claw Framing Hammer',func:'Framing hammer with a straight ripping claw designed for prying apart framed walls and stripping concrete forms.'},
+  {cat:'hand',img:'images/ht-83.jpg',name:'Curved Claw Hammer',func:'Standard claw hammer with a curved claw for driving nails into wood and levering them back out.'},
+  // POWER TOOLS
+  {cat:'power',img:'images/pt-1.jpg',name:'Drill Motor',func:'Portable drill for boring holes and driving screws in wood, metal, and plastic — the most common power tool on any job site.'},
+  {cat:'power',img:'images/pt-3.jpg',name:'Jig Saw',func:'Reciprocating blade saw that cuts curves, circles, and irregular shapes in plywood, drywall, and sheet materials.'},
+  {cat:'power',img:'images/pt-5.jpg',name:'Impact Drill / Driver',func:'Delivers rapid rotational hammer strikes for driving long screws and lag bolts with high torque and no kickback.'},
+  {cat:'power',img:'images/pt-7.jpg',name:'Hammer Drill',func:'Combines rotation with a hammering action to drill through concrete, brick, and masonry using carbide-tipped bits.'},
+  {cat:'power',img:'images/pt-9.jpg',name:'Reciprocating Saw (Sawzall)',func:'Back-and-forth cutting blade for demolition — cuts through nails, pipes, and framing in tight spaces where other saws cannot reach.'},
+  {cat:'power',img:'images/pt-11.jpg',name:'Hole Saw',func:'Cylindrical toothed blade that cuts clean circular holes in wood, drywall, plastic, and light metal for pipes and wiring.'},
+  {cat:'power',img:'images/pt-13.jpg',name:'Chop Saw',func:'Fixed-angle abrasive saw that cuts metal pipe, rebar, and conduit at 90 degrees with a quick downward chop motion.'},
+  {cat:'power',img:'images/pt-15.jpg',name:'Miter Saw',func:'Motorized saw on a pivoting arm that makes precise angled and beveled cuts in lumber and trim without repositioning the material.'},
+  {cat:'power',img:'images/pt-17.jpg',name:'Circular Saw',func:'Handheld saw with a round blade for making straight cuts in lumber, plywood, and sheet goods on the job site.'},
+  {cat:'power',img:'images/pt-19.jpg',name:'Circular Saw Worm-Drive',func:'Circular saw with a worm-gear drive that develops greater torque, with the blade on the left side for better sightlines when cutting.'},
+  {cat:'power',img:'images/pt-21.jpg',name:'Table Saw',func:'Stationary saw with a circular blade rising through a flat table for precise ripping and crosscutting of lumber and sheet goods.'},
+  {cat:'power',img:'images/pt-23.jpg',name:'Portable Band Saw (Portaband)',func:'Handheld continuous-loop blade saw for cutting metal pipe, tubing, conduit, and structural members on the job site.'},
+  {cat:'power',img:'images/pt-25.jpg',name:'Angle Grinder',func:'High-speed rotating disc for cutting metal, grinding welds, removing rust, and cutting masonry or tile.'},
+  {cat:'power',img:'images/pt-27.jpg',name:'Ground Fault Circuit Interrupter (GFCI)',func:'Safety device that detects current leaking to ground and shuts off power in milliseconds to protect against electrocution.'},
+  {cat:'power',img:'images/pt-29.jpg',name:'Belt Sander',func:'Continuous abrasive belt that removes material quickly for smoothing rough lumber, leveling surfaces, and stripping finishes.'},
+  {cat:'power',img:'images/pt-31.jpg',name:'Orbital Sander',func:'Random orbital pad motion creates a swirl-free finish on wood surfaces for final sanding before stain or paint.'},
+  {cat:'power',img:'images/pt-33.jpg',name:'Router',func:'High-speed spinning bit that shapes edges, cuts grooves, and creates decorative profiles in wood for trim and joinery work.'},
+  {cat:'power',img:'images/pt-35.jpg',name:'Nail Gun',func:'Pneumatic or cordless tool that drives nails rapidly into framing lumber, sheathing, and finish materials.'},
+  {cat:'power',img:'images/pt-37.jpg',name:'Cordless Gas Cut-Off Saw',func:'Battery or gas-powered abrasive saw for cutting rebar, pipe, and metal on the job site without a power cord or compressor.'},
+  {cat:'power',img:'images/pt-39.jpg',name:'Jack Hammer',func:'Heavy electric or pneumatic tool that delivers rapid hammer blows to break up concrete, asphalt, and hard pavement.'},
+  {cat:'power',img:'images/pt-41.jpg',name:'Oscillating Multi-Tool',func:'Rapid side-to-side oscillation with interchangeable blades for cutting, sanding, scraping, and grinding in tight or awkward spaces.'},
+  {cat:'power',img:'images/pt-43.jpg',name:'Chain Saw',func:'Gas or electric powered chain of cutting teeth for felling trees, clearing brush, and cutting rough timber.'},
 ];
 
 let current = [...TOOLS];
 let index = 0;
+let mode = 'images';
 
 function setFilter(f, btn) {
-  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
   current = f === 'all' ? [...TOOLS] : TOOLS.filter(t => t.cat === f);
+  index = 0;
+  render();
+}
+
+function setMode(m, btn) {
+  mode = m;
+  document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
   index = 0;
   render();
 }
@@ -176,9 +198,29 @@ function render() {
   const tool = current[index];
   document.getElementById('card').classList.remove('flipped');
   document.getElementById('hint').textContent = 'click to reveal';
-  document.getElementById('cardImg').src = tool.img;
-  document.getElementById('cardImg').alt = tool.name;
-  document.getElementById('cardName').textContent = tool.name;
+
+  const imgEl = document.getElementById('cardImg');
+  const nameFront = document.getElementById('cardNameFront');
+  const nameBack = document.getElementById('cardName');
+  const desc = document.getElementById('cardDesc');
+
+  if (mode === 'images') {
+    imgEl.src = tool.img;
+    imgEl.alt = tool.name;
+    imgEl.style.display = 'block';
+    nameFront.style.display = 'none';
+    nameBack.textContent = tool.name;
+    nameBack.style.display = 'block';
+    desc.style.display = 'none';
+  } else {
+    imgEl.style.display = 'none';
+    nameFront.textContent = tool.name;
+    nameFront.style.display = 'flex';
+    nameBack.style.display = 'none';
+    desc.textContent = tool.func;
+    desc.style.display = 'block';
+  }
+
   document.getElementById('cardCat').textContent = tool.cat === 'hand' ? 'Hand Tool' : 'Power Tool';
   document.getElementById('counter').textContent = `${index + 1} of ${current.length}`;
   document.getElementById('count').textContent = `${current.length} cards`;
