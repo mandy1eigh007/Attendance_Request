@@ -1,25 +1,5 @@
 <!DOCTYPE html>
-<!--
-═══════════════════════════════════════════════════════════════════════════════
-  DEPLOYING AGENT: READ README.md FIRST. Quick version:
-  • Host: Cloudflare Pages. Framework preset = None. Build command = EMPTY.
-    Build output directory = "/". There is NO build step (static + functions).
-  • Functions live in /functions and auto-serve at /admin /submit /respond.
-    Do NOT rename them or change the fetch paths in the HTML.
-  • Database is ALREADY LIVE in Supabase (ref lfizcpaqolckemrvsooy). Do NOT
-    create tables or edit the schema. /supabase/01_schema.sql is reference only.
-  • REQUIRED environment variables (set in Cloudflare → Settings → Env vars):
-      SUPABASE_URL          = https://lfizcpaqolckemrvsooy.supabase.co
-      SUPABASE_SERVICE_KEY  = <Supabase service_role secret key>  (SECRET)
-      ADMIN_PASSWORD        = <dashboard login password, owner picks>
-      EMAILJS_PRIVATE_KEY   = <EmailJS private key>               (SECRET)
-      SITE_URL              = <deployed URL, optional>
-  • After setting vars, redeploy (free on Cloudflare). Verify by logging in at
-    /admin.html. Full troubleshooting + function probe in README.md.
-  • Never commit secrets. EmailJS public key/IDs in functions are public by design.
-═══════════════════════════════════════════════════════════════════════════════
--->
-
+<!-- Deployment notes live in README.md — do not add internal docs to this public file. -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -33,11 +13,6 @@
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='24' fill='%232dd4a7'/><path d='M50 18 L78 34 V66 L50 82 L22 66 V34 Z' fill='none' stroke='%2306231b' stroke-width='6' stroke-linejoin='round'/></svg>">
 <link rel="stylesheet" href="/app.css">
 <style>
-.topbar{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;
-  background:var(--mat-chrome);backdrop-filter:saturate(180%) blur(22px);-webkit-backdrop-filter:saturate(180%) blur(22px);
-  border-bottom:.5px solid var(--b1);padding-top:calc(14px + env(safe-area-inset-top));position:sticky;top:0;z-index:10}
-.topbar h1{font-size:17px;font-weight:600;letter-spacing:-.02em}
-.topbar .logo-dot{display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--ac);box-shadow:0 0 8px var(--ac);margin-right:8px;vertical-align:middle}
 .hero{max-width:680px;margin:0 auto;padding:48px 20px 32px;text-align:center}
 .logo{width:76px;height:76px;border-radius:20px;background:linear-gradient(160deg,var(--ac2),var(--ac));
   display:flex;align-items:center;justify-content:center;margin:0 auto 22px;
@@ -62,10 +37,9 @@
 </style>
 </head>
 <body>
-<div class="topbar">
-  <h1><span class="logo-dot"></span>ANEW Attendance</h1>
-  <a href="/admin/" class="btn btn-ghost btn-sm">Instructor Login</a>
-</div>
+<nav class="shell-nav">
+  <a class="shell-nav-brand" href="/">ANEW</a>
+</nav>
 <div class="hero">
   <div class="logo">
     <svg width="40" height="40" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -82,7 +56,7 @@
       </div>
       <h3>Submit a Request</h3>
       <p>Students — select your class to request an absence, appointment, or early departure.</p>
-      <span class="pseudo">Choose your class →</span>
+      <span class="pseudo">Choose your class</span>
     </a>
     <a href="/admin/" class="card card-link">
       <div class="card-ic">
@@ -90,7 +64,7 @@
       </div>
       <h3>Instructor Hub</h3>
       <p>Instructors — log in to manage classes, assign cohorts, and see your student form links.</p>
-      <span class="pseudo">Go to Dashboard →</span>
+      <span class="pseudo">Go to Dashboard</span>
     </a>
     <a href="/tests/" class="card card-link">
       <div class="card-ic">
@@ -98,7 +72,15 @@
       </div>
       <h3>Tool Finals</h3>
       <p>Students — take your Tape Measure, Hand Tool, or Power Tool final exam.</p>
-      <span class="pseudo">Go to Tests →</span>
+      <span class="pseudo">Go to Tests</span>
+    </a>
+    <a href="/tools/" class="card card-link">
+      <div class="card-ic">
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="11" height="11" rx="2"/><path d="M6.5 3.5h9A1.5 1.5 0 0 1 17 5v9"/><path d="M6 9.5h5M6 12.5h3"/></svg>
+      </div>
+      <h3>Tool Study Cards</h3>
+      <p>Students — study tool names and functions with flash cards before your finals.</p>
+      <span class="pseudo">Start Studying</span>
     </a>
   </div>
 

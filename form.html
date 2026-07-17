@@ -35,7 +35,6 @@
 .type-card{cursor:pointer;background:var(--s2);border:1.5px solid var(--b2);border-radius:14px;padding:16px 8px 13px;
   text-align:center;transition:border-color .18s var(--ease),background .18s var(--ease),transform .12s var(--ease);user-select:none}
 .type-card:active{transform:scale(.96)}
-.type-card .ico{font-size:24px;margin-bottom:8px;display:block;line-height:1}
 .type-card .lbl{font-size:12.5px;font-weight:600;color:var(--t2);display:block}
 .type-card .desc{font-size:11px;color:var(--t3);margin-top:3px;line-height:1.3}
 .type-card.sel{border-color:var(--ac);background:var(--acd)}
@@ -60,8 +59,6 @@
 #successPanel{display:none;text-align:center;padding:44px 20px;animation:sheetIn .5s var(--ease-out)}
 #successPanel.on{display:block}
 @keyframes sheetIn{from{opacity:0;transform:scale(.94)}to{opacity:1;transform:scale(1)}}
-.success-ic{width:72px;height:72px;border-radius:50%;background:var(--grd);color:var(--gr);
-  display:flex;align-items:center;justify-content:center;font-size:38px;margin:0 auto 18px}
 .success-h{font-size:27px;font-weight:700;letter-spacing:-.03em;margin-bottom:10px}
 .success-p{font-size:15px;color:var(--t2);line-height:1.65;margin-bottom:18px;max-width:420px;margin-left:auto;margin-right:auto}
 .success-p strong{color:var(--t1)}
@@ -75,6 +72,9 @@
 </style>
 </head>
 <body>
+<nav class="shell-nav">
+  <a class="shell-nav-brand" href="/">ANEW</a>
+</nav>
 <div class="page">
   <div class="header">
     <div class="header-top">
@@ -189,9 +189,9 @@ function renderForm(){
       <div class="divider"></div>
       <div class="sec">What are you requesting?</div>
       <div class="type-grid">
-        <div class="type-card" data-type="Full Absence" onclick="selectType(this)"><span class="ico">🚪</span><span class="lbl">Full Absence</span><span class="desc">Missing the entire day</span></div>
-        <div class="type-card" data-type="Leave Early" onclick="selectType(this)"><span class="ico">⏱️</span><span class="lbl">Leave Early</span><span class="desc">Leaving before end of day</span></div>
-        <div class="type-card" data-type="Appointment" onclick="selectType(this)"><span class="ico">📋</span><span class="lbl">Appointment</span><span class="desc">Out a few hours &amp; returning</span></div>
+        <div class="type-card" data-type="Full Absence" onclick="selectType(this)"><span class="lbl">Full Absence</span><span class="desc">Missing the entire day</span></div>
+        <div class="type-card" data-type="Leave Early" onclick="selectType(this)"><span class="lbl">Leave Early</span><span class="desc">Leaving before end of day</span></div>
+        <div class="type-card" data-type="Appointment" onclick="selectType(this)"><span class="lbl">Appointment</span><span class="desc">Out a few hours &amp; returning</span></div>
       </div>
       <input type="hidden" id="requestType">
       <div class="field"><label>Date of request <span class="req">*</span></label><input type="date" id="requestDate" min="${today}"></div>
@@ -232,11 +232,13 @@ function renderForm(){
       </div>
     </form>
     <div id="successPanel">
-      <div class="success-ic">✓</div>
       <div class="success-h">Request Submitted</div>
       <p class="success-p" id="successMsg"></p>
       <div class="success-badge" id="successBadge"></div>
-      <div><button class="btn btn-ghost" onclick="showFormAgain()">Submit Another Request</button></div>
+      <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
+        <button class="btn btn-ghost" onclick="showFormAgain()">Submit Another Request</button>
+        <a class="btn btn-primary" href="/">Return to Home</a>
+      </div>
     </div>
     </div>`;
 }

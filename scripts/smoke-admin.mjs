@@ -272,7 +272,7 @@ async function runE2E({ baseUrl, password, classId }) {
       assert(r.json?.total === 0, `Expected total 0 after excusing, got ${JSON.stringify(r.json)}`);
     }
 
-    console.log('✓ e2e ok (updateStudent + updateDemerit verified)');
+    console.log('OK: e2e ok (updateStudent + updateDemerit verified)');
   } finally {
     // best-effort cleanup so we don't clutter real data
     if (demeritId) {
@@ -313,7 +313,7 @@ try {
     const r = await postAdmin(baseUrl, { action: 'login', password: '__WRONG__' });
     assert(r.status === 401, `Expected 401 for wrong password, got ${r.status}`);
     assert(r.json && r.json.error === 'Unauthorized', `Expected {error:"Unauthorized"}, got ${JSON.stringify(r.json)}`);
-    console.log('✓ /api/admin reachable; unauthorized rejected');
+    console.log('OK: /api/admin reachable; unauthorized rejected');
   }
 
   // 2) Auth works
@@ -321,7 +321,7 @@ try {
     const r = await postAdmin(baseUrl, { action: 'login', password });
     assert(r.status === 200, `Expected 200 for login, got ${r.status}`);
     assert(r.json && r.json.ok === true, `Expected {ok:true}, got ${JSON.stringify(r.json)}`);
-    console.log('✓ login ok');
+    console.log('OK: login ok');
   }
 
   // 3) Supabase connectivity (bootstrap)
@@ -329,7 +329,7 @@ try {
     const r = await postAdmin(baseUrl, { action: 'bootstrap', password });
     assert(r.status === 200, `Expected 200 for bootstrap, got ${r.status}`);
     assert(r.json && Array.isArray(r.json.instructors) && Array.isArray(r.json.classes), `Expected instructors/classes arrays, got ${JSON.stringify(r.json)}`);
-    console.log(`✓ bootstrap ok (instructors=${r.json.instructors.length}, classes=${r.json.classes.length})`);
+    console.log(`OK: bootstrap ok (instructors=${r.json.instructors.length}, classes=${r.json.classes.length})`);
   }
 
   // 4) New actions wired (validate expected errors without needing real IDs)
@@ -337,14 +337,14 @@ try {
     const r = await postAdmin(baseUrl, { action: 'updateStudent', password, payload: {} });
     assert(r.status === 400, `Expected 400 for updateStudent missing id, got ${r.status}`);
     assert(r.json && r.json.error === 'Missing student id', `Expected Missing student id, got ${JSON.stringify(r.json)}`);
-    console.log('✓ updateStudent action present');
+    console.log('OK: updateStudent action present');
   }
 
   {
     const r = await postAdmin(baseUrl, { action: 'updateDemerit', password, payload: {} });
     assert(r.status === 400, `Expected 400 for updateDemerit missing id, got ${r.status}`);
     assert(r.json && r.json.error === 'Missing demerit id', `Expected Missing demerit id, got ${JSON.stringify(r.json)}`);
-    console.log('✓ updateDemerit action present');
+    console.log('OK: updateDemerit action present');
   }
 
   // Case notes: ensure the action is wired and rejects missing fields.
@@ -352,12 +352,12 @@ try {
     const r = await postAdmin(baseUrl, { action: 'caseNotes', password, payload: {} });
     assert(r.status === 400, `Expected 400 for caseNotes missing fields, got ${r.status}`);
     assert(r.json && /Missing/.test(r.json.error || ''), `Expected Missing... for caseNotes, got ${JSON.stringify(r.json)}`);
-    console.log('✓ caseNotes action present');
+    console.log('OK: caseNotes action present');
   }
   {
     const r = await postAdmin(baseUrl, { action: 'addCaseNote', password, payload: {} });
     assert(r.status === 400, `Expected 400 for addCaseNote missing fields, got ${r.status}`);
-    console.log('✓ addCaseNote action present');
+    console.log('OK: addCaseNote action present');
   }
 
   // Method / routing checks
@@ -365,13 +365,13 @@ try {
     const apiUrl = new URL('/api/admin', baseUrl);
     const res = await fetch(apiUrl, { method: 'GET' });
     assert(res.status === 405, `Expected 405 for GET /api/admin, got ${res.status}`);
-    console.log('✓ GET /api/admin rejected with 405');
+    console.log('OK: GET /api/admin rejected with 405');
 
     // /admin should land on the static UI (308 → /admin/ → 200)
     const pageRes = await fetch(new URL('/admin', baseUrl), { redirect: 'follow' });
     const ok = pageRes.status === 200 || pageRes.status === 304;
     assert(ok, `Expected 200/304 for GET /admin (with redirect follow), got ${pageRes.status}`);
-    console.log('✓ GET /admin lands on the static UI');
+    console.log('OK: GET /admin lands on the static UI');
   }
 
   if (opts.e2e) {
