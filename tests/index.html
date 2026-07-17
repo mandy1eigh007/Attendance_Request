@@ -138,11 +138,11 @@
   <div id="guest-form" style="display:none;width:100%;margin-top:16px">
     <div class="field-wrap">
       <span class="field-label">Full Name</span>
-      <input type="text" id="guest-name" placeholder="First Last" autocomplete="name">
+      <input type="text" id="guest-name" placeholder="First Last" autocomplete="name" onkeydown="if(event.key==='Enter')submitGuestAccess()">
     </div>
     <div class="field-wrap" style="margin-top:8px">
       <span class="field-label">Guest Access Code</span>
-      <input type="text" id="guest-pin" placeholder="Code from instructor" autocomplete="off" autocorrect="off">
+      <input type="text" id="guest-pin" placeholder="Code from instructor" autocomplete="off" autocorrect="off" onkeydown="if(event.key==='Enter')submitGuestAccess()">
     </div>
     <button class="primary-btn" onclick="submitGuestAccess()">Continue as Guest</button>
   </div>
@@ -471,14 +471,11 @@ function showGuestMode() {
 async function submitGuestAccess() {
   const name = (document.getElementById('guest-name').value || '').trim();
   const guestPin = (document.getElementById('guest-pin').value || '').trim();
-  if (name.split(/\s+/).filter(Boolean).length < 2) {
-    setAuthStatus('Enter your full first and last name.', true);
-    return;
-  }
   if (!guestPin) {
-    setAuthStatus('Enter the guest access code.', true);
+    setAuthStatus('Enter your access code.', true);
     return;
   }
+  // Name validation happens server-side (instructor mode skips it)
   setAuthStatus('Verifying...');
   try {
     const res = await fetch('/api/verify-test-access', {
