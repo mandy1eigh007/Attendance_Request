@@ -94,15 +94,15 @@
   <div class="home-sub">Select your test to begin</div>
   <div class="test-card" onclick="selectTest('tape')">
     <div class="test-card-title">Tape Measure Final</div>
-    <div class="test-card-meta">35 questions — measurement math, tool knowledge, and safety</div>
+    <div class="test-card-meta">50 questions — measurement math, tool knowledge, and safety</div>
   </div>
   <div class="test-card" onclick="selectTest('hand')">
     <div class="test-card-title">Hand Tool Final</div>
-    <div class="test-card-meta">35 questions — tool identification, safety, and PPE</div>
+    <div class="test-card-meta">50 questions — tool identification, safety, and PPE</div>
   </div>
   <div class="test-card" onclick="selectTest('power')">
     <div class="test-card-title">Power Tool Final</div>
-    <div class="test-card-meta">35 questions — tool identification, safety, and PPE</div>
+    <div class="test-card-meta">50 questions — tool identification, safety, and PPE</div>
   </div>
 </div>
 
@@ -197,6 +197,23 @@ const TESTS = {
       {type:'tf', q:'True or False:\nThe numbers or marks printed every 12 inches on a tape measure indicate one foot.', ans:true},
       {type:'tf', q:'True or False:\nA 16-foot tape measure is typically easier to use for small trim and finish work than a 25-foot tape.', ans:true},
       {type:'mc', q:'What PPE should you wear when using a utility knife alongside a tape measure to mark and cut material?', options:['No PPE needed for measuring','Cut-resistant gloves and safety glasses','Hard hat only','Full face shield only'], correct:1},
+      // ── Additional math ──────────────────────────────────────────────────
+      {type:'measure', q:'Convert 7 feet 4 inches to total inches.', ans:{ft:0,in:88,frac:'0'}},
+      {type:'measure', q:'How many inches are in 6 feet?', ans:{ft:0,in:72,frac:'0'}},
+      {type:'measure', q:'What is 5 feet 2 inches in total inches?', ans:{ft:0,in:62,frac:'0'}},
+      {type:'measure', q:'What is 6 feet and 1/16 of an inch in total inches?', ans:{ft:0,in:72,frac:'1/16'}},
+      {type:'measure', q:'What is 8 feet 3 and 7/16 inches in total inches?', ans:{ft:0,in:99,frac:'7/16'}},
+      {type:'measure', q:'Convert 5 feet 11 and 15/16 inches to total inches.', ans:{ft:0,in:71,frac:'15/16'}},
+      {type:'measure', q:'SUBTRACT: 6 feet 3 and 1/16 inches\n− 4 feet 7/8 inch', ans:{ft:2,in:2,frac:'3/16'}},
+      {type:'measure', q:'SUBTRACT: 5 feet 7 and 1/8 inches\n− 2 feet 3 and 9/16 inches', ans:{ft:3,in:3,frac:'9/16'}},
+      {type:'measure', q:'SUBTRACT: 3 feet 11 and 3/4 inches\n− 1 foot 5 and 1/16 inches', ans:{ft:2,in:6,frac:'11/16'}},
+      {type:'measure', q:'SUBTRACT: 9 feet 5 and 7/8 inches\n− 6 feet 2 and 1/16 inches', ans:{ft:3,in:3,frac:'13/16'}},
+      // ── Additional knowledge / safety ─────────────────────────────────────
+      {type:'mc', q:'What is the purpose of the nail catch hole on a tape measure hook?', options:['To hook over a nail so the tape holds itself without a helper','To attach the tape to a tool belt','To start a pilot hole for a nail','To reduce the weight of the hook'], correct:0},
+      {type:'mc', q:'What does "blade standout" refer to on a tape measure?', options:['The total length of the tape blade','How far the blade extends horizontally before it collapses or bends','The blade thickness','How fast the blade retracts'], correct:1},
+      {type:'mc', q:'What is the locking mechanism on a tape measure used for?', options:['To prevent the blade from extending','To hold the blade at a specific length while you mark','To lock the case shut','To protect the hook from damage'], correct:1},
+      {type:'tf', q:'True or False:\nA tape measure can take both inside (between walls) and outside (around an object) measurements.', ans:true},
+      {type:'tf', q:'True or False:\nYou should store a tape measure with the blade fully extended to reduce spring tension over time.', ans:false},
     ]
   },
 
@@ -241,6 +258,23 @@ const TESTS = {
       {type:'tf', q:'True or False:\nWearing cut-resistant gloves when using sharp cutting tools helps prevent hand injuries.', ans:true},
       {type:'tf', q:'True or False:\nA hammer with a loose head can be used safely as long as you are careful.', ans:false},
       {type:'tf', q:'True or False:\nTools should be cleaned, dried, and stored properly after each use.', ans:true},
+      // ── Additional tool ID ────────────────────────────────────────────────
+      {type:'mc', q:'A wrench that applies a specific pre-set amount of torque — used when precise tightening is critical in structural or mechanical work.', options:['Adjustable wrench','Combination wrench','Torque wrench','Pipe wrench'], correct:2},
+      {type:'mc', q:'A hand tool with a long handle and a flat or curved blade used for digging and moving soil.', options:['Mattock','Shovel / Spade','Garden hoe','Pry bar'], correct:1},
+      {type:'mc', q:'Scissor-like cutting tools with hardened blades designed for cutting sheet metal.', options:['Wire cutters','Tin snips / Aviation snips','Bolt cutters','Lineman\'s pliers'], correct:1},
+      {type:'mc', q:'A small, lightweight level — often with a magnetic base — that fits in tight or narrow spaces.', options:['Speed square','Torpedo level','Laser level','Combination square'], correct:1},
+      {type:'mc', q:'A heavy hammer with a long handle used for driving stakes, breaking concrete, or demolition.', options:['Dead blow hammer','Ball-peen hammer','Sledgehammer','Club hammer'], correct:2},
+      {type:'mc', q:'A rubber-faced mallet used to strike objects without marring or damaging their surface.', options:['Dead blow hammer','Rubber mallet','Ball-peen hammer','Tapping hammer'], correct:1},
+      {type:'mc', q:'Pliers with a cross-hatch pivot joint that open wide to grip pipes, fittings, or large round objects.', options:['Locking pliers','Needle-nose pliers','Channel-lock / Tongue-and-groove pliers','Lineman\'s pliers'], correct:2},
+      {type:'mc', q:'A pointed hand tool used to bore a small starting hole in wood as a guide for screws or a drill bit.', options:['Center punch','Pin punch','Awl / Scratch awl','Brad nailer tip'], correct:2},
+      {type:'mc', q:'An adjustable angle-measuring tool with a sliding blade that locks to any angle — used to transfer angles between pieces.', options:['Speed square','Combination square','Sliding T-bevel / Bevel gauge','Adjustable protractor'], correct:2},
+      {type:'mc', q:'A clamping device used to hold work pieces together firmly while glue sets or while work is performed.', options:['C-clamp','Bar clamp','Spring clamp','Any of these — they are all types of clamps'], correct:3},
+      // ── Additional safety / knowledge ─────────────────────────────────────
+      {type:'tf', q:'True or False:\nSafety glasses should be worn when using any striking tool such as a hammer or sledgehammer.', ans:true},
+      {type:'tf', q:'True or False:\nIt is safe to use an adjustable wrench as a hammer in an emergency.', ans:false},
+      {type:'mc', q:'What is the correct way to store sharp-edged tools like chisels and utility knives?', options:['Leave them on the workbench for quick access','Store them in a roll or sheath with blades covered','Keep them in a loose pile in the toolbox','Hang them blade-up on a pegboard'], correct:1},
+      {type:'mc', q:'What should you do with any hand tool that has a cracked or broken handle?', options:['Tape the crack and continue using it','Use it carefully for light tasks only','Remove it from service and replace the handle or the tool','Sand it smooth so it does not cut your hand'], correct:2},
+      {type:'mc', q:'Which of the following is the correct definition of "right tool for the right job"?', options:['Use the heaviest tool available','Always use power tools over hand tools','Select the tool designed for the specific task to work safely and efficiently','Use whatever tool is closest'], correct:2},
     ]
   },
 
@@ -285,6 +319,22 @@ const TESTS = {
       {type:'tf', q:'True or False:\nPower tools should be inspected for damage before each use.', ans:true},
       {type:'tf', q:'True or False:\nBlade guards can be removed from a saw to make a difficult cut easier or faster.', ans:false},
       {type:'tf', q:'True or False:\nWearing hearing protection while using loud power tools is optional if the noise does not bother you.', ans:false},
+      // ── Additional questions ──────────────────────────────────────────────
+      {type:'mc', q:'A pneumatic tool that uses compressed air and a chisel bit to break up concrete, asphalt, or hard surfaces.', options:['Plate compactor','Jackhammer / Demolition hammer','Rotary hammer','Angle grinder'], correct:1},
+      {type:'mc', q:'A machine used on a job site to supply compressed air to power pneumatic tools.', options:['Generator','Air compressor','Power inverter','Hydraulic pump'], correct:1},
+      {type:'mc', q:'A power saw with a long, continuous looping blade used for resawing lumber and cutting curves.', options:['Jigsaw','Reciprocating saw','Band saw','Track saw'], correct:2},
+      {type:'mc', q:'What is the purpose of a torque clutch (torque setting) on a drill/driver?', options:['Controls drill speed only','Limits rotational force to prevent stripping screws or damaging material','Sets the direction of rotation','Controls battery output voltage'], correct:1},
+      {type:'mc', q:'Which power tool is most commonly used for cutting ceramic or porcelain tile?', options:['Circular saw with a wood blade','Angle grinder with cutting disc','Wet tile saw','Jigsaw with a fine blade'], correct:2},
+      {type:'mc', q:'What does "intermittent use only" mean on a power tool rating?', options:['The tool can only be used outdoors','The tool must run in short cycles with rest periods to prevent overheating','It cannot be used with an extension cord','It requires a GFCI outlet'], correct:1},
+      {type:'mc', q:'What is the purpose of a rip fence on a table saw?', options:['To guide freehand cuts at any angle','To provide a straight guide for ripping lumber to a consistent width','To hold the workpiece from behind','To catch and collect sawdust'], correct:1},
+      {type:'mc', q:'What is "kickback" on a power saw?', options:['Normal vibration from a running saw motor','When the workpiece is suddenly thrown back toward the operator','When the blade stalls because of a knot in the wood','The recoil felt when a nail gun fires'], correct:1},
+      {type:'mc', q:'Which saw is most appropriate for making long, straight cuts in large sheet goods like plywood?', options:['Jigsaw','Reciprocating saw','Circular saw with a guide or track','Miter saw'], correct:2},
+      {type:'mc', q:'Before adjusting or replacing a blade on a table saw, what must you do first?', options:['Lower the blade completely','Turn off the saw and unplug it or remove the battery','Increase the blade tension','Move the blade guard to the side'], correct:1},
+      {type:'tf', q:'True or False:\nYou should read the manufacturer\'s manual before operating a power tool you have not used before.', ans:true},
+      {type:'tf', q:'True or False:\nIt is acceptable to use a power tool in wet or rainy conditions if the work is urgent.', ans:false},
+      {type:'tf', q:'True or False:\nExtension cords used with power tools outdoors must be rated for outdoor use.', ans:true},
+      {type:'mc', q:'What should you do before leaving a power tool unattended on the job site?', options:['Leave it running so it is ready when you return','Turn it off, unplug it or remove the battery, and store it safely','Leave it plugged in but set to the lowest speed','Just set it down — it will stop on its own'], correct:1},
+      {type:'mc', q:'A power tool that uses a spinning bit to remove material and create flat surfaces, grooves, or decorative profiles.', options:['Circular saw','Reciprocating saw','Router','Orbital sander'], correct:2},
     ]
   }
 };
