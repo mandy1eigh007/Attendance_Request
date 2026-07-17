@@ -9,6 +9,15 @@ export async function onRequestPost(context) {
   let d;
   try { d = await request.json(); } catch { return bad('Bad JSON'); }
 
+  // ── Auth ──────────────────────────────────────────────────────────────────
+  // TESTS_WRITE_TOKEN must be set in Cloudflare Pages → Settings → Environment
+  // variables (do NOT commit a value). /api/verify-test-access hands the same
+  // token to the client after a successful sign-in; without it, anyone could
+  // POST fake scores.
+  if (!env.TESTS_WRITE_TOKEN || d.authToken !== env.TESTS_WRITE_TOKEN) {
+    return bad('Unauthorized', 401);
+  }
+
   const studentName = clean(d.studentName);
   const testName    = clean(d.testName);
   const score       = parseInt(d.score);

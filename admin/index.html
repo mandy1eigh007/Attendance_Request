@@ -36,7 +36,7 @@
     <p style="font-size:13.5px;color:var(--t3);margin-bottom:20px">Case notes you write will be stamped with your name. Only you (and other instructors assigned to the same class) can read them.</p>
     <div class="field"><select id="whoSelect" style="text-align:center"></select></div>
     <button class="btn btn-primary btn-block" onclick="chooseInstructor()">Continue</button>
-    <p class="note" style="margin-top:14px">Not in the list? Add yourself under Manage → Instructors after signing in as anyone, then come back.</p>
+    <p class="note" style="margin-top:14px">Not in the list? Add yourself under Manage, Instructors after signing in as anyone, then come back.</p>
   </div>
 </div>
 
@@ -1799,7 +1799,7 @@ Documentation: Student was informed and demerit slip presented for signature.${r
   // Selected case notes
   sdCaseNotes.filter(n=>selectedNoteIds.has(n.id)).forEach(n=>parts.push(buildCaseNoteText(n)));
   if(!parts.length){toast('Nothing selected',true);return;}
-  navigator.clipboard.writeText(parts.join('\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n')).then(()=>toast(`${parts.length} note${parts.length>1?'s':''} copied`));
+  navigator.clipboard.writeText(parts.join('\n\n------------------------------\n\n')).then(()=>toast(`${parts.length} note${parts.length>1?'s':''} copied`));
 }
 
 

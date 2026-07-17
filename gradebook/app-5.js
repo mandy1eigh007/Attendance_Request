@@ -25,7 +25,7 @@ function renderRubrics(){
   });
   const sourceDims=[...new Set(RUBRICS.map(r=>r.sourceDimension))].sort();
   return `
-    <div class="page-header"><div><div class="page-title">Assignment Rubrics</div><div class="page-sub">46 fixed curriculum rubrics. Grade each criterion 1–4 (Incomplete → Professional); weights calculate the assignment percentage. Map each rubric to the dimension it should feed.</div></div></div>
+    <div class="page-header"><div><div class="page-title">Assignment Rubrics</div><div class="page-sub">46 fixed curriculum rubrics. Grade each criterion 1–4 (Incomplete to Professional); weights calculate the assignment percentage. Map each rubric to the dimension it should feed.</div></div></div>
     <div class="section-card">
       <div class="gb-filter">
         <input type="text" placeholder="Search rubric…" value="${attr(rubricFilter.search)}" oninput="rubricFilter.search=this.value;renderActive()">

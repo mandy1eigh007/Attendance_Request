@@ -16,7 +16,7 @@ export async function onRequestPost(context) {
 
     // Instructor PIN — no name needed, unlocks answer-key mode
     if (env.INSTRUCTOR_PIN && code === env.INSTRUCTOR_PIN) {
-      return ok({ ok: true, studentName: 'Instructor', mode: 'instructor', classId: null });
+      return ok({ ok: true, studentName: 'Instructor', mode: 'instructor', classId: null, writeToken: env.TESTS_WRITE_TOKEN });
     }
 
     // Guest PIN — name required
@@ -25,7 +25,7 @@ export async function onRequestPost(context) {
     }
     const studentName = clean(d.studentName);
     if (!studentName) return bad('Name required');
-    return ok({ ok: true, studentName, mode: 'guest', classId: null });
+    return ok({ ok: true, studentName, mode: 'guest', classId: null, writeToken: env.TESTS_WRITE_TOKEN });
   }
 
   // ── Google mode ───────────────────────────────────────────────────────────
@@ -72,5 +72,8 @@ export async function onRequestPost(context) {
     mode:        'google',
     classId:     classes[0].id,
     className:   classes[0].program_name,
+    // Shared write token for POST /api/tests. TESTS_WRITE_TOKEN is set in
+    // Cloudflare Pages env vars — never committed.
+    writeToken:  env.TESTS_WRITE_TOKEN,
   });
 }

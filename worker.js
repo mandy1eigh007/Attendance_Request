@@ -1,5 +1,7 @@
 import { onRequest as adminRequest } from './functions/api/admin.js';
 import { onRequest as gradebookRequest } from './functions/api/gradebook.js';
+import { onRequestPost as testsPost } from './functions/api/tests.js';
+import { onRequestPost as verifyTestAccessPost } from './functions/api/verify-test-access.js';
 import { onRequestGet as submitGet, onRequestPost as submitPost } from './functions/submit.js';
 import { onRequestGet as respondGet } from './functions/respond.js';
 
@@ -30,6 +32,16 @@ export default {
 
     if (path === '/api/admin') return adminRequest(context);
     if (path === '/api/gradebook') return gradebookRequest(context);
+
+    if (path === '/api/tests') {
+      if (request.method === 'POST') return testsPost(context);
+      return methodNotAllowed('POST');
+    }
+
+    if (path === '/api/verify-test-access') {
+      if (request.method === 'POST') return verifyTestAccessPost(context);
+      return methodNotAllowed('POST');
+    }
 
     if (path === '/submit') {
       if (request.method === 'GET') return submitGet(context);
