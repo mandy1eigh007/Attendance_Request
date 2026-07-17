@@ -35,7 +35,11 @@
     <h1 style="font-size:22px;font-weight:700;letter-spacing:-.03em;margin-bottom:6px">Who are you signing in as?</h1>
     <p style="font-size:13.5px;color:var(--t3);margin-bottom:20px">Case notes you write will be stamped with your name. Only you (and other instructors assigned to the same class) can read them.</p>
     <div class="field"><select id="whoSelect" style="text-align:center"></select></div>
-    <button class="btn btn-primary btn-block" onclick="chooseInstructor()">Continue</button>
+    <div style="margin-top:8px;margin-bottom:4px;font-size:13px;color:var(--t3)">I am signing in as a…</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <button class="btn btn-primary btn-block" onclick="chooseInstructor('instructor')">Instructor</button>
+      <button class="btn btn-ghost btn-block" onclick="chooseInstructor('coordinator')">Coordinator</button>
+    </div>
     <p class="note" style="margin-top:14px">Not in the list? Add yourself under Manage, Instructors after signing in as anyone, then come back.</p>
   </div>
 </div>
@@ -165,6 +169,38 @@
             </div>
           </div>
           <div id="profileNoteBody"><div class="empty-state"><p>Loading…</p></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- INSTRUCTOR DASHBOARD (role=instructor) -->
+    <div class="view" id="view-instructor">
+      <div style="max-width:680px;margin:0 auto;padding:32px 16px">
+        <div style="margin-bottom:24px">
+          <div style="font-size:22px;font-weight:700;letter-spacing:-.02em" id="instrWelcome">Welcome</div>
+          <div style="font-size:14px;color:var(--t3);margin-top:4px" id="instrClass"></div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+          <button class="card" style="text-align:left;padding:22px 20px;cursor:pointer;width:100%;background:var(--s2)" onclick="openGradebook()">
+            <div style="font-size:16px;font-weight:700;margin-bottom:6px">Gradebook</div>
+            <div style="font-size:13px;color:var(--t3);line-height:1.5">Enter and view student grades for your class.</div>
+            <div style="margin-top:14px;font-size:13px;font-weight:600;color:var(--ac2)">Open Gradebook</div>
+          </button>
+          <button class="card" style="text-align:left;padding:22px 20px;cursor:pointer;width:100%;background:var(--s2)" onclick="location.href='/tools/'">
+            <div style="font-size:16px;font-weight:700;margin-bottom:6px">Tool Study Cards</div>
+            <div style="font-size:13px;color:var(--t3);line-height:1.5">Share with students to study before finals.</div>
+            <div style="margin-top:14px;font-size:13px;font-weight:600;color:var(--ac2)">Open Study Cards</div>
+          </button>
+          <button class="card" style="text-align:left;padding:22px 20px;cursor:pointer;width:100%;background:var(--s2)" onclick="location.href='/tests/'">
+            <div style="font-size:16px;font-weight:700;margin-bottom:6px">Tool Finals</div>
+            <div style="font-size:13px;color:var(--t3);line-height:1.5">Run the hand tool, power tool, or tape measure exam.</div>
+            <div style="margin-top:14px;font-size:13px;font-weight:600;color:var(--ac2)">Open Finals</div>
+          </button>
+          <button class="card" style="text-align:left;padding:22px 20px;cursor:pointer;width:100%;background:var(--s2)" onclick="instrOpenDemerit()">
+            <div style="font-size:16px;font-weight:700;margin-bottom:6px">Demerits</div>
+            <div style="font-size:13px;color:var(--t3);line-height:1.5">Issue a demerit or review a student record.</div>
+            <div style="margin-top:14px;font-size:13px;font-weight:600;color:var(--ac2)">Open Demerits</div>
+          </button>
         </div>
       </div>
     </div>
@@ -674,12 +710,12 @@ async function showInstructorPicker(){
     sel.innerHTML=`<option value="">${esc(e.message)}</option>`;
   }
 }
-function chooseInstructor(){
+function chooseInstructor(role){
   const id=document.getElementById('whoSelect').value;
   if(!id){toast('Pick an instructor',true);return;}
   const i=instructors.find(x=>x.id===id);
   if(!i){toast('Instructor not found',true);return;}
-  ME={id:i.id,name:i.name,email:i.email};
+  ME={id:i.id,name:i.name,email:i.email,role:role||'coordinator'};
   sessionStorage.setItem('anew_me',JSON.stringify(ME));
   document.getElementById('whoWrap').style.display='none';
   showApp();
@@ -692,7 +728,40 @@ function showApp(skipBootstrap){
   document.getElementById('dDate').value=todayStr();
   if(ME && ME.name) document.getElementById('appSub').textContent=ME.name;
   if(ME && ME.name && !document.getElementById('dStaff').value) document.getElementById('dStaff').value=ME.name;
+  applyRole();
   if(!skipBootstrap) bootstrap();
+}
+function applyRole(){
+  const isInstr=ME && ME.role==='instructor';
+  document.getElementById('navTabs').style.display=isInstr?'none':'';
+  document.getElementById('contextBar').style.display=isInstr?'none':'';
+  if(isInstr){
+    document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+    document.getElementById('view-instructor').classList.add('active');
+    document.getElementById('instrWelcome').textContent='Welcome, '+(ME.name||'Instructor');
+  }
+}
+function instrOpenDemerit(){
+  // Show demerit view with a back-to-dashboard bar
+  document.getElementById('contextBar').style.display='';
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.getElementById('view-demerit').classList.add('active');
+  let bar=document.getElementById('instrBackBar');
+  if(!bar){
+    bar=document.createElement('div');
+    bar.id='instrBackBar';
+    bar.style.cssText='max-width:1000px;margin:10px auto -4px;padding:0 16px';
+    bar.innerHTML='<button class="btn btn-ghost btn-sm" onclick="showInstrDash()">Back to Dashboard</button>';
+    document.querySelector('.main').insertAdjacentElement('beforebegin',bar);
+  }
+  bar.style.display='';
+}
+function showInstrDash(){
+  const bar=document.getElementById('instrBackBar');
+  if(bar) bar.style.display='none';
+  document.getElementById('contextBar').style.display='none';
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.getElementById('view-instructor').classList.add('active');
 }
 
 // ── Bootstrap ──
@@ -702,6 +771,7 @@ async function bootstrap(){
     instructors=d.instructors;classes=d.classes;
     renderClassSelect();renderManage();
     if(classes.length){curClass=classes[0].id;document.getElementById('classSelect').value=curClass;await onClassChange();}
+    if(ME && ME.role==='instructor' && classes.length){document.getElementById('instrClass').textContent=classes.find(c=>c.id===curClass)?.program_name||'';}
   }catch(e){toast(e.message,true);}
 }
 
