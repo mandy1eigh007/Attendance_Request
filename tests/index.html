@@ -65,6 +65,14 @@
     #q-image{width:100%;text-align:center;margin-bottom:16px;display:none}
     #q-image img{max-width:100%;max-height:280px;border-radius:10px;object-fit:contain}
 
+    /* Bonus multi-image grid */
+    .multiimg-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;width:100%;margin-top:8px}
+    .multiimg-item{border:3px solid #222;border-radius:10px;overflow:hidden;cursor:pointer;transition:border-color 0.15s,background 0.15s;background:#111}
+    .multiimg-item img{width:100%;aspect-ratio:1;object-fit:cover;display:block}
+    .multiimg-item .miLabel{font-size:0.7rem;color:#777;text-align:center;padding:4px 2px}
+    .multiimg-item.selected{border-color:#fff;background:#1d1d1d}
+    .multiimg-item.selected .miLabel{color:#fff}
+
     /* Nav */
     .nav-row{display:flex;justify-content:flex-end;width:100%;margin-top:28px}
     .next-btn{background:#fff;color:#0a0a0a;border:none;border-radius:8px;padding:13px 30px;font-size:0.97rem;font-weight:700;cursor:pointer;transition:opacity 0.15s}
@@ -162,7 +170,7 @@
   </div>
   <div class="test-card" onclick="selectTest('hand')">
     <div class="test-card-title">Hand Tool Final</div>
-    <div class="test-card-meta">79 questions — tool ID with photos, safety, and PPE</div>
+    <div class="test-card-meta">50 questions + 1 bonus — tool ID with photos, safety, and PPE</div>
   </div>
   <div class="test-card" onclick="selectTest('power')">
     <div class="test-card-title">Power Tool Final</div>
@@ -287,28 +295,7 @@ const TESTS = {
   hand: {
     name: 'Hand Tool Final',
     questions: [
-      // ── Tool ID (MC) ─────────────────────────────────────────────────────
-      {type:'mc', q:'A hand tool with a heavy metal head and a handle, used for driving nails into wood.', options:['Mallet','Hammer','Hatchet','Sledgehammer'], correct:1},
-      {type:'mc', q:'Pliers with long, thin, pointed jaws for gripping small objects in tight spaces.', options:['Channel-lock pliers','Lineman\'s pliers','Needle-nose pliers','Locking pliers'], correct:2},
-      {type:'mc', q:'A screwdriver with a cross-shaped (+) tip that fits Phillips-head screws.', options:['Slotted screwdriver','Torx screwdriver','Phillips screwdriver','Allen wrench'], correct:2},
-      {type:'mc', q:'A triangular-shaped measuring tool used to quickly mark 90° and 45° angles in carpentry.', options:['Framing square','Speed square','Combination square','Bevel gauge'], correct:1},
-      {type:'mc', q:'A hand tool with a fine-toothed blade designed primarily for cutting metal.', options:['Coping saw','Keyhole saw','Jab saw','Hacksaw'], correct:3},
-      {type:'mc', q:'A measuring tool with a bubble vial used to check that a surface is level or plumb.', options:['Plumb bob','Chalk line','Level','Speed square'], correct:2},
-      {type:'mc', q:'Heavy-duty pliers that lock firmly onto objects and stay locked with an adjustment screw.', options:['Channel-lock pliers','Locking pliers / Vise-Grips','Slip-joint pliers','Needle-nose pliers'], correct:1},
-      {type:'mc', q:'A hand saw with coarse teeth designed for rough cuts through drywall.', options:['Hacksaw','Coping saw','Jab saw / Drywall saw','Hand saw'], correct:2},
-      {type:'mc', q:'A small pointed weight on a string used to establish a true vertical reference line.', options:['Level','Plumb bob','Chalk line','Torpedo level'], correct:1},
-      {type:'mc', q:'A cutting tool with a retractable, replaceable blade used for scoring and trimming materials.', options:['Utility knife / Box cutter','Chisel','Tin snips','Pocket knife'], correct:0},
-      {type:'mc', q:'A flexible steel blade coiled inside a case, used for measuring distance.', options:['Chalk line','Folding rule','Tape measure','Caliper'], correct:2},
-      {type:'mc', q:'A wrench with a movable jaw that can be adjusted to fit different-sized fasteners.', options:['Pipe wrench','Combination wrench','Adjustable wrench','Socket wrench'], correct:2},
-      {type:'mc', q:'A right-angled measuring tool typically 24 inches long, used to lay out framing.', options:['Speed square','Combination square','Framing square','T-bevel'], correct:2},
-      {type:'mc', q:'A tool that dispenses powdered chalk onto a taut string, then snaps a straight layout line.', options:['Marking gauge','Scribe','Chalk line','Pencil compass'], correct:2},
-      {type:'mc', q:'A drilling bit with a flat, paddle-shaped cutting edge for boring large holes in wood.', options:['Twist bit','Spade bit','Auger bit','Brad-point bit'], correct:1},
-      {type:'mc', q:'A wrench with a ratcheting mechanism and interchangeable sockets for driving fasteners.', options:['Adjustable wrench','Torque wrench','Ratchet / Socket wrench','Box wrench'], correct:2},
-      {type:'mc', q:'A masonry tool with a flat, diamond-shaped blade used to apply and smooth mortar.', options:['Grout float','Margin trowel','Masonry trowel','Drywall knife'], correct:2},
-      {type:'mc', q:'A measuring tool with a sliding jaw and a fixed jaw for precise measurement of object dimensions.', options:['Micrometer','Caliper','Depth gauge','Try square'], correct:1},
-      {type:'mc', q:'An L-shaped tool used to drive hex (six-sided) socket-head screws and bolts.', options:['Torx key','Socket wrench','Allen wrench / Hex key','Nut driver'], correct:2},
-      {type:'mc', q:'A tool used to drive a nail head below the surface of wood without marring the wood.', options:['Center punch','Pin punch','Awl','Nail set'], correct:3},
-      // ── Safety / Knowledge (MC) ──────────────────────────────────────────
+      // ── Safety & Knowledge (MC) ───────────────────────────────────────────
       {type:'mc', q:'What is the FIRST thing you should do before using any hand tool?', options:['Sharpen it','Inspect it for damage','Clean it','Oil the joints'], correct:1},
       {type:'mc', q:'When using a hammer, what should you avoid doing?', options:['Using the flat face of the head','Striking with the side (cheek) of the head','Starting nails slowly','Wearing safety glasses'], correct:1},
       {type:'mc', q:'What is the safest way to pass a sharp hand tool to another person?', options:['Toss it gently underhand','Hold it by the blade and extend the handle','Point the sharp end toward them first','Set it on a flat surface and let them pick it up'], correct:3},
@@ -318,30 +305,20 @@ const TESTS = {
       {type:'mc', q:'What does it mean when a tool is tagged "Out of Service"?', options:['It needs cleaning only','It belongs to another crew','It must not be used until inspected and cleared','It is due for its annual maintenance check'], correct:2},
       {type:'mc', q:'Which hand saw is best suited for cutting curves in wood?', options:['Circular saw','Hacksaw','Coping saw','Cross-cut hand saw'], correct:2},
       {type:'mc', q:'What does PPE stand for?', options:['Power Protection Equipment','Personal Protective Equipment','Protective Professional Ensemble','Professional Prevention Equipment'], correct:1},
-      {type:'mc', q:'What is the function of a GFCI (Ground Fault Circuit Interrupter)?', options:['Increases voltage available to tools','Prevents electric shock by cutting power when a ground fault is detected','Measures the current draw of a tool','Resets circuit breakers automatically'], correct:1},
+      {type:'mc', q:'What is the correct way to store sharp-edged tools like chisels and utility knives?', options:['Leave them on the workbench for quick access','Store them in a roll or sheath with blades covered','Keep them in a loose pile in the toolbox','Hang them blade-up on a pegboard'], correct:1},
+      {type:'mc', q:'What should you do with any hand tool that has a cracked or broken handle?', options:['Tape the crack and continue using it','Use it carefully for light tasks only','Remove it from service and replace the handle or the tool','Sand it smooth so it does not cut your hand'], correct:2},
+      {type:'mc', q:'Which of the following is the correct definition of "right tool for the right job"?', options:['Use the heaviest tool available','Always use power tools over hand tools','Select the tool designed for the specific task to work safely and efficiently','Use whatever tool is closest'], correct:2},
       // ── True / False ─────────────────────────────────────────────────────
       {type:'tf', q:'True or False:\nIt is acceptable to use a screwdriver as a pry bar when a pry bar is not available.', ans:false},
       {type:'tf', q:'True or False:\nHand tools should be inspected before each use.', ans:true},
       {type:'tf', q:'True or False:\nWearing cut-resistant gloves when using sharp cutting tools helps prevent hand injuries.', ans:true},
       {type:'tf', q:'True or False:\nA hammer with a loose head can be used safely as long as you are careful.', ans:false},
       {type:'tf', q:'True or False:\nTools should be cleaned, dried, and stored properly after each use.', ans:true},
-      // ── Additional tool ID ────────────────────────────────────────────────
-      {type:'mc', q:'A wrench that applies a specific pre-set amount of torque — used when precise tightening is critical in structural or mechanical work.', options:['Adjustable wrench','Combination wrench','Torque wrench','Pipe wrench'], correct:2},
-      {type:'mc', q:'A hand tool with a long handle and a flat or curved blade used for digging and moving soil.', options:['Mattock','Shovel / Spade','Garden hoe','Pry bar'], correct:1},
-      {type:'mc', q:'Scissor-like cutting tools with hardened blades designed for cutting sheet metal.', options:['Wire cutters','Tin snips / Aviation snips','Bolt cutters','Lineman\'s pliers'], correct:1},
-      {type:'mc', q:'A small, lightweight level — often with a magnetic base — that fits in tight or narrow spaces.', options:['Speed square','Torpedo level','Laser level','Combination square'], correct:1},
-      {type:'mc', q:'A heavy hammer with a long handle used for driving stakes, breaking concrete, or demolition.', options:['Dead blow hammer','Ball-peen hammer','Sledgehammer','Club hammer'], correct:2},
-      {type:'mc', q:'A rubber-faced mallet used to strike objects without marring or damaging their surface.', options:['Dead blow hammer','Rubber mallet','Ball-peen hammer','Tapping hammer'], correct:1},
-      {type:'mc', q:'Pliers with a cross-hatch pivot joint that open wide to grip pipes, fittings, or large round objects.', options:['Locking pliers','Needle-nose pliers','Channel-lock / Tongue-and-groove pliers','Lineman\'s pliers'], correct:2},
-      {type:'mc', q:'A pointed hand tool used to bore a small starting hole in wood as a guide for screws or a drill bit.', options:['Center punch','Pin punch','Awl / Scratch awl','Brad nailer tip'], correct:2},
-      {type:'mc', q:'An adjustable angle-measuring tool with a sliding blade that locks to any angle — used to transfer angles between pieces.', options:['Speed square','Combination square','Sliding T-bevel / Bevel gauge','Adjustable protractor'], correct:2},
-      {type:'mc', q:'A clamping device used to hold work pieces together firmly while glue sets or while work is performed.', options:['C-clamp','Bar clamp','Spring clamp','Any of these — they are all types of clamps'], correct:3},
-      // ── Additional safety / knowledge ─────────────────────────────────────
       {type:'tf', q:'True or False:\nSafety glasses should be worn when using any striking tool such as a hammer or sledgehammer.', ans:true},
       {type:'tf', q:'True or False:\nIt is safe to use an adjustable wrench as a hammer in an emergency.', ans:false},
-      {type:'mc', q:'What is the correct way to store sharp-edged tools like chisels and utility knives?', options:['Leave them on the workbench for quick access','Store them in a roll or sheath with blades covered','Keep them in a loose pile in the toolbox','Hang them blade-up on a pegboard'], correct:1},
-      {type:'mc', q:'What should you do with any hand tool that has a cracked or broken handle?', options:['Tape the crack and continue using it','Use it carefully for light tasks only','Remove it from service and replace the handle or the tool','Sand it smooth so it does not cut your hand'], correct:2},
-      {type:'mc', q:'Which of the following is the correct definition of "right tool for the right job"?', options:['Use the heaviest tool available','Always use power tools over hand tools','Select the tool designed for the specific task to work safely and efficiently','Use whatever tool is closest'], correct:2},
+      // ── Specialty Knowledge (no picture equivalent) ───────────────────────
+      {type:'mc', q:'A wrench that applies a specific pre-set amount of torque — used when precise tightening is critical in structural or mechanical work.', options:['Adjustable wrench','Combination wrench','Torque wrench','Pipe wrench'], correct:2},
+      {type:'mc', q:'A rubber-faced mallet used to strike objects without marring or damaging their surface.', options:['Dead blow hammer','Rubber mallet','Ball-peen hammer','Tapping hammer'], correct:1},
       // ── Picture Identification ─────────────────────────────────────────────
       {type:'img', img:'../tools/images/ht-1.jpg',  q:'What is this hand tool?', options:['Chalk Line','Plumb Bob','String Line','Line Level'], correct:2},
       {type:'img', img:'../tools/images/ht-3.jpg',  q:'What is this hand tool?', options:['Handsaw','Hacksaw','Tenon Saw','Drywall Saw'], correct:3},
@@ -371,8 +348,11 @@ const TESTS = {
       {type:'img', img:'../tools/images/ht-73.jpg', q:'What is this hand tool?', options:["Cat's Paw",'Pry Bar','Crowbar','Straight Claw Hammer'], correct:2},
       {type:'img', img:'../tools/images/ht-79.jpg', q:'What is this hand tool?', options:['Channel-Lock Pliers','Locking Pliers','Slip Joint Pliers','Needle-Nose Pliers'], correct:2},
       {type:'img', img:'../tools/images/ht-81.jpg', q:'What is this hand tool?', options:['Curved Claw Hammer','Ball-Peen Hammer','Straight Claw Framing Hammer','Mallet'], correct:2},
-      // ── Extra Credit ───────────────────────────────────────────────────────
-      {type:'img', img:'../tools/images/ht-53.jpg', q:'EXTRA CREDIT: A hex head snap tie is used in concrete formwork. What happens to the hex head after the forms are stripped?', options:['It is unscrewed and reused','It stays in the wall permanently','It breaks off flush with the concrete surface','It is cut off with bolt cutters'], correct:2},
+      // ── BONUS: Extra Credit ───────────────────────────────────────────────
+      {type:'multiimg', q:'BONUS — Tap every MEASURING tool in the grid. Select all that apply, then hit Next.',
+        imgs:['../tools/images/ht-9.jpg','../tools/images/ht-23.jpg','../tools/images/ht-25.jpg','../tools/images/ht-37.jpg','../tools/images/ht-63.jpg','../tools/images/ht-77.jpg'],
+        labels:['Spirit Level','Hacksaw','Chalk Line','Pipe Wrench','Speed Square','Combination Square'],
+        correct:[0,2,4,5]},
     ]
   },
 
@@ -611,6 +591,17 @@ function renderQ(idx) {
       ).join('')
     }</div>`;
 
+  } else if (q.type === 'multiimg') {
+    currentAnswer = new Set();
+    area.innerHTML = `<div class="multiimg-grid">${
+      q.imgs.map((src, i) =>
+        `<div class="multiimg-item" id="mi-${i}" onclick="toggleMultiImg(${i})">
+           <img src="${src}" alt="${q.labels[i]}">
+           <div class="miLabel">${q.labels[i]}</div>
+         </div>`
+      ).join('')
+    }</div>`;
+
   } else if (q.type === 'tf') {
     area.innerHTML = `<div class="tf-row">
       <button class="tf-btn" onclick="selectTF(true, this)">True</button>
@@ -627,7 +618,7 @@ function renderQ(idx) {
   }
 
   const nextBtn = document.getElementById('next-btn');
-  nextBtn.disabled = !isInstructor;
+  nextBtn.disabled = !isInstructor && q.type !== 'multiimg';
   nextBtn.textContent = idx === total - 1 ? 'Submit' : 'Next';
 }
 
@@ -648,6 +639,19 @@ function selectMC(idx, btn) {
   document.querySelectorAll('.mc-opt').forEach(b => b.classList.remove('selected'));
   btn.classList.add('selected');
   currentAnswer = idx;
+  document.getElementById('next-btn').disabled = false;
+}
+
+function toggleMultiImg(idx) {
+  if (!(currentAnswer instanceof Set)) currentAnswer = new Set();
+  const el = document.getElementById('mi-' + idx);
+  if (currentAnswer.has(idx)) {
+    currentAnswer.delete(idx);
+    el.classList.remove('selected');
+  } else {
+    currentAnswer.add(idx);
+    el.classList.add('selected');
+  }
   document.getElementById('next-btn').disabled = false;
 }
 
@@ -691,6 +695,11 @@ function gradeAnswer(q, answer) {
   }
   if (q.type === 'mc' || q.type === 'img') return answer === q.correct;
   if (q.type === 'tf') return answer === q.ans;
+  if (q.type === 'multiimg') {
+    const sel = answer instanceof Set ? [...answer].sort().join(',') : '';
+    const exp = [...q.correct].sort().join(',');
+    return sel === exp;
+  }
   return false;
 }
 
@@ -702,6 +711,10 @@ function fmtAnswer(q, answer) {
   }
   if (q.type === 'mc' || q.type === 'img') return q.options[answer] ?? '—';
   if (q.type === 'tf') return answer ? 'True' : 'False';
+  if (q.type === 'multiimg') {
+    const sel = answer instanceof Set ? [...answer] : [];
+    return sel.length ? sel.map(i => q.labels[i]).join(', ') : '(none selected)';
+  }
   return '—';
 }
 
@@ -712,6 +725,7 @@ function fmtCorrect(q) {
   }
   if (q.type === 'mc' || q.type === 'img') return q.options[q.correct];
   if (q.type === 'tf') return q.ans ? 'True' : 'False';
+  if (q.type === 'multiimg') return q.correct.map(i => q.labels[i]).join(', ');
   return '—';
 }
 
