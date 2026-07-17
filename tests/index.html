@@ -174,7 +174,7 @@
   </div>
   <div class="test-card" onclick="selectTest('power')">
     <div class="test-card-title">Power Tool Final</div>
-    <div class="test-card-meta">50 questions — tool identification, safety, and PPE</div>
+    <div class="test-card-meta">50 questions + 1 bonus — tool ID with photos, safety, and PPE</div>
   </div>
   <div id="instructor-bar" style="display:none;width:100%;margin-top:8px">
     <button class="ghost-btn" onclick="printAnswerKey('tape')" style="margin-bottom:8px">Print Tape Measure Answer Key</button>
@@ -359,60 +359,65 @@ const TESTS = {
   power: {
     name: 'Power Tool Final',
     questions: [
-      // ── Tool ID / Knowledge (MC) ─────────────────────────────────────────
-      {type:'mc', q:'A handheld power saw with a circular blade used for straight cuts in wood, metal, or other materials.', options:['Reciprocating saw','Jigsaw','Circular saw','Miter saw'], correct:2},
-      {type:'mc', q:'A versatile cordless power tool used for both drilling holes and driving screws.', options:['Reciprocating saw','Rotary hammer','Impact wrench','Drill / driver'], correct:3},
-      {type:'mc', q:'A power saw whose blade moves back and forth rapidly, used for demolition cuts and cutting in tight spaces. Also called a Sawzall.', options:['Circular saw','Jigsaw','Reciprocating saw','Band saw'], correct:2},
-      {type:'mc', q:'A saw with a small, thin blade that moves up and down, designed for curved or intricate cuts.', options:['Circular saw','Jigsaw','Oscillating multi-tool','Coping saw'], correct:1},
-      {type:'mc', q:'A stationary power tool with a large circular blade mounted in a table, used for ripping and cross-cutting lumber.', options:['Miter saw','Band saw','Table saw','Track saw'], correct:2},
-      {type:'mc', q:'A power saw mounted on a swinging arm that cuts wood at precise angle settings. Also called a chop saw.', options:['Circular saw','Band saw','Miter saw','Table saw'], correct:2},
-      {type:'mc', q:'A power tool with a spinning disc used for grinding, cutting, or polishing metal and masonry.', options:['Belt sander','Die grinder','Angle grinder','Random orbital sander'], correct:2},
-      {type:'mc', q:'A heavy-duty drill designed specifically to drill into concrete, masonry, or stone.', options:['Standard drill/driver','Impact driver','Rotary hammer / Hammer drill','Auger'], correct:2},
-      {type:'mc', q:'A power tool that drives nails or staples into materials using compressed air or electricity.', options:['Staple gun only','Nail gun / Nailer','Pin nailer only','Finish nailer only'], correct:1},
-      {type:'mc', q:'A power tool that delivers very high rotational torque, used to loosen or tighten large bolts.', options:['Drill/driver','Impact driver','Impact wrench','Rotary hammer'], correct:2},
-      {type:'mc', q:'A power sander with a disc that moves in small random orbits, used for fine surface finishing.', options:['Belt sander','Random orbital sander','Sheet sander','Drum sander'], correct:1},
-      {type:'mc', q:'What is a Sawzall?', options:['A large stationary table saw','A reciprocating saw','A miter saw brand name','A type of jigsaw'], correct:1},
-      {type:'mc', q:'Which power tool is used to shape edges and cut grooves or profiles in wood?', options:['Circular saw','Reciprocating saw','Router','Jigsaw'], correct:2},
-      {type:'mc', q:'Which piece of equipment is used on a job site to compact soil, gravel, or asphalt?', options:['Jackhammer','Plate compactor','Concrete mixer','Power tamper'], correct:1},
-      {type:'mc', q:'What is the primary function of an impact driver?', options:['Drilling through concrete','Driving screws and bolts with high rotational torque','Cutting metal with high speed','Polishing and buffing surfaces'], correct:1},
-      // ── Safety / Knowledge (MC) ──────────────────────────────────────────
+      // ── Safety & Knowledge (MC) ───────────────────────────────────────────
       {type:'mc', q:'What does RPM stand for in relation to power tools?', options:['Rotating Power Mode','Revolutions Per Minute','Rapid Pressure Mechanism','Rotary Performance Meter'], correct:1},
       {type:'mc', q:'What is the purpose of a blade guard on a power saw?', options:['To keep the blade dry and rust-free','To protect the operator from the spinning blade','To guide the blade for a straight cut','To reduce blade noise'], correct:1},
       {type:'mc', q:'What should you do if a power tool starts overheating during use?', options:['Keep using it — heat will dissipate on its own','Pour water on it to cool it quickly','Turn it off and let it cool completely before inspecting','Switch to a higher speed setting'], correct:2},
       {type:'mc', q:'What PPE is required when operating power tools?', options:['Hard hat only','Safety glasses and hearing protection','Gloves only','Steel-toed boots only'], correct:1},
       {type:'mc', q:'What is the FIRST step before operating any power tool?', options:['Test the outlet with a voltage tester','Secure your workpiece in a clamp','Inspect the tool for damage','Put on your hard hat'], correct:2},
-      {type:'mc', q:'What is the purpose of a GFCI outlet when using power tools?', options:['Increase the tool\'s power output','Prevent electric shock by cutting power when a ground fault is detected','Prevent the tool from overheating','Act as a surge protector for batteries'], correct:1},
       {type:'mc', q:'What should you NEVER do while a power saw blade is still spinning?', options:['Keep both hands on the saw','Wear safety glasses','Reach across the moving blade','Wait for the cut to finish'], correct:2},
       {type:'mc', q:'What should you do immediately if you see sparks coming from a power tool motor during use?', options:['Continue — sparks are sometimes normal','Reduce the speed setting','Stop, turn it off, and have it inspected before using again','Add lubricant to the motor housing'], correct:2},
       {type:'mc', q:'Why is dust extraction important when using power saws and sanders?', options:['It keeps the workspace tidy and looks professional','Fine dust can cause serious respiratory disease and creates a fire hazard','It prevents the tool from overheating','It reduces vibration noise'], correct:1},
-      {type:'mc', q:'What type of drill bit is designed for drilling into concrete or masonry?', options:['Brad-point bit','Spade bit','Carbide-tipped masonry bit','Forstner bit'], correct:2},
       {type:'mc', q:'What should you do if a power tool malfunctions or behaves unexpectedly during use?', options:['Force it to continue to finish the job','Adjust the settings and try again','Remove the safety guard to inspect the problem','Stop using it, turn it off, unplug it, and report it'], correct:3},
       {type:'mc', q:'What is the safest way to carry a power tool on the job site?', options:['By the power cord','With your finger resting on the trigger','By the body of the tool with the trigger released and tool off','With the blade guard removed for better visibility'], correct:2},
       {type:'mc', q:'What blade should you use to cut metal with a circular saw?', options:['Standard carbide wood blade','Metal-cutting / abrasive disc blade','Fine-tooth finish blade','Demolition blade'], correct:1},
-      {type:'mc', q:'What is the main function of a thickness planer?', options:['Cutting sheet material to length','Shaping decorative edge profiles','Smoothing and reducing lumber to a uniform thickness','Drilling large-diameter holes'], correct:2},
-      {type:'mc', q:'What power tool accessory is best for polishing or buffing metal surfaces?', options:['Orbital sander pad','Belt sander','Flap disc or polishing wheel on an angle grinder','Reciprocating saw blade'], correct:2},
+      {type:'mc', q:'What is the purpose of a torque clutch (torque setting) on a drill/driver?', options:['Controls drill speed only','Limits rotational force to prevent stripping screws or damaging material','Sets the direction of rotation','Controls battery output voltage'], correct:1},
+      {type:'mc', q:'What does "intermittent use only" mean on a power tool rating?', options:['The tool can only be used outdoors','The tool must run in short cycles with rest periods to prevent overheating','It cannot be used with an extension cord','It requires a GFCI outlet'], correct:1},
+      {type:'mc', q:'What is the purpose of a rip fence on a table saw?', options:['To guide freehand cuts at any angle','To provide a straight guide for ripping lumber to a consistent width','To hold the workpiece from behind','To catch and collect sawdust'], correct:1},
+      {type:'mc', q:'What is "kickback" on a power saw?', options:['Normal vibration from a running saw motor','When the workpiece is suddenly thrown back toward the operator','When the blade stalls because of a knot in the wood','The recoil felt when a nail gun fires'], correct:1},
+      {type:'mc', q:'Which saw is most appropriate for making long, straight cuts in large sheet goods like plywood?', options:['Jigsaw','Reciprocating saw','Circular saw with a guide or track','Miter saw'], correct:2},
+      {type:'mc', q:'Before adjusting or replacing a blade on a table saw, what must you do first?', options:['Lower the blade completely','Turn off the saw and unplug it or remove the battery','Increase the blade tension','Move the blade guard to the side'], correct:1},
+      {type:'mc', q:'What should you do before leaving a power tool unattended on the job site?', options:['Leave it running so it is ready when you return','Turn it off, unplug it or remove the battery, and store it safely','Leave it plugged in but set to the lowest speed','Just set it down — it will stop on its own'], correct:1},
+      {type:'mc', q:'What is the primary function of an impact driver?', options:['Drilling through concrete','Driving screws and bolts with high rotational torque','Cutting metal with high speed','Polishing and buffing surfaces'], correct:1},
+      {type:'mc', q:'A machine used on a job site to supply compressed air to power pneumatic tools.', options:['Generator','Air compressor','Power inverter','Hydraulic pump'], correct:1},
+      {type:'mc', q:'Which piece of equipment is used on a job site to compact soil, gravel, or asphalt?', options:['Jackhammer','Plate compactor','Concrete mixer','Power tamper'], correct:1},
       // ── True / False ─────────────────────────────────────────────────────
       {type:'tf', q:'True or False:\nYou should always unplug a power tool or remove the battery before changing a blade or bit.', ans:true},
       {type:'tf', q:'True or False:\nIt is safe to use a power tool with a damaged or frayed extension cord as long as the tool still runs.', ans:false},
       {type:'tf', q:'True or False:\nPower tools should be inspected for damage before each use.', ans:true},
       {type:'tf', q:'True or False:\nBlade guards can be removed from a saw to make a difficult cut easier or faster.', ans:false},
       {type:'tf', q:'True or False:\nWearing hearing protection while using loud power tools is optional if the noise does not bother you.', ans:false},
-      // ── Additional questions ──────────────────────────────────────────────
-      {type:'mc', q:'A pneumatic tool that uses compressed air and a chisel bit to break up concrete, asphalt, or hard surfaces.', options:['Plate compactor','Jackhammer / Demolition hammer','Rotary hammer','Angle grinder'], correct:1},
-      {type:'mc', q:'A machine used on a job site to supply compressed air to power pneumatic tools.', options:['Generator','Air compressor','Power inverter','Hydraulic pump'], correct:1},
-      {type:'mc', q:'A power saw with a long, continuous looping blade used for resawing lumber and cutting curves.', options:['Jigsaw','Reciprocating saw','Band saw','Track saw'], correct:2},
-      {type:'mc', q:'What is the purpose of a torque clutch (torque setting) on a drill/driver?', options:['Controls drill speed only','Limits rotational force to prevent stripping screws or damaging material','Sets the direction of rotation','Controls battery output voltage'], correct:1},
-      {type:'mc', q:'Which power tool is most commonly used for cutting ceramic or porcelain tile?', options:['Circular saw with a wood blade','Angle grinder with cutting disc','Wet tile saw','Jigsaw with a fine blade'], correct:2},
-      {type:'mc', q:'What does "intermittent use only" mean on a power tool rating?', options:['The tool can only be used outdoors','The tool must run in short cycles with rest periods to prevent overheating','It cannot be used with an extension cord','It requires a GFCI outlet'], correct:1},
-      {type:'mc', q:'What is the purpose of a rip fence on a table saw?', options:['To guide freehand cuts at any angle','To provide a straight guide for ripping lumber to a consistent width','To hold the workpiece from behind','To catch and collect sawdust'], correct:1},
-      {type:'mc', q:'What is "kickback" on a power saw?', options:['Normal vibration from a running saw motor','When the workpiece is suddenly thrown back toward the operator','When the blade stalls because of a knot in the wood','The recoil felt when a nail gun fires'], correct:1},
-      {type:'mc', q:'Which saw is most appropriate for making long, straight cuts in large sheet goods like plywood?', options:['Jigsaw','Reciprocating saw','Circular saw with a guide or track','Miter saw'], correct:2},
-      {type:'mc', q:'Before adjusting or replacing a blade on a table saw, what must you do first?', options:['Lower the blade completely','Turn off the saw and unplug it or remove the battery','Increase the blade tension','Move the blade guard to the side'], correct:1},
       {type:'tf', q:'True or False:\nYou should read the manufacturer\'s manual before operating a power tool you have not used before.', ans:true},
       {type:'tf', q:'True or False:\nIt is acceptable to use a power tool in wet or rainy conditions if the work is urgent.', ans:false},
       {type:'tf', q:'True or False:\nExtension cords used with power tools outdoors must be rated for outdoor use.', ans:true},
-      {type:'mc', q:'What should you do before leaving a power tool unattended on the job site?', options:['Leave it running so it is ready when you return','Turn it off, unplug it or remove the battery, and store it safely','Leave it plugged in but set to the lowest speed','Just set it down — it will stop on its own'], correct:1},
-      {type:'mc', q:'A power tool that uses a spinning bit to remove material and create flat surfaces, grooves, or decorative profiles.', options:['Circular saw','Reciprocating saw','Router','Orbital sander'], correct:2},
+      // ── Picture Identification ────────────────────────────────────────────
+      {type:'img', img:'../tools/images/pt-1.jpg',  q:'What is this power tool?', options:['Impact Driver','Drill Motor','Rotary Hammer','Hammer Drill'], correct:1},
+      {type:'img', img:'../tools/images/pt-3.jpg',  q:'What is this power tool?', options:['Circular Saw','Reciprocating Saw','Jig Saw','Oscillating Multi-Tool'], correct:2},
+      {type:'img', img:'../tools/images/pt-5.jpg',  q:'What is this power tool?', options:['Drill Motor','Impact Drill / Driver','Rotary Hammer','Hammer Drill'], correct:1},
+      {type:'img', img:'../tools/images/pt-7.jpg',  q:'What is this power tool?', options:['Drill Motor','Impact Driver','Hammer Drill','Rotary Hammer'], correct:2},
+      {type:'img', img:'../tools/images/pt-9.jpg',  q:'What is this power tool?', options:['Jig Saw','Circular Saw','Reciprocating Saw (Sawzall)','Oscillating Multi-Tool'], correct:2},
+      {type:'img', img:'../tools/images/pt-11.jpg', q:'What is this drill accessory?', options:['Spade Bit','Auger Bit','Hole Saw','Drum Sander'], correct:2},
+      {type:'img', img:'../tools/images/pt-13.jpg', q:'What is this power tool?', options:['Miter Saw','Chop Saw','Table Saw','Track Saw'], correct:1},
+      {type:'img', img:'../tools/images/pt-15.jpg', q:'What is this power tool?', options:['Chop Saw','Table Saw','Miter Saw','Radial Arm Saw'], correct:2},
+      {type:'img', img:'../tools/images/pt-17.jpg', q:'What is this power tool?', options:['Miter Saw','Circular Saw','Track Saw','Reciprocating Saw'], correct:1},
+      {type:'img', img:'../tools/images/pt-19.jpg', q:'What is this power tool?', options:['Standard Circular Saw','Circular Saw Worm-Drive','Track Saw','Miter Saw'], correct:1},
+      {type:'img', img:'../tools/images/pt-21.jpg', q:'What is this power tool?', options:['Band Saw','Miter Saw','Track Saw','Table Saw'], correct:3},
+      {type:'img', img:'../tools/images/pt-23.jpg', q:'What is this power tool?', options:['Reciprocating Saw','Jig Saw','Portable Band Saw (Portaband)','Oscillating Multi-Tool'], correct:2},
+      {type:'img', img:'../tools/images/pt-25.jpg', q:'What is this power tool?', options:['Orbital Sander','Belt Sander','Angle Grinder','Die Grinder'], correct:2},
+      {type:'img', img:'../tools/images/pt-27.jpg', q:'What is this safety device?', options:['Circuit Breaker','Power Strip','Extension Cord','Ground Fault Circuit Interrupter (GFCI)'], correct:3},
+      {type:'img', img:'../tools/images/pt-29.jpg', q:'What is this power tool?', options:['Orbital Sander','Belt Sander','Drum Sander','Sheet Sander'], correct:1},
+      {type:'img', img:'../tools/images/pt-31.jpg', q:'What is this power tool?', options:['Belt Sander','Orbital Sander','Sheet Sander','Drum Sander'], correct:1},
+      {type:'img', img:'../tools/images/pt-33.jpg', q:'What is this power tool?', options:['Oscillating Multi-Tool','Die Grinder','Jig Saw','Router'], correct:3},
+      {type:'img', img:'../tools/images/pt-35.jpg', q:'What is this power tool?', options:['Staple Gun','Caulk Gun','Nail Gun','Grease Gun'], correct:2},
+      {type:'img', img:'../tools/images/pt-37.jpg', q:'What is this power tool?', options:['Angle Grinder','Chop Saw','Cordless Gas Cut-Off Saw','Circular Saw'], correct:2},
+      {type:'img', img:'../tools/images/pt-39.jpg', q:'What is this power tool?', options:['Plate Compactor','Rotary Hammer','Jack Hammer','Demolition Saw'], correct:2},
+      {type:'img', img:'../tools/images/pt-41.jpg', q:'What is this power tool?', options:['Jig Saw','Reciprocating Saw','Rotary Tool','Oscillating Multi-Tool'], correct:3},
+      {type:'img', img:'../tools/images/pt-43.jpg', q:'What is this power tool?', options:['Reciprocating Saw','Portable Band Saw','Chain Saw','Circular Saw'], correct:2},
+      // ── BONUS: Extra Credit ───────────────────────────────────────────────
+      {type:'multiimg', q:'BONUS — Tap every SAW in the grid. Select all that apply, then hit Next.',
+        imgs:['../tools/images/pt-1.jpg','../tools/images/pt-3.jpg','../tools/images/pt-17.jpg','../tools/images/pt-25.jpg','../tools/images/pt-29.jpg','../tools/images/pt-9.jpg'],
+        labels:['Drill Motor','Jig Saw','Circular Saw','Angle Grinder','Belt Sander','Reciprocating Saw'],
+        correct:[1,2,5]},
     ]
   }
 };
@@ -529,9 +534,22 @@ function setAuthStatus(msg, isError) {
 // TEST SELECTION
 // ─────────────────────────────────────────────────────────────────────────────
 
+function shuffleArray(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
 function selectTest(key) {
   currentTestKey = key;
-  currentTest = TESTS[key];
+  const src = TESTS[key];
+  // Shuffle questions, but keep the bonus (last question) at the end
+  const bonus = src.questions[src.questions.length - 1];
+  const rest  = shuffleArray(src.questions.slice(0, -1));
+  currentTest = { ...src, questions: [...rest, bonus] };
   answers = [];
   currentIndex = 0;
   currentAnswer = null;
