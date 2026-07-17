@@ -73,8 +73,11 @@
     .multiimg-item.selected{border-color:#fff;background:#1d1d1d}
     .multiimg-item.selected .miLabel{color:#fff}
 
+    /* Test screen tile layout */
+    #screen-test{height:100dvh;overflow:hidden;padding-bottom:0}
+    #test-scroll{flex:1;overflow-y:auto;width:100%;padding:32px 0 8px}
     /* Nav */
-    .nav-row{display:flex;justify-content:flex-end;width:100%;margin-top:28px}
+    .nav-row{display:flex;justify-content:flex-end;width:100%;padding:12px 0 28px;flex-shrink:0;background:#0a0a0a;margin-top:0}
     .next-btn{background:#fff;color:#0a0a0a;border:none;border-radius:8px;padding:13px 30px;font-size:0.97rem;font-weight:700;cursor:pointer;transition:opacity 0.15s}
     .next-btn:disabled{opacity:0.18;cursor:not-allowed}
     .next-btn:hover:not(:disabled){opacity:0.88}
@@ -193,14 +196,16 @@
 
 <!-- ── TEST ── -->
 <div id="screen-test" class="screen">
-  <div style="width:100%">
-    <div class="prog-wrap"><div class="prog-bar" id="prog-bar"></div></div>
-    <div class="prog-label" id="prog-label"></div>
+  <div id="test-scroll">
+    <div style="width:100%">
+      <div class="prog-wrap"><div class="prog-bar" id="prog-bar"></div></div>
+      <div class="prog-label" id="prog-label"></div>
+    </div>
+    <div class="q-text" id="q-text"></div>
+    <div id="q-image"><img id="q-image-el" src="" alt="Tool image"></div>
+    <div id="answer-area" style="width:100%"></div>
+    <div id="instructor-answer" class="instructor-answer"></div>
   </div>
-  <div class="q-text" id="q-text"></div>
-  <div id="q-image"><img id="q-image-el" src="" alt="Tool image"></div>
-  <div id="answer-area" style="width:100%"></div>
-  <div id="instructor-answer" class="instructor-answer"></div>
   <div class="nav-row">
     <button class="next-btn" id="next-btn" disabled onclick="nextQ()">Next</button>
   </div>
