@@ -511,6 +511,14 @@ export async function onRequestPost(context) {
         return ok({ attachments: signed });
       }
 
+      case 'testResults': {
+        const { classId } = payload;
+        let q = 'anew_test_results?order=taken_at.desc&limit=200';
+        if (classId) q += `&class_id=eq.${enc(classId)}`;
+        const rows = await sb(q);
+        return ok({ results: rows || [] });
+      }
+
       default:
         return bad('Unknown action: ' + action);
     }

@@ -67,6 +67,7 @@
       <button class="nav-tab" data-view="requests" onclick="showView('requests')">Requests</button>
       <button class="nav-tab" data-view="history" onclick="showView('history')">History</button>
       <button class="nav-tab" data-view="manage" onclick="showView('manage')">Manage</button>
+      <button class="nav-tab" data-view="results" onclick="showView('results');loadTestResults()">Results</button>
       <button class="nav-tab" data-view="faq" onclick="showView('faq')">FAQ</button>
     </div>
   </div>
@@ -201,6 +202,11 @@
             <div style="font-size:13px;color:var(--t3);line-height:1.5">Issue a demerit or review a student record.</div>
             <div style="margin-top:14px;font-size:13px;font-weight:600;color:var(--ac2)">Open Demerits</div>
           </button>
+          <button class="card" style="text-align:left;padding:22px 20px;cursor:pointer;width:100%;background:var(--s2);grid-column:1/-1" onclick="instrOpenResults()">
+            <div style="font-size:16px;font-weight:700;margin-bottom:6px">Test Results</div>
+            <div style="font-size:13px;color:var(--t3);line-height:1.5">See scores from the Hand Tool, Power Tool, and Tape Measure finals.</div>
+            <div style="margin-top:14px;font-size:13px;font-weight:600;color:var(--ac2)">View Scores</div>
+          </button>
         </div>
       </div>
     </div>
@@ -317,6 +323,23 @@
         </div>
         <div id="manageStudents"></div>
       </div>
+    </div>
+
+    <!-- TEST RESULTS -->
+    <div class="view" id="view-results">
+      <div class="page-header">
+        <div><div class="page-title">Test Results</div><div class="page-sub">Tool Finals scores submitted by students. Filtered by selected class.</div></div>
+        <div class="flex-gap">
+          <select id="resultsFilter" onchange="renderTestResults()" style="width:auto">
+            <option value="">All Tests</option>
+            <option value="Hand Tool Final">Hand Tool</option>
+            <option value="Power Tool Final">Power Tool</option>
+            <option value="Tape Measure Final">Tape Measure</option>
+          </select>
+          <button class="btn btn-ghost btn-sm" onclick="loadTestResults()">Refresh</button>
+        </div>
+      </div>
+      <div id="resultsBody"><div class="empty-state"><p>Select a class and click Refresh.</p></div></div>
     </div>
 
     <!-- FAQ -->
@@ -742,6 +765,21 @@ function applyRole(){
     document.getElementById('view-instructor').classList.add('active');
     document.getElementById('instrWelcome').textContent='Welcome, '+(ME.name||'Instructor');
   }
+}
+function instrOpenResults(){
+  document.getElementById('contextBar').style.display='none';
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.getElementById('view-results').classList.add('active');
+  let bar=document.getElementById('instrBackBar');
+  if(!bar){
+    bar=document.createElement('div');
+    bar.id='instrBackBar';
+    bar.style.cssText='max-width:1000px;margin:10px auto -4px;padding:0 16px';
+    bar.innerHTML='<button class="btn btn-ghost btn-sm" onclick="showInstrDash()">Back to Dashboard</button>';
+    document.querySelector('.main').insertAdjacentElement('beforebegin',bar);
+  }
+  bar.style.display='';
+  loadTestResults();
 }
 function instrOpenDemerit(){
   // Show demerit view with a back-to-dashboard bar
@@ -1486,6 +1524,50 @@ async function delClass(id){
   const c=classes.find(x=>x.id===id);
   if(!confirm(`Close "${c.program_name}"? Students will no longer see it as an option, but your records will be kept.`))return;
   try{await api('deleteClass',{id});await bootstrap();toast('Closed');}catch(e){toast(e.message,true);}
+}
+
+// ── Test Results ──
+let _testResults=[];
+async function loadTestResults(){
+  const host=document.getElementById('resultsBody');
+  if(!host) return;
+  host.innerHTML='<div class="note" style="padding:16px">Loading…</div>';
+  try{
+    const d=await api('testResults',{classId:curClass||null});
+    _testResults=d.results||[];
+    renderTestResults();
+  }catch(e){host.innerHTML=`<div class="alert alert-danger">${esc(e.message)}</div>`;}
+}
+function renderTestResults(){
+  const host=document.getElementById('resultsBody');
+  if(!host) return;
+  const filter=document.getElementById('resultsFilter')?.value||'';
+  const rows=_testResults.filter(r=>!filter||r.test_name===filter);
+  if(!rows.length){host.innerHTML='<div class="empty-state"><p>No results found.</p></div>';return;}
+  const passMark=70;
+  host.innerHTML=`<table style="width:100%;border-collapse:collapse;font-size:13px">
+    <thead><tr style="border-bottom:.5px solid var(--b1);text-align:left">
+      <th style="padding:8px 10px;color:var(--t3);font-weight:600">Student</th>
+      <th style="padding:8px 10px;color:var(--t3);font-weight:600">Test</th>
+      <th style="padding:8px 10px;color:var(--t3);font-weight:600;text-align:center">Score</th>
+      <th style="padding:8px 10px;color:var(--t3);font-weight:600;text-align:center">Pct</th>
+      <th style="padding:8px 10px;color:var(--t3);font-weight:600;text-align:center">Pass</th>
+      <th style="padding:8px 10px;color:var(--t3);font-weight:600">Date</th>
+    </tr></thead>
+    <tbody>${rows.map(r=>{
+      const pct=r.pct!=null?Math.round(r.pct):r.total?Math.round(r.score/r.total*100):null;
+      const pass=pct!=null&&pct>=passMark;
+      const dateStr=r.taken_at?new Date(r.taken_at).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}):'—';
+      return `<tr style="border-bottom:.5px solid var(--b1)">
+        <td style="padding:9px 10px;font-weight:500">${esc(r.student_name||'—')}</td>
+        <td style="padding:9px 10px;color:var(--t2)">${esc(r.test_name||'—')}</td>
+        <td style="padding:9px 10px;text-align:center">${r.score}/${r.total}</td>
+        <td style="padding:9px 10px;text-align:center;font-weight:600;color:${pct==null?'var(--t3)':pct>=passMark?'var(--ac)':'#e74c3c'}">${pct!=null?pct+'%':'—'}</td>
+        <td style="padding:9px 10px;text-align:center;font-weight:600;color:${pass?'var(--ac)':'#e74c3c'}">${pct==null?'—':pass?'Yes':'No'}</td>
+        <td style="padding:9px 10px;color:var(--t3);font-size:12px">${esc(dateStr)}</td>
+      </tr>`;
+    }).join('')}</tbody>
+  </table>`;
 }
 
 // ── Student modals ──
