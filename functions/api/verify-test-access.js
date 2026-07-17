@@ -1,5 +1,5 @@
 // functions/api/verify-test-access.js  →  POST /api/verify-test-access
-// Verifies Google identity + class PIN (or guest PIN) before a student can take a test.
+// Verifies Google identity + class PIN, or guest/instructor PIN, before a student can take a test.
 import { makeSb, ok, bad, clean, enc } from '../_lib.js';
 
 export async function onRequestPost(context) {
