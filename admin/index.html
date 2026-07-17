@@ -981,7 +981,8 @@ function renderManage(){
     const names=(c.instructor_ids||[]).map(id=>(instructors.find(i=>i.id===id)||{}).name).filter(Boolean).join(', ');
     return `<div style="padding:11px 0;border-bottom:.5px solid var(--b1);display:flex;justify-content:space-between;align-items:center;gap:10px">
       <div><strong>${esc(c.program_name)}</strong> <span class="note" style="display:inline">${esc(names||'no instructors')}</span>
-        <div class="note" style="margin-top:4px;word-break:break-all;overflow-wrap:anywhere">/form?class=<span style="color:var(--ac2)">${esc(c.slug)}</span> &nbsp;·&nbsp; ${(c.cohorts||[]).length} cohort(s)</div></div>
+        <div class="note" style="margin-top:4px;word-break:break-all;overflow-wrap:anywhere">/form?class=<span style="color:var(--ac2)">${esc(c.slug)}</span> &nbsp;·&nbsp; ${(c.cohorts||[]).length} cohort(s)</div>
+        ${c.class_pin?`<div style="margin-top:5px;font-size:13px;font-weight:700;letter-spacing:.08em;color:var(--ac2)">Test PIN: ${esc(c.class_pin)}</div>`:''}</div>
       <div class="flex-gap"><button class="btn btn-ghost btn-sm" onclick="openClassModal('${esc(c.id)}')">Edit</button>
         <button class="btn btn-danger btn-sm" onclick="delClass('${esc(c.id)}')">Close</button></div></div>`;
   }).join(''):'<div class="empty-state"><p>No classes yet.</p></div>';
