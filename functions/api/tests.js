@@ -1,0 +1,41 @@
+// functions/api/tests.js  →  POST /api/tests
+// Saves a student test result to anew_test_results.
+import { makeSb, ok, bad, clean } from '../_lib.js';
+
+export async function onRequestPost(context) {
+  const { request, env } = context;
+  const sb = makeSb(env);
+
+  let d;
+  try { d = await request.json(); } catch { return bad('Bad JSON'); }
+
+  const studentName = clean(d.studentName);
+  const testName    = clean(d.testName);
+  const score       = parseInt(d.score);
+  const total       = parseInt(d.total);
+  const pct         = parseFloat(d.pct);
+
+  if (!studentName) return bad('studentName is required');
+  if (!testName)    return bad('testName is required');
+  if (isNaN(score) || isNaN(total) || total < 1) return bad('Invalid score or total');
+
+  try {
+    const row = await sb('anew_test_results', {
+      method: 'POST',
+      prefer: 'return=representation',
+      body: JSON.stringify({
+        student_name: studentName,
+        test_name:    testName,
+        score,
+        total,
+        pct: isNaN(pct) ? null : pct,
+        answers: d.answers || null,
+        taken_at: new Date().toISOString(),
+      }),
+    });
+    return ok({ ok: true, id: (row && row[0]) ? row[0].id : null });
+  } catch (e) {
+    console.error('tests POST failed:', e && e.message);
+    return bad('Could not save result: ' + e.message, 500);
+  }
+}

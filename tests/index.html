@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>ANEW Tool Finals</title>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{background:#0a0a0a;color:#e8e8e8;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center}
+    .screen{display:none;width:100%;max-width:680px;padding:32px 20px 60px;flex-direction:column;align-items:center;min-height:100vh}
+    .screen.active{display:flex}
+
+    /* Home */
+    .home-title{font-size:2rem;font-weight:700;color:#fff;margin-top:60px;margin-bottom:6px;text-align:center}
+    .home-sub{font-size:1rem;color:#666;margin-bottom:48px}
+    .test-card{width:100%;background:#141414;border:1px solid #242424;border-radius:12px;padding:22px 26px;margin-bottom:12px;cursor:pointer;transition:all 0.15s;text-align:left}
+    .test-card:hover{border-color:#444;background:#1c1c1c}
+    .test-card-title{font-size:1.05rem;font-weight:700;color:#fff;margin-bottom:4px}
+    .test-card-meta{font-size:0.82rem;color:#555}
+
+    /* Name */
+    .back-btn{align-self:flex-start;background:none;border:none;color:#555;cursor:pointer;font-size:0.9rem;padding:0;margin-bottom:36px}
+    .back-btn:hover{color:#aaa}
+    .screen-title{font-size:1.4rem;font-weight:700;color:#fff;margin-bottom:6px;text-align:center}
+    .screen-sub{font-size:0.88rem;color:#666;margin-bottom:36px;text-align:center}
+    .field-wrap{width:100%;margin-bottom:8px}
+    .field-label{font-size:0.72rem;font-weight:700;color:#666;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:6px;display:block}
+    input[type=text]{width:100%;background:#141414;border:1px solid #2a2a2a;border-radius:8px;padding:14px 16px;color:#fff;font-size:1rem;outline:none;transition:border-color 0.15s}
+    input[type=text]:focus{border-color:#555}
+    .primary-btn{width:100%;background:#fff;color:#0a0a0a;border:none;border-radius:8px;padding:15px;font-size:1rem;font-weight:700;cursor:pointer;margin-top:20px;transition:opacity 0.15s}
+    .primary-btn:hover:not(:disabled){opacity:0.88}
+    .primary-btn:disabled{opacity:0.25;cursor:not-allowed}
+    .ghost-btn{width:100%;background:#141414;color:#ccc;border:1px solid #2a2a2a;border-radius:8px;padding:14px;font-size:0.95rem;font-weight:600;cursor:pointer;margin-top:10px;transition:all 0.15s}
+    .ghost-btn:hover{border-color:#444;color:#fff}
+
+    /* Test */
+    .prog-wrap{width:100%;height:3px;background:#1e1e1e;border-radius:2px;margin-bottom:6px}
+    .prog-bar{height:3px;background:#fff;border-radius:2px;transition:width 0.35s}
+    .prog-label{font-size:0.75rem;color:#444;margin-bottom:36px;align-self:flex-end}
+    .q-text{font-size:1.15rem;color:#f0f0f0;line-height:1.65;margin-bottom:32px}
+
+    /* Measure */
+    .measure-row{display:flex;gap:10px;width:100%}
+    .measure-cell{display:flex;flex-direction:column;gap:6px;flex:1}
+    .measure-cell label{font-size:0.7rem;font-weight:700;color:#555;text-transform:uppercase;letter-spacing:0.07em}
+    .measure-cell input[type=number],.measure-cell select{width:100%;background:#141414;border:1px solid #2a2a2a;border-radius:8px;padding:14px 10px;color:#fff;font-size:1rem;outline:none;transition:border-color 0.15s;-moz-appearance:textfield}
+    .measure-cell input[type=number]:focus,.measure-cell select:focus{border-color:#555}
+    .measure-cell input[type=number]::-webkit-inner-spin-button,.measure-cell input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none}
+    .measure-cell select option{background:#141414}
+    .measure-hint{font-size:0.78rem;color:#444;margin-top:10px;line-height:1.4}
+
+    /* MC */
+    .mc-options{width:100%;display:flex;flex-direction:column;gap:10px}
+    .mc-opt{width:100%;background:#141414;border:2px solid #222;border-radius:10px;padding:15px 18px;cursor:pointer;text-align:left;color:#aaa;font-size:0.97rem;line-height:1.45;transition:all 0.12s}
+    .mc-opt:hover{border-color:#444;color:#ddd}
+    .mc-opt.selected{border-color:#fff;color:#fff;background:#1d1d1d}
+
+    /* TF */
+    .tf-row{display:flex;gap:12px;width:100%}
+    .tf-btn{flex:1;background:#141414;border:2px solid #222;border-radius:10px;padding:22px 16px;font-size:1.15rem;font-weight:700;cursor:pointer;color:#888;transition:all 0.12s}
+    .tf-btn:hover{border-color:#444;color:#ddd}
+    .tf-btn.selected{border-color:#fff;color:#fff;background:#1d1d1d}
+
+    /* Nav */
+    .nav-row{display:flex;justify-content:flex-end;width:100%;margin-top:28px}
+    .next-btn{background:#fff;color:#0a0a0a;border:none;border-radius:8px;padding:13px 30px;font-size:0.97rem;font-weight:700;cursor:pointer;transition:opacity 0.15s}
+    .next-btn:disabled{opacity:0.18;cursor:not-allowed}
+    .next-btn:hover:not(:disabled){opacity:0.88}
+
+    /* Results */
+    .score-ring{width:136px;height:136px;border-radius:50%;border:3px solid #fff;display:flex;flex-direction:column;align-items:center;justify-content:center;margin:44px 0 28px;flex-shrink:0}
+    .score-pct{font-size:2.1rem;font-weight:700;color:#fff}
+    .score-frac{font-size:0.82rem;color:#666;margin-top:2px}
+    .res-title{font-size:1.3rem;font-weight:700;color:#fff;margin-bottom:4px}
+    .res-sub{font-size:0.85rem;color:#555;margin-bottom:32px}
+    .breakdown{width:100%;margin-bottom:28px}
+    .bd-item{display:flex;align-items:flex-start;gap:12px;padding:11px 0;border-bottom:1px solid #181818;font-size:0.88rem;line-height:1.45}
+    .bd-item:last-child{border-bottom:none}
+    .bd-icon{flex-shrink:0;width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.65rem;font-weight:700;margin-top:1px}
+    .bd-icon.ok{background:#0e2a0e;color:#4caf50}
+    .bd-icon.no{background:#2a0e0e;color:#f44336}
+    .bd-q{color:#ccc}
+    .bd-a{font-size:0.8rem;color:#555;margin-top:2px}
+    .bd-a.yours{color:#888}
+    .submit-area{width:100%;display:flex;flex-direction:column;gap:10px}
+    .status-line{font-size:0.82rem;color:#666;text-align:center;min-height:18px}
+  </style>
+</head>
+<body>
+
+<!-- ── HOME ── -->
+<div id="screen-home" class="screen active">
+  <div class="home-title">ANEW Tool Finals</div>
+  <div class="home-sub">Select your test to begin</div>
+  <div class="test-card" onclick="selectTest('tape')">
+    <div class="test-card-title">Tape Measure Final</div>
+    <div class="test-card-meta">35 questions — measurement math, tool knowledge, and safety</div>
+  </div>
+  <div class="test-card" onclick="selectTest('hand')">
+    <div class="test-card-title">Hand Tool Final</div>
+    <div class="test-card-meta">35 questions — tool identification, safety, and PPE</div>
+  </div>
+  <div class="test-card" onclick="selectTest('power')">
+    <div class="test-card-title">Power Tool Final</div>
+    <div class="test-card-meta">35 questions — tool identification, safety, and PPE</div>
+  </div>
+</div>
+
+<!-- ── NAME ── -->
+<div id="screen-name" class="screen">
+  <button class="back-btn" onclick="showScreen('home')">Back</button>
+  <div class="screen-title" id="name-test-title"></div>
+  <div class="screen-sub">Enter your full name exactly as it appears on the roster.</div>
+  <div class="field-wrap">
+    <span class="field-label">Full Name</span>
+    <input type="text" id="student-name" placeholder="First Last" autocomplete="name">
+  </div>
+  <button class="primary-btn" onclick="startTest()">Start Test</button>
+</div>
+
+<!-- ── TEST ── -->
+<div id="screen-test" class="screen">
+  <div style="width:100%">
+    <div class="prog-wrap"><div class="prog-bar" id="prog-bar"></div></div>
+    <div class="prog-label" id="prog-label"></div>
+  </div>
+  <div class="q-text" id="q-text"></div>
+  <div id="answer-area" style="width:100%"></div>
+  <div class="nav-row">
+    <button class="next-btn" id="next-btn" disabled onclick="nextQ()">Next</button>
+  </div>
+</div>
+
+<!-- ── RESULTS ── -->
+<div id="screen-results" class="screen">
+  <div class="score-ring">
+    <div class="score-pct" id="score-pct"></div>
+    <div class="score-frac" id="score-frac"></div>
+  </div>
+  <div class="res-title" id="res-title"></div>
+  <div class="res-sub" id="res-sub"></div>
+  <div class="breakdown" id="breakdown"></div>
+  <div class="submit-area">
+    <button class="primary-btn" id="submit-btn" onclick="submitResult()">Save My Score</button>
+    <div class="status-line" id="status-line"></div>
+    <button class="ghost-btn" onclick="showScreen('home')">Take Another Test</button>
+  </div>
+</div>
+
+<script>
+const FRACS = ['0','1/16','1/8','3/16','1/4','5/16','3/8','7/16','1/2','9/16','5/8','11/16','3/4','13/16','7/8','15/16'];
+
+// ─────────────────────────────────────────────────────────────────────────────
+// QUESTION BANKS
+// ─────────────────────────────────────────────────────────────────────────────
+
+const TESTS = {
+
+  tape: {
+    name: 'Tape Measure Final',
+    questions: [
+      // ── Math (measure input: feet / inches / fraction) ──────────────────
+      {type:'measure', q:'What is 2 feet 3 inches in total inches?', ans:{ft:0,in:27,frac:'0'}},
+      {type:'measure', q:'What is 4 feet 6 inches in total inches?', ans:{ft:0,in:54,frac:'0'}},
+      {type:'measure', q:'What is 1 foot 11 inches in total inches?', ans:{ft:0,in:23,frac:'0'}},
+      {type:'measure', q:'Convert 68 inches to feet and inches.', ans:{ft:5,in:8,frac:'0'}},
+      {type:'measure', q:'Convert 85 inches to feet and inches.', ans:{ft:7,in:1,frac:'0'}},
+      {type:'measure', q:'How many feet and inches are in 48 inches?', ans:{ft:4,in:0,frac:'0'}},
+      {type:'measure', q:'What is 1 foot and 7/16 of an inch in total inches?', ans:{ft:0,in:12,frac:'7/16'}},
+      {type:'measure', q:'What is 3 feet and 3/4 of an inch in total inches?', ans:{ft:0,in:36,frac:'3/4'}},
+      {type:'measure', q:'How many inches are in 4 feet and 5/8 of an inch?', ans:{ft:0,in:48,frac:'5/8'}},
+      {type:'measure', q:'What is 2 feet 5 and 3/16 inches in total inches?', ans:{ft:0,in:29,frac:'3/16'}},
+      {type:'measure', q:'How many inches are in 3 feet 11 and 7/8 inches?', ans:{ft:0,in:47,frac:'7/8'}},
+      {type:'measure', q:'What is 1 foot 9 and 1/16 inches in total inches?', ans:{ft:0,in:21,frac:'1/16'}},
+      {type:'measure', q:'Convert 4 feet 2 and 3/8 inches to total inches.', ans:{ft:0,in:50,frac:'3/8'}},
+      {type:'measure', q:'ADD: 3 feet 7/8 inch\n+ 2 feet 5 and 1/16 inches', ans:{ft:5,in:5,frac:'15/16'}},
+      {type:'measure', q:'SUBTRACT: 2 feet 7 and 3/4 inches\n− 1 foot 3/8 inch', ans:{ft:1,in:7,frac:'3/8'}},
+      {type:'measure', q:'ADD: 4 feet 5/8 inch\n+ 3 feet 11 and 1/4 inches', ans:{ft:7,in:11,frac:'7/8'}},
+      {type:'measure', q:'SUBTRACT: 4 feet 8 and 3/16 inches\n− 2 feet 5 and 7/16 inches', ans:{ft:2,in:2,frac:'3/4'}},
+      {type:'measure', q:'SUBTRACT: 5 feet 9 and 15/16 inches\n− 3 feet 1/8 inch', ans:{ft:2,in:9,frac:'13/16'}},
+      {type:'measure', q:'SUBTRACT: 3 feet 5 and 1/2 inches\n− 1 foot 11 and 3/4 inches', ans:{ft:1,in:5,frac:'3/4'}},
+      {type:'measure', q:'SUBTRACT: 6 feet 2 and 1/2 inches\n− 3 feet 10 and 3/16 inches', ans:{ft:2,in:4,frac:'5/16'}},
+      // ── Knowledge (MC) ───────────────────────────────────────────────────
+      {type:'mc', q:'What does the black diamond mark on a tape measure represent?', options:['19.2-inch stud spacing','16-inch on-center spacing','Foot markers','Metric conversion point'], correct:0},
+      {type:'mc', q:'What is the standard spacing for wall studs indicated on a tape measure?', options:['12 inches','16 inches','18 inches','24 inches'], correct:1},
+      {type:'mc', q:'What is the hook at the end of a tape measure blade called?', options:['End cap','Blade hook','Catch plate','Thumb stop'], correct:1},
+      {type:'mc', q:'Why does the hook on a tape measure slide slightly back and forth?', options:['It is loose and needs to be tightened','To account for its own thickness so inside and outside measurements are both accurate','To allow the blade to extend further without kinking','To prevent rusting of the blade tip'], correct:1},
+      {type:'mc', q:'What is the smallest increment marked on a standard tape measure?', options:['1/8 inch','1/4 inch','1/16 inch','1/32 inch'], correct:2},
+      {type:'mc', q:'What is the purpose of the serrated edge on the tape measure hook?', options:['To grip the case when retracting','To score a mark on soft surfaces for reference','To cut thin materials','To lock the hook in place'], correct:1},
+      {type:'mc', q:'What does "burning an inch" mean when using a tape measure?', options:['Starting measurement at the 1-inch mark instead of the hook, then subtracting 1 inch from the result','Adding one inch as a safety margin','Using the serrated hook to score a burn line','Discarding a damaged tape and using a new one'], correct:0},
+      {type:'mc', q:'What is the "case addition method" for taking inside measurements?', options:['Add 6 inches for the depth of the case','Read the tape at the wall, then add the printed width of the tape case (usually 3 inches)','Subtract 1 inch for the blade curl','Double the measurement for both sides'], correct:1},
+      // ── Safety / True-False ──────────────────────────────────────────────
+      {type:'tf', q:'True or False:\nIt is safe to let a tape measure blade snap back at full speed.', ans:false},
+      {type:'tf', q:'True or False:\nA bent or damaged tape measure hook affects measurement accuracy and the tape should be replaced.', ans:true},
+      {type:'mc', q:'What should you do before using a tape measure with a bent or damaged hook?', options:['Tape it down with electrical tape','Replace the tape measure','Bend it back into place','Use it carefully and subtract the error'], correct:1},
+      {type:'mc', q:'When measuring with a tape measure, when should you control blade retraction speed?', options:['Never — it retracts automatically','Only for blades longer than 16 feet','Always — to protect the blade and prevent injury from snapping','Only when working around other people'], correct:2},
+      {type:'tf', q:'True or False:\nThe numbers or marks printed every 12 inches on a tape measure indicate one foot.', ans:true},
+      {type:'tf', q:'True or False:\nA 16-foot tape measure is typically easier to use for small trim and finish work than a 25-foot tape.', ans:true},
+      {type:'mc', q:'What PPE should you wear when using a utility knife alongside a tape measure to mark and cut material?', options:['No PPE needed for measuring','Cut-resistant gloves and safety glasses','Hard hat only','Full face shield only'], correct:1},
+    ]
+  },
+
+  hand: {
+    name: 'Hand Tool Final',
+    questions: [
+      // ── Tool ID (MC) ─────────────────────────────────────────────────────
+      {type:'mc', q:'A hand tool with a heavy metal head and a handle, used for driving nails into wood.', options:['Mallet','Hammer','Hatchet','Sledgehammer'], correct:1},
+      {type:'mc', q:'Pliers with long, thin, pointed jaws for gripping small objects in tight spaces.', options:['Channel-lock pliers','Lineman\'s pliers','Needle-nose pliers','Locking pliers'], correct:2},
+      {type:'mc', q:'A screwdriver with a cross-shaped (+) tip that fits Phillips-head screws.', options:['Slotted screwdriver','Torx screwdriver','Phillips screwdriver','Allen wrench'], correct:2},
+      {type:'mc', q:'A triangular-shaped measuring tool used to quickly mark 90° and 45° angles in carpentry.', options:['Framing square','Speed square','Combination square','Bevel gauge'], correct:1},
+      {type:'mc', q:'A hand tool with a fine-toothed blade designed primarily for cutting metal.', options:['Coping saw','Keyhole saw','Jab saw','Hacksaw'], correct:3},
+      {type:'mc', q:'A measuring tool with a bubble vial used to check that a surface is level or plumb.', options:['Plumb bob','Chalk line','Level','Speed square'], correct:2},
+      {type:'mc', q:'Heavy-duty pliers that lock firmly onto objects and stay locked with an adjustment screw.', options:['Channel-lock pliers','Locking pliers / Vise-Grips','Slip-joint pliers','Needle-nose pliers'], correct:1},
+      {type:'mc', q:'A hand saw with coarse teeth designed for rough cuts through drywall.', options:['Hacksaw','Coping saw','Jab saw / Drywall saw','Hand saw'], correct:2},
+      {type:'mc', q:'A small pointed weight on a string used to establish a true vertical reference line.', options:['Level','Plumb bob','Chalk line','Torpedo level'], correct:1},
+      {type:'mc', q:'A cutting tool with a retractable, replaceable blade used for scoring and trimming materials.', options:['Utility knife / Box cutter','Chisel','Tin snips','Pocket knife'], correct:0},
+      {type:'mc', q:'A flexible steel blade coiled inside a case, used for measuring distance.', options:['Chalk line','Folding rule','Tape measure','Caliper'], correct:2},
+      {type:'mc', q:'A wrench with a movable jaw that can be adjusted to fit different-sized fasteners.', options:['Pipe wrench','Combination wrench','Adjustable wrench','Socket wrench'], correct:2},
+      {type:'mc', q:'A right-angled measuring tool typically 24 inches long, used to lay out framing.', options:['Speed square','Combination square','Framing square','T-bevel'], correct:2},
+      {type:'mc', q:'A tool that dispenses powdered chalk onto a taut string, then snaps a straight layout line.', options:['Marking gauge','Scribe','Chalk line','Pencil compass'], correct:2},
+      {type:'mc', q:'A drilling bit with a flat, paddle-shaped cutting edge for boring large holes in wood.', options:['Twist bit','Spade bit','Auger bit','Brad-point bit'], correct:1},
+      {type:'mc', q:'A wrench with a ratcheting mechanism and interchangeable sockets for driving fasteners.', options:['Adjustable wrench','Torque wrench','Ratchet / Socket wrench','Box wrench'], correct:2},
+      {type:'mc', q:'A masonry tool with a flat, diamond-shaped blade used to apply and smooth mortar.', options:['Grout float','Margin trowel','Masonry trowel','Drywall knife'], correct:2},
+      {type:'mc', q:'A measuring tool with a sliding jaw and a fixed jaw for precise measurement of object dimensions.', options:['Micrometer','Caliper','Depth gauge','Try square'], correct:1},
+      {type:'mc', q:'An L-shaped tool used to drive hex (six-sided) socket-head screws and bolts.', options:['Torx key','Socket wrench','Allen wrench / Hex key','Nut driver'], correct:2},
+      {type:'mc', q:'A tool used to drive a nail head below the surface of wood without marring the wood.', options:['Center punch','Pin punch','Awl','Nail set'], correct:3},
+      // ── Safety / Knowledge (MC) ──────────────────────────────────────────
+      {type:'mc', q:'What is the FIRST thing you should do before using any hand tool?', options:['Sharpen it','Inspect it for damage','Clean it','Oil the joints'], correct:1},
+      {type:'mc', q:'When using a hammer, what should you avoid doing?', options:['Using the flat face of the head','Striking with the side (cheek) of the head','Starting nails slowly','Wearing safety glasses'], correct:1},
+      {type:'mc', q:'What is the safest way to pass a sharp hand tool to another person?', options:['Toss it gently underhand','Hold it by the blade and extend the handle','Point the sharp end toward them first','Set it on a flat surface and let them pick it up'], correct:3},
+      {type:'mc', q:'What should you do if a hammer handle is cracked or splintered?', options:['Wrap it with tape and continue','Use it carefully for light tasks','Replace it immediately','Sand it smooth and keep using it'], correct:2},
+      {type:'mc', q:'Why is it dangerous to use the wrong size wrench on a bolt?', options:['It may not fit the toolbox','The bolt may rust faster','The wrench can slip and injure you, and round off the bolt head','It takes longer to tighten'], correct:2},
+      {type:'mc', q:'Which PPE is most important when chiseling or cutting hard material?', options:['Hearing protection','Safety glasses','Steel-toed boots','Knee pads'], correct:1},
+      {type:'mc', q:'What does it mean when a tool is tagged "Out of Service"?', options:['It needs cleaning only','It belongs to another crew','It must not be used until inspected and cleared','It is due for its annual maintenance check'], correct:2},
+      {type:'mc', q:'Which hand saw is best suited for cutting curves in wood?', options:['Circular saw','Hacksaw','Coping saw','Cross-cut hand saw'], correct:2},
+      {type:'mc', q:'What does PPE stand for?', options:['Power Protection Equipment','Personal Protective Equipment','Protective Professional Ensemble','Professional Prevention Equipment'], correct:1},
+      {type:'mc', q:'What is the function of a GFCI (Ground Fault Circuit Interrupter)?', options:['Increases voltage available to tools','Prevents electric shock by cutting power when a ground fault is detected','Measures the current draw of a tool','Resets circuit breakers automatically'], correct:1},
+      // ── True / False ─────────────────────────────────────────────────────
+      {type:'tf', q:'True or False:\nIt is acceptable to use a screwdriver as a pry bar when a pry bar is not available.', ans:false},
+      {type:'tf', q:'True or False:\nHand tools should be inspected before each use.', ans:true},
+      {type:'tf', q:'True or False:\nWearing cut-resistant gloves when using sharp cutting tools helps prevent hand injuries.', ans:true},
+      {type:'tf', q:'True or False:\nA hammer with a loose head can be used safely as long as you are careful.', ans:false},
+      {type:'tf', q:'True or False:\nTools should be cleaned, dried, and stored properly after each use.', ans:true},
+    ]
+  },
+
+  power: {
+    name: 'Power Tool Final',
+    questions: [
+      // ── Tool ID / Knowledge (MC) ─────────────────────────────────────────
+      {type:'mc', q:'A handheld power saw with a circular blade used for straight cuts in wood, metal, or other materials.', options:['Reciprocating saw','Jigsaw','Circular saw','Miter saw'], correct:2},
+      {type:'mc', q:'A versatile cordless power tool used for both drilling holes and driving screws.', options:['Reciprocating saw','Rotary hammer','Impact wrench','Drill / driver'], correct:3},
+      {type:'mc', q:'A power saw whose blade moves back and forth rapidly, used for demolition cuts and cutting in tight spaces. Also called a Sawzall.', options:['Circular saw','Jigsaw','Reciprocating saw','Band saw'], correct:2},
+      {type:'mc', q:'A saw with a small, thin blade that moves up and down, designed for curved or intricate cuts.', options:['Circular saw','Jigsaw','Oscillating multi-tool','Coping saw'], correct:1},
+      {type:'mc', q:'A stationary power tool with a large circular blade mounted in a table, used for ripping and cross-cutting lumber.', options:['Miter saw','Band saw','Table saw','Track saw'], correct:2},
+      {type:'mc', q:'A power saw mounted on a swinging arm that cuts wood at precise angle settings. Also called a chop saw.', options:['Circular saw','Band saw','Miter saw','Table saw'], correct:2},
+      {type:'mc', q:'A power tool with a spinning disc used for grinding, cutting, or polishing metal and masonry.', options:['Belt sander','Die grinder','Angle grinder','Random orbital sander'], correct:2},
+      {type:'mc', q:'A heavy-duty drill designed specifically to drill into concrete, masonry, or stone.', options:['Standard drill/driver','Impact driver','Rotary hammer / Hammer drill','Auger'], correct:2},
+      {type:'mc', q:'A power tool that drives nails or staples into materials using compressed air or electricity.', options:['Staple gun only','Nail gun / Nailer','Pin nailer only','Finish nailer only'], correct:1},
+      {type:'mc', q:'A power tool that delivers very high rotational torque, used to loosen or tighten large bolts.', options:['Drill/driver','Impact driver','Impact wrench','Rotary hammer'], correct:2},
+      {type:'mc', q:'A power sander with a disc that moves in small random orbits, used for fine surface finishing.', options:['Belt sander','Random orbital sander','Sheet sander','Drum sander'], correct:1},
+      {type:'mc', q:'What is a Sawzall?', options:['A large stationary table saw','A reciprocating saw','A miter saw brand name','A type of jigsaw'], correct:1},
+      {type:'mc', q:'Which power tool is used to shape edges and cut grooves or profiles in wood?', options:['Circular saw','Reciprocating saw','Router','Jigsaw'], correct:2},
+      {type:'mc', q:'Which piece of equipment is used on a job site to compact soil, gravel, or asphalt?', options:['Jackhammer','Plate compactor','Concrete mixer','Power tamper'], correct:1},
+      {type:'mc', q:'What is the primary function of an impact driver?', options:['Drilling through concrete','Driving screws and bolts with high rotational torque','Cutting metal with high speed','Polishing and buffing surfaces'], correct:1},
+      // ── Safety / Knowledge (MC) ──────────────────────────────────────────
+      {type:'mc', q:'What does RPM stand for in relation to power tools?', options:['Rotating Power Mode','Revolutions Per Minute','Rapid Pressure Mechanism','Rotary Performance Meter'], correct:1},
+      {type:'mc', q:'What is the purpose of a blade guard on a power saw?', options:['To keep the blade dry and rust-free','To protect the operator from the spinning blade','To guide the blade for a straight cut','To reduce blade noise'], correct:1},
+      {type:'mc', q:'What should you do if a power tool starts overheating during use?', options:['Keep using it — heat will dissipate on its own','Pour water on it to cool it quickly','Turn it off and let it cool completely before inspecting','Switch to a higher speed setting'], correct:2},
+      {type:'mc', q:'What PPE is required when operating power tools?', options:['Hard hat only','Safety glasses and hearing protection','Gloves only','Steel-toed boots only'], correct:1},
+      {type:'mc', q:'What is the FIRST step before operating any power tool?', options:['Test the outlet with a voltage tester','Secure your workpiece in a clamp','Inspect the tool for damage','Put on your hard hat'], correct:2},
+      {type:'mc', q:'What is the purpose of a GFCI outlet when using power tools?', options:['Increase the tool\'s power output','Prevent electric shock by cutting power when a ground fault is detected','Prevent the tool from overheating','Act as a surge protector for batteries'], correct:1},
+      {type:'mc', q:'What should you NEVER do while a power saw blade is still spinning?', options:['Keep both hands on the saw','Wear safety glasses','Reach across the moving blade','Wait for the cut to finish'], correct:2},
+      {type:'mc', q:'What should you do immediately if you see sparks coming from a power tool motor during use?', options:['Continue — sparks are sometimes normal','Reduce the speed setting','Stop, turn it off, and have it inspected before using again','Add lubricant to the motor housing'], correct:2},
+      {type:'mc', q:'Why is dust extraction important when using power saws and sanders?', options:['It keeps the workspace tidy and looks professional','Fine dust can cause serious respiratory disease and creates a fire hazard','It prevents the tool from overheating','It reduces vibration noise'], correct:1},
+      {type:'mc', q:'What type of drill bit is designed for drilling into concrete or masonry?', options:['Brad-point bit','Spade bit','Carbide-tipped masonry bit','Forstner bit'], correct:2},
+      {type:'mc', q:'What should you do if a power tool malfunctions or behaves unexpectedly during use?', options:['Force it to continue to finish the job','Adjust the settings and try again','Remove the safety guard to inspect the problem','Stop using it, turn it off, unplug it, and report it'], correct:3},
+      {type:'mc', q:'What is the safest way to carry a power tool on the job site?', options:['By the power cord','With your finger resting on the trigger','By the body of the tool with the trigger released and tool off','With the blade guard removed for better visibility'], correct:2},
+      {type:'mc', q:'What blade should you use to cut metal with a circular saw?', options:['Standard carbide wood blade','Metal-cutting / abrasive disc blade','Fine-tooth finish blade','Demolition blade'], correct:1},
+      {type:'mc', q:'What is the main function of a thickness planer?', options:['Cutting sheet material to length','Shaping decorative edge profiles','Smoothing and reducing lumber to a uniform thickness','Drilling large-diameter holes'], correct:2},
+      {type:'mc', q:'What power tool accessory is best for polishing or buffing metal surfaces?', options:['Orbital sander pad','Belt sander','Flap disc or polishing wheel on an angle grinder','Reciprocating saw blade'], correct:2},
+      // ── True / False ─────────────────────────────────────────────────────
+      {type:'tf', q:'True or False:\nYou should always unplug a power tool or remove the battery before changing a blade or bit.', ans:true},
+      {type:'tf', q:'True or False:\nIt is safe to use a power tool with a damaged or frayed extension cord as long as the tool still runs.', ans:false},
+      {type:'tf', q:'True or False:\nPower tools should be inspected for damage before each use.', ans:true},
+      {type:'tf', q:'True or False:\nBlade guards can be removed from a saw to make a difficult cut easier or faster.', ans:false},
+      {type:'tf', q:'True or False:\nWearing hearing protection while using loud power tools is optional if the noise does not bother you.', ans:false},
+    ]
+  }
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// APP STATE
+// ─────────────────────────────────────────────────────────────────────────────
+
+let currentTestKey = null;
+let currentTest = null;
+let currentIndex = 0;
+let studentName = '';
+let answers = [];
+let currentAnswer = null;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SCREENS
+// ─────────────────────────────────────────────────────────────────────────────
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-' + id).classList.add('active');
+  window.scrollTo(0, 0);
+}
+
+function selectTest(key) {
+  currentTestKey = key;
+  currentTest = TESTS[key];
+  document.getElementById('name-test-title').textContent = currentTest.name;
+  document.getElementById('student-name').value = '';
+  showScreen('name');
+}
+
+function startTest() {
+  const val = (document.getElementById('student-name').value || '').trim();
+  const parts = val.split(/\s+/).filter(Boolean);
+  if (parts.length < 2) {
+    document.getElementById('student-name').style.borderColor = '#c0392b';
+    document.getElementById('student-name').focus();
+    return;
+  }
+  document.getElementById('student-name').style.borderColor = '#2a2a2a';
+  studentName = val;
+  answers = [];
+  currentIndex = 0;
+  currentAnswer = null;
+  showScreen('test');
+  renderQ(0);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// QUESTION RENDERING
+// ─────────────────────────────────────────────────────────────────────────────
+
+function renderQ(idx) {
+  const q = currentTest.questions[idx];
+  const total = currentTest.questions.length;
+
+  document.getElementById('prog-bar').style.width = ((idx / total) * 100) + '%';
+  document.getElementById('prog-label').textContent = `Question ${idx + 1} of ${total}`;
+  document.getElementById('q-text').textContent = q.q;
+
+  const area = document.getElementById('answer-area');
+  currentAnswer = null;
+
+  if (q.type === 'measure') {
+    area.innerHTML = `
+      <div class="measure-row">
+        <div class="measure-cell">
+          <label>Feet</label>
+          <input type="number" id="ans-ft" min="0" max="999" placeholder="0" oninput="onMeasureInput()">
+        </div>
+        <div class="measure-cell">
+          <label>Inches</label>
+          <input type="number" id="ans-in" min="0" max="999" placeholder="0" oninput="onMeasureInput()">
+        </div>
+        <div class="measure-cell">
+          <label>Parts of an inch</label>
+          <select id="ans-frac" onchange="onMeasureInput()">
+            ${FRACS.map(f => `<option value="${f}">${f === '0' ? '0 (none)' : f + '"'}</option>`).join('')}
+          </select>
+        </div>
+      </div>
+      <div class="measure-hint">For total-inches questions, enter 0 in Feet and the total in Inches.</div>`;
+
+  } else if (q.type === 'mc') {
+    area.innerHTML = `<div class="mc-options">${
+      q.options.map((opt, i) =>
+        `<button class="mc-opt" onclick="selectMC(${i}, this)">${opt}</button>`
+      ).join('')
+    }</div>`;
+
+  } else if (q.type === 'tf') {
+    area.innerHTML = `<div class="tf-row">
+      <button class="tf-btn" onclick="selectTF(true, this)">True</button>
+      <button class="tf-btn" onclick="selectTF(false, this)">False</button>
+    </div>`;
+  }
+
+  const nextBtn = document.getElementById('next-btn');
+  nextBtn.disabled = true;
+  nextBtn.textContent = idx === total - 1 ? 'Submit' : 'Next';
+}
+
+function onMeasureInput() {
+  const ft = document.getElementById('ans-ft').value;
+  const inches = document.getElementById('ans-in').value;
+  if (ft !== '' || inches !== '') {
+    currentAnswer = {
+      ft: parseInt(ft) || 0,
+      in: parseInt(inches) || 0,
+      frac: document.getElementById('ans-frac').value
+    };
+    document.getElementById('next-btn').disabled = false;
+  }
+}
+
+function selectMC(idx, btn) {
+  document.querySelectorAll('.mc-opt').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  currentAnswer = idx;
+  document.getElementById('next-btn').disabled = false;
+}
+
+function selectTF(val, btn) {
+  document.querySelectorAll('.tf-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  currentAnswer = val;
+  document.getElementById('next-btn').disabled = false;
+}
+
+function nextQ() {
+  answers.push({ q: currentTest.questions[currentIndex], answer: currentAnswer });
+  currentIndex++;
+  if (currentIndex >= currentTest.questions.length) {
+    buildResults();
+  } else {
+    renderQ(currentIndex);
+    window.scrollTo(0, 0);
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// GRADING
+// ─────────────────────────────────────────────────────────────────────────────
+
+function fracToDecimal(f) {
+  if (!f || f === '0') return 0;
+  const [n, d] = f.split('/');
+  return parseInt(n) / parseInt(d);
+}
+
+function totalInches(ft, inches, frac) {
+  return (parseInt(ft) || 0) * 12 + (parseInt(inches) || 0) + fracToDecimal(frac || '0');
+}
+
+function gradeAnswer(q, answer) {
+  if (q.type === 'measure') {
+    const sv = totalInches(answer.ft, answer.in, answer.frac);
+    const cv = totalInches(q.ans.ft, q.ans.in, q.ans.frac);
+    return Math.abs(sv - cv) < 0.001;
+  }
+  if (q.type === 'mc') return answer === q.correct;
+  if (q.type === 'tf') return answer === q.ans;
+  return false;
+}
+
+function fmtAnswer(q, answer) {
+  if (!answer && answer !== 0 && answer !== false) return '(no answer)';
+  if (q.type === 'measure') {
+    const ft = answer.ft ?? 0, inches = answer.in ?? 0, frac = answer.frac || '0';
+    return `${ft} ft  ${inches} in  ${frac === '0' ? '0"' : frac + '"'}`;
+  }
+  if (q.type === 'mc') return q.options[answer] ?? '—';
+  if (q.type === 'tf') return answer ? 'True' : 'False';
+  return '—';
+}
+
+function fmtCorrect(q) {
+  if (q.type === 'measure') {
+    const {ft, in: inches, frac} = q.ans;
+    return `${ft} ft  ${inches} in  ${frac === '0' ? '0"' : frac + '"'}`;
+  }
+  if (q.type === 'mc') return q.options[q.correct];
+  if (q.type === 'tf') return q.ans ? 'True' : 'False';
+  return '—';
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// RESULTS
+// ─────────────────────────────────────────────────────────────────────────────
+
+function buildResults() {
+  let score = 0;
+  const items = answers.map(({q, answer}, i) => {
+    const correct = gradeAnswer(q, answer);
+    if (correct) score++;
+    return {q, answer, correct, num: i + 1};
+  });
+  const total = answers.length;
+  const pct = Math.round((score / total) * 100);
+
+  document.getElementById('score-pct').textContent = pct + '%';
+  document.getElementById('score-frac').textContent = `${score} / ${total}`;
+
+  const msg = pct >= 90 ? 'Excellent work!' : pct >= 80 ? 'Good job!' : pct >= 70 ? 'Almost there — keep reviewing.' : 'Keep studying — you\'ve got this.';
+  document.getElementById('res-title').textContent = msg;
+  document.getElementById('res-sub').textContent = currentTest.name;
+
+  document.getElementById('breakdown').innerHTML = items.map(({q, answer, correct, num}) => `
+    <div class="bd-item">
+      <div class="bd-icon ${correct ? 'ok' : 'no'}">${correct ? '+' : 'x'}</div>
+      <div>
+        <div class="bd-q">${num}. ${q.q.split('\n')[0]}</div>
+        ${!correct ? `
+          <div class="bd-a yours">Your answer: ${fmtAnswer(q, answer)}</div>
+          <div class="bd-a">Correct: ${fmtCorrect(q)}</div>` : ''}
+      </div>
+    </div>`).join('');
+
+  window._payload = {
+    studentName,
+    testName: currentTest.name,
+    score,
+    total,
+    pct,
+    answers: items.map(({q, answer, correct, num}) => ({
+      num,
+      question: q.q.split('\n')[0],
+      correct,
+      studentAnswer: fmtAnswer(q, answer),
+      correctAnswer: fmtCorrect(q)
+    }))
+  };
+
+  document.getElementById('submit-btn').disabled = false;
+  document.getElementById('status-line').textContent = '';
+  showScreen('results');
+}
+
+async function submitResult() {
+  const btn = document.getElementById('submit-btn');
+  const statusEl = document.getElementById('status-line');
+  btn.disabled = true;
+  statusEl.textContent = 'Saving...';
+  try {
+    const res = await fetch('/api/tests', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(window._payload)
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || 'Server error ' + res.status);
+    }
+    statusEl.textContent = 'Score saved successfully.';
+    btn.textContent = 'Saved';
+  } catch (e) {
+    statusEl.textContent = 'Could not save — check your connection and try again.';
+    btn.disabled = false;
+  }
+}
+</script>
+</body>
+</html>
