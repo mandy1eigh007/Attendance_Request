@@ -88,6 +88,20 @@
     /* Auth */
     .home-signed-in{font-size:0.82rem;color:#555;margin-top:-28px;margin-bottom:24px;text-align:center}
     .auth-sep{width:100%;border-top:1px solid #1a1a1a;margin:22px 0 16px;text-align:center}
+
+    /* Instructor */
+    .instructor-answer{display:none;margin-top:16px;padding:12px 16px;background:#0e2a0e;border-radius:8px;color:#4caf50;font-size:0.9rem;width:100%;line-height:1.5}
+
+    /* Print */
+    @media print {
+      body > .screen{display:none !important}
+      #print-view{display:block !important;padding:24px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#000;background:#fff}
+      .print-title{font-size:1.1rem;font-weight:700;margin-bottom:6px}
+      .print-sub{font-size:0.8rem;color:#555;margin-bottom:20px;border-bottom:1px solid #ccc;padding-bottom:10px}
+      .pk-item{margin-bottom:12px;page-break-inside:avoid}
+      .pk-q{font-size:0.85rem;color:#222}
+      .pk-a{font-size:0.85rem;font-weight:700;color:#1a5c1a;padding-left:14px;margin-top:2px}
+    }
   </style>
   <script src="https://accounts.google.com/gsi/client" async></script>
 </head>
@@ -150,6 +164,18 @@
     <div class="test-card-title">Power Tool Final</div>
     <div class="test-card-meta">50 questions — tool identification, safety, and PPE</div>
   </div>
+  <div id="instructor-bar" style="display:none;width:100%;margin-top:8px">
+    <button class="ghost-btn" onclick="printAnswerKey('tape')" style="margin-bottom:8px">Print Tape Measure Answer Key</button>
+    <button class="ghost-btn" onclick="printAnswerKey('hand')" style="margin-bottom:8px">Print Hand Tool Answer Key</button>
+    <button class="ghost-btn" onclick="printAnswerKey('power')">Print Power Tool Answer Key</button>
+  </div>
+</div>
+
+<!-- print-only answer key — invisible on screen, visible only in @media print -->
+<div id="print-view" style="display:none">
+  <div class="print-title" id="print-test-name"></div>
+  <div class="print-sub">ANEW Tool Finals — Instructor Answer Key</div>
+  <div id="print-body"></div>
 </div>
 
 
@@ -161,6 +187,7 @@
   </div>
   <div class="q-text" id="q-text"></div>
   <div id="answer-area" style="width:100%"></div>
+  <div id="instructor-answer" class="instructor-answer"></div>
   <div class="nav-row">
     <button class="next-btn" id="next-btn" disabled onclick="nextQ()">Next</button>
   </div>
@@ -380,6 +407,7 @@ const TESTS = {
 
 const GOOGLE_CLIENT_ID = '562580761539-ieshikn09v5sidcmhph2u9auqv8qblgq.apps.googleusercontent.com';
 let authData = null;
+let isInstructor = false;
 let pendingGoogleCredential = null;
 let currentTestKey = null;
 let currentTest = null;
@@ -469,7 +497,11 @@ async function submitGuestAccess() {
 function completeAuth(data) {
   authData = data;
   studentName = data.studentName;
-  document.getElementById('home-signed-in').textContent = 'Signed in as ' + studentName;
+  isInstructor = data.mode === 'instructor';
+  document.getElementById('home-signed-in').textContent = isInstructor
+    ? 'Instructor Preview Mode — answers visible'
+    : 'Signed in as ' + studentName;
+  document.getElementById('instructor-bar').style.display = isInstructor ? 'block' : 'none';
   setAuthStatus('');
   showScreen('home');
 }
@@ -541,6 +573,14 @@ function renderQ(idx) {
       <button class="tf-btn" onclick="selectTF(true, this)">True</button>
       <button class="tf-btn" onclick="selectTF(false, this)">False</button>
     </div>`;
+  }
+
+  const instrEl = document.getElementById('instructor-answer');
+  if (isInstructor) {
+    instrEl.style.display = 'block';
+    instrEl.textContent = 'Correct answer: ' + fmtCorrect(q);
+  } else {
+    instrEl.style.display = 'none';
   }
 
   const nextBtn = document.getElementById('next-btn');
@@ -681,9 +721,27 @@ function buildResults() {
     }))
   };
 
-  document.getElementById('submit-btn').disabled = false;
+  const submitBtn = document.getElementById('submit-btn');
+  if (isInstructor) {
+    submitBtn.style.display = 'none';
+  } else {
+    submitBtn.style.display = '';
+    submitBtn.disabled = false;
+  }
   document.getElementById('status-line').textContent = '';
   showScreen('results');
+}
+
+function printAnswerKey(key) {
+  const test = TESTS[key];
+  document.getElementById('print-test-name').textContent = test.name + ' — Answer Key';
+  document.getElementById('print-body').innerHTML = test.questions.map((q, i) =>
+    `<div class="pk-item">
+      <div class="pk-q">${i + 1}. ${q.q.replace(/\n/g, ' / ')}</div>
+      <div class="pk-a">Answer: ${fmtCorrect(q)}</div>
+    </div>`
+  ).join('');
+  window.print();
 }
 
 async function submitResult() {

@@ -9,11 +9,19 @@ export async function onRequestPost(context) {
   let d;
   try { d = await request.json(); } catch { return bad('Bad JSON'); }
 
-  // ── Guest mode ────────────────────────────────────────────────────────────
+  // ── Guest / Instructor mode ───────────────────────────────────────────────
   if (d.guestMode) {
-    const guestPin = clean(d.guestPin);
-    if (!guestPin || !env.GUEST_PIN || guestPin !== env.GUEST_PIN) {
-      return bad('Invalid guest code', 403);
+    const code = clean(d.guestPin);
+    if (!code) return bad('Access code required', 403);
+
+    // Instructor PIN — no name needed, unlocks answer-key mode
+    if (env.INSTRUCTOR_PIN && code === env.INSTRUCTOR_PIN) {
+      return ok({ ok: true, studentName: 'Instructor', mode: 'instructor', classId: null });
+    }
+
+    // Guest PIN — name required
+    if (!env.GUEST_PIN || code !== env.GUEST_PIN) {
+      return bad('Invalid access code', 403);
     }
     const studentName = clean(d.studentName);
     if (!studentName) return bad('Name required');
