@@ -4,9 +4,19 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>ANEW Tool Finals</title>
+  <meta name="color-scheme" content="dark">
+  <meta name="theme-color" content="#0e1413">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='24' fill='%232dd4a7'/><path d='M50 18 L78 34 V66 L50 82 L22 66 V34 Z' fill='none' stroke='%2306231b' stroke-width='6' stroke-linejoin='round'/></svg>">
+  <!-- app.css supplies the shared shell-nav only; the page's own styles below override its base rules -->
+  <link rel="stylesheet" href="/app.css">
   <style>
     *{box-sizing:border-box;margin:0;padding:0}
-    body{background:#0a0a0a;color:#e8e8e8;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center}
+    html,body{background:#0a0a0a}
+    body{color:#e8e8e8;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center}
+    body::before{display:none}
+    .shell-nav{width:100%;background:rgba(10,10,10,.82);border-bottom-color:#1e1e1e}
+    .shell-nav.nav-locked .shell-nav-links{display:none}
+    .shell-nav.nav-locked .shell-nav-brand{pointer-events:none}
     .screen{display:none;width:100%;max-width:680px;padding:32px 20px 60px;flex-direction:column;align-items:center;min-height:100vh}
     .screen.active{display:flex}
 
@@ -73,8 +83,10 @@
     .multiimg-item.selected{border-color:#fff;background:#1d1d1d}
     .multiimg-item.selected .miLabel{color:#fff}
 
-    /* Test screen tile layout */
-    #screen-test{height:100dvh;overflow:hidden;padding-bottom:0}
+    /* Test screen tile layout — body.testing pins the viewport so the Next
+       button stays at the bottom below the minimal nav */
+    body.testing{height:100dvh;overflow:hidden}
+    #screen-test{flex:1;min-height:0;overflow:hidden;padding-bottom:0}
     #test-scroll{flex:1;overflow-y:auto;width:100%;padding:32px 0 8px}
     /* Nav */
     .nav-row{display:flex;justify-content:flex-end;width:100%;padding:12px 0 28px;flex-shrink:0;background:#0a0a0a;margin-top:0}
@@ -121,6 +133,11 @@
   <script src="https://accounts.google.com/gsi/client" async></script>
 </head>
 <body>
+
+<nav class="shell-nav" id="site-nav">
+  <a class="shell-nav-brand" href="/">ANEW</a>
+  <div class="shell-nav-links"><a href="/">Return to ANEW</a></div>
+</nav>
 
 <!-- ── AUTH ── -->
 <div id="screen-auth" class="screen active">
@@ -449,8 +466,20 @@ let currentAnswer = null;
 function showScreen(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById('screen-' + id).classList.add('active');
+  // Mid-test and on results, lock the nav down to a plain ANEW header so a
+  // stray tap can't navigate away from an in-progress test.
+  const locked = (id === 'test' || id === 'results');
+  document.getElementById('site-nav').classList.toggle('nav-locked', locked);
+  document.body.classList.toggle('testing', id === 'test');
   window.scrollTo(0, 0);
 }
+
+// Warn before leaving the page while a test is in progress.
+window.onbeforeunload = function () {
+  if (document.getElementById('screen-test').classList.contains('active')) {
+    return 'Your test is in progress — leaving now will lose your answers.';
+  }
+};
 
 // ─────────────────────────────────────────────────────────────────────────────
 // AUTH
@@ -792,6 +821,8 @@ function buildResults() {
     pct,
     authMode: authData ? authData.mode : 'unknown',
     classId:  authData ? authData.classId : null,
+    // Issued by /api/verify-test-access on sign-in; required by /api/tests.
+    authToken: authData ? authData.writeToken : null,
     answers: items.map(({q, answer, correct, num}) => ({
       num,
       question: q.q.split('\n')[0],
