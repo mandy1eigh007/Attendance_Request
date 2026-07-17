@@ -581,7 +581,7 @@ function renderQ(idx) {
   }
 
   const nextBtn = document.getElementById('next-btn');
-  nextBtn.disabled = true;
+  nextBtn.disabled = !isInstructor;
   nextBtn.textContent = idx === total - 1 ? 'Submit' : 'Next';
 }
 
