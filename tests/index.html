@@ -61,6 +61,10 @@
     .tf-btn:hover{border-color:#444;color:#ddd}
     .tf-btn.selected{border-color:#fff;color:#fff;background:#1d1d1d}
 
+    /* Question image */
+    #q-image{width:100%;text-align:center;margin-bottom:16px;display:none}
+    #q-image img{max-width:100%;max-height:280px;border-radius:10px;object-fit:contain}
+
     /* Nav */
     .nav-row{display:flex;justify-content:flex-end;width:100%;margin-top:28px}
     .next-btn{background:#fff;color:#0a0a0a;border:none;border-radius:8px;padding:13px 30px;font-size:0.97rem;font-weight:700;cursor:pointer;transition:opacity 0.15s}
@@ -158,7 +162,7 @@
   </div>
   <div class="test-card" onclick="selectTest('hand')">
     <div class="test-card-title">Hand Tool Final</div>
-    <div class="test-card-meta">50 questions — tool identification, safety, and PPE</div>
+    <div class="test-card-meta">79 questions — tool ID with photos, safety, and PPE</div>
   </div>
   <div class="test-card" onclick="selectTest('power')">
     <div class="test-card-title">Power Tool Final</div>
@@ -186,6 +190,7 @@
     <div class="prog-label" id="prog-label"></div>
   </div>
   <div class="q-text" id="q-text"></div>
+  <div id="q-image"><img id="q-image-el" src="" alt="Tool image"></div>
   <div id="answer-area" style="width:100%"></div>
   <div id="instructor-answer" class="instructor-answer"></div>
   <div class="nav-row">
@@ -337,6 +342,37 @@ const TESTS = {
       {type:'mc', q:'What is the correct way to store sharp-edged tools like chisels and utility knives?', options:['Leave them on the workbench for quick access','Store them in a roll or sheath with blades covered','Keep them in a loose pile in the toolbox','Hang them blade-up on a pegboard'], correct:1},
       {type:'mc', q:'What should you do with any hand tool that has a cracked or broken handle?', options:['Tape the crack and continue using it','Use it carefully for light tasks only','Remove it from service and replace the handle or the tool','Sand it smooth so it does not cut your hand'], correct:2},
       {type:'mc', q:'Which of the following is the correct definition of "right tool for the right job"?', options:['Use the heaviest tool available','Always use power tools over hand tools','Select the tool designed for the specific task to work safely and efficiently','Use whatever tool is closest'], correct:2},
+      // ── Picture Identification ─────────────────────────────────────────────
+      {type:'img', img:'../tools/images/ht-1.jpg',  q:'What is this hand tool?', options:['Chalk Line','Plumb Bob','String Line','Line Level'], correct:2},
+      {type:'img', img:'../tools/images/ht-3.jpg',  q:'What is this hand tool?', options:['Handsaw','Hacksaw','Tenon Saw','Drywall Saw'], correct:3},
+      {type:'img', img:'../tools/images/ht-5.jpg',  q:'What is this hand tool?', options:['C-Clamp','Locking Pliers','Spring Clamp','Bar Clamp'], correct:0},
+      {type:'img', img:'../tools/images/ht-11.jpg', q:'What is this hand tool?', options:['Open-End Wrench','Box-End Wrench','Combination Wrench','Adjustable Wrench'], correct:1},
+      {type:'img', img:'../tools/images/ht-13.jpg', q:'What is this hand tool?', options:['Combination Wrench','Open-End Wrench','Box-End Wrench','Adjustable Wrench'], correct:1},
+      {type:'img', img:'../tools/images/ht-15.jpg', q:'What is this hand tool?', options:['Box-End Wrench','Adjustable Wrench','Open-End Wrench','Combination Wrench'], correct:3},
+      {type:'img', img:'../tools/images/ht-19.jpg', q:'What is this hand tool?', options:['Line Level','Spirit Level','Torpedo Level','Post Level'], correct:2},
+      {type:'img', img:'../tools/images/ht-21.jpg', q:'What is this hand tool?', options:['Torque Wrench','Box-End Wrench','Ratchet Wrench & Socket','Combination Wrench'], correct:2},
+      {type:'img', img:'../tools/images/ht-29.jpg', q:'What is this hand tool?', options:['Handsaw','Tenon Saw (Back Saw)','Drywall Saw','Hacksaw'], correct:1},
+      {type:'img', img:'../tools/images/ht-31.jpg', q:'What is this hand tool?', options:['Drywall Saw','Hacksaw','Tenon Saw','Handsaw'], correct:3},
+      {type:'img', img:'../tools/images/ht-33.jpg', q:'What is this hand tool?', options:['Crowbar',"Cat's Paw Nail Bar",'Pry Bar','Straight Claw Hammer'], correct:1},
+      {type:'img', img:'../tools/images/ht-35.jpg', q:'What is this fastener?', options:['Common Nail','Ring Shank Nail','Roofing Nail','Duplex Nail'], correct:3},
+      {type:'img', img:'../tools/images/ht-39.jpg', q:'What is this hand tool?', options:['Cold Chisel','Wood Chisel','Mason Chisel','Center Punch'], correct:0},
+      {type:'img', img:'../tools/images/ht-43.jpg', q:'What is this hand tool?', options:['Wood Chisel','Cold Chisel','Mason Chisel','Bolster Chisel'], correct:2},
+      {type:'img', img:'../tools/images/ht-45.jpg', q:'What is this hand tool?', options:['Cold Chisel','Wood Chisel','Mason Chisel','Firmer Chisel'], correct:1},
+      {type:'img', img:'../tools/images/ht-47.jpg', q:'What type of drill bit is this?', options:['Twist Bit','Hole Saw','Paddle Bit','Auger Bit'], correct:2},
+      {type:'img', img:'../tools/images/ht-49.jpg', q:'What is this hand tool?', options:['Tie Wire Reel','Wire Stripper','Spool Holder','Cable Reel'], correct:0},
+      {type:'img', img:'../tools/images/ht-51.jpg', q:'What is this hand tool?', options:['Pointing Trowel','Margin Trowel','Finish Trowel','Gauging Trowel'], correct:1},
+      {type:'img', img:'../tools/images/ht-53.jpg', q:'What is this concrete formwork hardware?', options:['Wall Tie','Coil Tie','Form Tie','Hex Head Snap Tie'], correct:3},
+      {type:'img', img:'../tools/images/ht-55.jpg', q:'What is this hand tool?', options:['Center Punch','Nail Punch Set','Pin Punch','Drift Punch'], correct:1},
+      {type:'img', img:'../tools/images/ht-57.jpg', q:'What is this hand tool?', options:['Ball-Peen Hammer','Maul','Sledge Hammer','Framing Hammer'], correct:2},
+      {type:'img', img:'../tools/images/ht-59.jpg', q:'What is this hand tool?', options:['Torpedo Level','Post Level','Line Level','Spirit Level'], correct:2},
+      {type:'img', img:'../tools/images/ht-65.jpg', q:'What is this hand tool?', options:['Framing Square','Combination Square','Speed Square','Drywall T-Square'], correct:3},
+      {type:'img', img:'../tools/images/ht-67.jpg', q:'What is this hand tool?', options:['Post Level','Torpedo Level','Line Level','Spirit Level'], correct:0},
+      {type:'img', img:'../tools/images/ht-71.jpg', q:'What is this hand tool?', options:['Framing Hammer','Ball-Peen Hammer','Mallet','Sledge Hammer'], correct:1},
+      {type:'img', img:'../tools/images/ht-73.jpg', q:'What is this hand tool?', options:["Cat's Paw",'Pry Bar','Crowbar','Straight Claw Hammer'], correct:2},
+      {type:'img', img:'../tools/images/ht-79.jpg', q:'What is this hand tool?', options:['Channel-Lock Pliers','Locking Pliers','Slip Joint Pliers','Needle-Nose Pliers'], correct:2},
+      {type:'img', img:'../tools/images/ht-81.jpg', q:'What is this hand tool?', options:['Curved Claw Hammer','Ball-Peen Hammer','Straight Claw Framing Hammer','Mallet'], correct:2},
+      // ── Extra Credit ───────────────────────────────────────────────────────
+      {type:'img', img:'../tools/images/ht-53.jpg', q:'EXTRA CREDIT: A hex head snap tie is used in concrete formwork. What happens to the hex head after the forms are stripped?', options:['It is unscrewed and reused','It stays in the wall permanently','It breaks off flush with the concrete surface','It is cut off with bolt cutters'], correct:2},
     ]
   },
 
@@ -535,6 +571,16 @@ function renderQ(idx) {
   document.getElementById('prog-label').textContent = `Question ${idx + 1} of ${total}`;
   document.getElementById('q-text').textContent = q.q;
 
+  const qImg = document.getElementById('q-image');
+  const qImgEl = document.getElementById('q-image-el');
+  if (q.img) {
+    qImgEl.src = q.img;
+    qImg.style.display = 'block';
+  } else {
+    qImg.style.display = 'none';
+    qImgEl.src = '';
+  }
+
   const area = document.getElementById('answer-area');
   currentAnswer = null;
 
@@ -558,7 +604,7 @@ function renderQ(idx) {
       </div>
       <div class="measure-hint">For total-inches questions, enter 0 in Feet and the total in Inches.</div>`;
 
-  } else if (q.type === 'mc') {
+  } else if (q.type === 'mc' || q.type === 'img') {
     area.innerHTML = `<div class="mc-options">${
       q.options.map((opt, i) =>
         `<button class="mc-opt" onclick="selectMC(${i}, this)">${opt}</button>`
@@ -643,7 +689,7 @@ function gradeAnswer(q, answer) {
     const cv = totalInches(q.ans.ft, q.ans.in, q.ans.frac);
     return Math.abs(sv - cv) < 0.001;
   }
-  if (q.type === 'mc') return answer === q.correct;
+  if (q.type === 'mc' || q.type === 'img') return answer === q.correct;
   if (q.type === 'tf') return answer === q.ans;
   return false;
 }
@@ -654,7 +700,7 @@ function fmtAnswer(q, answer) {
     const ft = answer.ft ?? 0, inches = answer.in ?? 0, frac = answer.frac || '0';
     return `${ft} ft  ${inches} in  ${frac === '0' ? '0"' : frac + '"'}`;
   }
-  if (q.type === 'mc') return q.options[answer] ?? '—';
+  if (q.type === 'mc' || q.type === 'img') return q.options[answer] ?? '—';
   if (q.type === 'tf') return answer ? 'True' : 'False';
   return '—';
 }
@@ -664,7 +710,7 @@ function fmtCorrect(q) {
     const {ft, in: inches, frac} = q.ans;
     return `${ft} ft  ${inches} in  ${frac === '0' ? '0"' : frac + '"'}`;
   }
-  if (q.type === 'mc') return q.options[q.correct];
+  if (q.type === 'mc' || q.type === 'img') return q.options[q.correct];
   if (q.type === 'tf') return q.ans ? 'True' : 'False';
   return '—';
 }
