@@ -84,14 +84,60 @@
     .bd-a.yours{color:#888}
     .submit-area{width:100%;display:flex;flex-direction:column;gap:10px}
     .status-line{font-size:0.82rem;color:#666;text-align:center;min-height:18px}
+
+    /* Auth */
+    .home-signed-in{font-size:0.82rem;color:#555;margin-top:-28px;margin-bottom:24px;text-align:center}
+    .auth-sep{width:100%;border-top:1px solid #1a1a1a;margin:22px 0 16px;text-align:center}
   </style>
+  <script src="https://accounts.google.com/gsi/client" async></script>
 </head>
 <body>
 
-<!-- ── HOME ── -->
-<div id="screen-home" class="screen active">
+<!-- ── AUTH ── -->
+<div id="screen-auth" class="screen active">
   <div class="home-title">ANEW Tool Finals</div>
-  <div class="home-sub">Select your test to begin</div>
+  <div class="home-sub">Enter your class code, then sign in with Google</div>
+
+  <div class="field-wrap" style="margin-bottom:24px">
+    <span class="field-label">Class Code</span>
+    <input type="text" id="class-pin" placeholder="Code from your instructor" maxlength="12" autocomplete="off" autocorrect="off" autocapitalize="off" oninput="checkAndVerify()">
+  </div>
+
+  <div id="g_id_onload"
+    data-client_id="562580761539-ieshikn09v5sidcmhph2u9auqv8qblgq.apps.googleusercontent.com"
+    data-callback="handleGoogleCredential"
+    data-auto_prompt="false">
+  </div>
+  <div class="g_id_signin"
+    data-type="standard"
+    data-size="large"
+    data-theme="filled_black"
+    data-text="sign_in_with"
+    data-width="320">
+  </div>
+
+  <div id="auth-status" class="status-line" style="margin-top:12px"></div>
+
+  <div class="auth-sep"></div>
+  <button class="ghost-btn" id="guest-toggle" onclick="showGuestMode()" style="width:auto;padding:8px 20px;font-size:0.82rem;color:#3a3a3a;border-color:#1e1e1e">Need guest access?</button>
+
+  <div id="guest-form" style="display:none;width:100%;margin-top:16px">
+    <div class="field-wrap">
+      <span class="field-label">Full Name</span>
+      <input type="text" id="guest-name" placeholder="First Last" autocomplete="name">
+    </div>
+    <div class="field-wrap" style="margin-top:8px">
+      <span class="field-label">Guest Access Code</span>
+      <input type="text" id="guest-pin" placeholder="Code from instructor" autocomplete="off" autocorrect="off">
+    </div>
+    <button class="primary-btn" onclick="submitGuestAccess()">Continue as Guest</button>
+  </div>
+</div>
+
+<!-- ── HOME ── -->
+<div id="screen-home" class="screen">
+  <div class="home-title">ANEW Tool Finals</div>
+  <div class="home-signed-in" id="home-signed-in"></div>
   <div class="test-card" onclick="selectTest('tape')">
     <div class="test-card-title">Tape Measure Final</div>
     <div class="test-card-meta">50 questions — measurement math, tool knowledge, and safety</div>
@@ -106,17 +152,6 @@
   </div>
 </div>
 
-<!-- ── NAME ── -->
-<div id="screen-name" class="screen">
-  <button class="back-btn" onclick="showScreen('home')">Back</button>
-  <div class="screen-title" id="name-test-title"></div>
-  <div class="screen-sub">Enter your full name exactly as it appears on the roster.</div>
-  <div class="field-wrap">
-    <span class="field-label">Full Name</span>
-    <input type="text" id="student-name" placeholder="First Last" autocomplete="name">
-  </div>
-  <button class="primary-btn" onclick="startTest()">Start Test</button>
-</div>
 
 <!-- ── TEST ── -->
 <div id="screen-test" class="screen">
@@ -343,6 +378,9 @@ const TESTS = {
 // APP STATE
 // ─────────────────────────────────────────────────────────────────────────────
 
+const GOOGLE_CLIENT_ID = '562580761539-ieshikn09v5sidcmhph2u9auqv8qblgq.apps.googleusercontent.com';
+let authData = null;
+let pendingGoogleCredential = null;
 let currentTestKey = null;
 let currentTest = null;
 let currentIndex = 0;
@@ -360,24 +398,95 @@ function showScreen(id) {
   window.scrollTo(0, 0);
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// AUTH
+// ─────────────────────────────────────────────────────────────────────────────
+
+function handleGoogleCredential(response) {
+  pendingGoogleCredential = response.credential;
+  checkAndVerify();
+}
+
+function checkAndVerify() {
+  const pin = (document.getElementById('class-pin').value || '').trim();
+  if (pendingGoogleCredential && pin) {
+    verifyGoogleAccess(pin);
+  } else if (pendingGoogleCredential && !pin) {
+    setAuthStatus('Enter your class code to continue.', true);
+  }
+}
+
+async function verifyGoogleAccess(pin) {
+  setAuthStatus('Verifying...');
+  try {
+    const res = await fetch('/api/verify-test-access', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ googleToken: pendingGoogleCredential, classPin: pin })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Verification failed');
+    completeAuth(data);
+  } catch (e) {
+    setAuthStatus(e.message, true);
+    pendingGoogleCredential = null;
+  }
+}
+
+function showGuestMode() {
+  const form = document.getElementById('guest-form');
+  const visible = form.style.display !== 'none';
+  form.style.display = visible ? 'none' : 'block';
+  document.getElementById('guest-toggle').textContent = visible ? 'Need guest access?' : 'Hide guest access';
+}
+
+async function submitGuestAccess() {
+  const name = (document.getElementById('guest-name').value || '').trim();
+  const guestPin = (document.getElementById('guest-pin').value || '').trim();
+  if (name.split(/\s+/).filter(Boolean).length < 2) {
+    setAuthStatus('Enter your full first and last name.', true);
+    return;
+  }
+  if (!guestPin) {
+    setAuthStatus('Enter the guest access code.', true);
+    return;
+  }
+  setAuthStatus('Verifying...');
+  try {
+    const res = await fetch('/api/verify-test-access', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ guestMode: true, guestPin, studentName: name })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Invalid guest code');
+    completeAuth(data);
+  } catch (e) {
+    setAuthStatus(e.message, true);
+  }
+}
+
+function completeAuth(data) {
+  authData = data;
+  studentName = data.studentName;
+  document.getElementById('home-signed-in').textContent = 'Signed in as ' + studentName;
+  setAuthStatus('');
+  showScreen('home');
+}
+
+function setAuthStatus(msg, isError) {
+  const el = document.getElementById('auth-status');
+  el.textContent = msg;
+  el.style.color = isError ? '#c0392b' : '#888';
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TEST SELECTION
+// ─────────────────────────────────────────────────────────────────────────────
+
 function selectTest(key) {
   currentTestKey = key;
   currentTest = TESTS[key];
-  document.getElementById('name-test-title').textContent = currentTest.name;
-  document.getElementById('student-name').value = '';
-  showScreen('name');
-}
-
-function startTest() {
-  const val = (document.getElementById('student-name').value || '').trim();
-  const parts = val.split(/\s+/).filter(Boolean);
-  if (parts.length < 2) {
-    document.getElementById('student-name').style.borderColor = '#c0392b';
-    document.getElementById('student-name').focus();
-    return;
-  }
-  document.getElementById('student-name').style.borderColor = '#2a2a2a';
-  studentName = val;
   answers = [];
   currentIndex = 0;
   currentAnswer = null;
@@ -561,6 +670,8 @@ function buildResults() {
     score,
     total,
     pct,
+    authMode: authData ? authData.mode : 'unknown',
+    classId:  authData ? authData.classId : null,
     answers: items.map(({q, answer, correct, num}) => ({
       num,
       question: q.q.split('\n')[0],

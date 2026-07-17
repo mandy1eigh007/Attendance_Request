@@ -29,8 +29,10 @@ export async function onRequestPost(context) {
         score,
         total,
         pct: isNaN(pct) ? null : pct,
-        answers: d.answers || null,
-        taken_at: new Date().toISOString(),
+        auth_mode: clean(d.authMode) || null,
+        class_id:  d.classId || null,
+        answers:   d.answers || null,
+        taken_at:  new Date().toISOString(),
       }),
     });
     return ok({ ok: true, id: (row && row[0]) ? row[0].id : null });
