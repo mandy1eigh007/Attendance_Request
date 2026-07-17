@@ -19,6 +19,13 @@ async function gradebookLogin(){
 }
 function gradebookLogout(){
   gbPassword="";
+  // Clear the hub SSO handoff keys so the reload lands on the login screen
+  // instead of auto-signing back in.
+  try{
+    sessionStorage.removeItem("cohotrack_gradebook_pw");
+    sessionStorage.removeItem("cohotrack_gradebook_classId");
+    sessionStorage.removeItem("cohotrack_gradebook_instructorId");
+  }catch{}
   location.reload();
 }
 function fillContextSelectors(){

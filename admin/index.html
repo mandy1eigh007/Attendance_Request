@@ -45,11 +45,13 @@
   <div class="app-header">
     <div class="app-logo"><span class="dot"></span><b>ANEW</b></div>
     <span class="app-sub" id="appSub">Instructor</span>
-    <div class="header-right">
-      <a class="btn btn-ghost btn-sm" href="/" title="Home">Home</a>
-      <a class="btn btn-ghost btn-sm" href="#" onclick="openGradebook();return false;" title="Gradebook">Gradebook</a>
-      <button class="btn btn-ghost btn-sm" onclick="switchInstructor()" title="Switch instructor">Switch</button>
-      <button class="btn btn-ghost btn-sm" onclick="doLogout()">Sign Out</button>
+    <div class="header-right shell-nav-links">
+      <a class="active" href="/admin/">Hub</a>
+      <a href="#" onclick="openGradebook();return false;">Gradebook</a>
+      <a href="/tools/">Tools</a>
+      <a href="/tests/">Tests</a>
+      <button onclick="switchInstructor()" title="Switch instructor">Switch</button>
+      <button onclick="doLogout()">Sign Out</button>
     </div>
   </div>
 
@@ -61,6 +63,7 @@
       <button class="nav-tab" data-view="requests" onclick="showView('requests')">Requests</button>
       <button class="nav-tab" data-view="history" onclick="showView('history')">History</button>
       <button class="nav-tab" data-view="manage" onclick="showView('manage')">Manage</button>
+      <button class="nav-tab" data-view="faq" onclick="showView('faq')">FAQ</button>
     </div>
   </div>
 
@@ -89,15 +92,14 @@
       <div id="studentProfilePane" style="display:none">
         <div class="page-header" style="margin-bottom:12px">
           <div style="display:flex;align-items:center;gap:12px">
-            <button class="btn btn-ghost btn-sm" onclick="closeStudentProfile()">← Back</button>
+            <button class="btn btn-ghost btn-sm" onclick="closeStudentProfile()">Back</button>
             <!-- Student photo -->
             <div style="position:relative;flex-shrink:0">
               <div id="profilePhotoWrap" style="width:52px;height:52px;border-radius:50%;background:var(--s4);border:.5px solid var(--b2);overflow:hidden;display:flex;align-items:center;justify-content:center">
                 <svg id="profilePhotoPlaceholder" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--t3)" stroke-width="1.5"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
                 <img id="profilePhotoImg" style="width:100%;height:100%;object-fit:cover;display:none" alt="Student photo">
               </div>
-              <label style="position:absolute;bottom:-2px;right:-2px;width:20px;height:20px;border-radius:50%;background:var(--ac);display:flex;align-items:center;justify-content:center;cursor:pointer;border:2px solid var(--bg)">
-                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="var(--on-ac)" stroke-width="3"><path d="M12 5v14M5 12h14"/></svg>
+              <label title="Upload photo" style="position:absolute;bottom:-2px;right:-2px;width:20px;height:20px;border-radius:50%;background:var(--ac);display:flex;align-items:center;justify-content:center;cursor:pointer;border:2px solid var(--bg);color:var(--on-ac);font-size:13px;font-weight:700;line-height:1">+
                 <input type="file" accept="image/*" style="display:none" onchange="uploadStudentPhoto(this)">
               </label>
             </div>
@@ -281,6 +283,59 @@
       </div>
     </div>
 
+    <!-- FAQ -->
+    <div class="view" id="view-faq">
+      <div class="page-header"><div><div class="page-title">Instructor FAQ</div><div class="page-sub">ANEW CohoTrack — quick answers for instructors.</div></div></div>
+
+      <div class="section-card">
+        <div class="card-title">Getting Started</div>
+        <p style="font-weight:600;margin-bottom:4px">Q: How do I log in?</p>
+        <p style="color:var(--t2);margin-bottom:0">A: Use your instructor password at cohotrack.pages.dev/admin. Contact your program coordinator if you need your password reset.</p>
+      </div>
+
+      <div class="section-card">
+        <div class="card-title">Attendance and Requests</div>
+        <p style="font-weight:600;margin-bottom:4px">Q: How do requests work?</p>
+        <p style="color:var(--t2);margin-bottom:14px">A: Students submit absence/late/departure requests at cohotrack.pages.dev. You receive an email notification, then approve or deny the request in the Requests tab here in the hub — email links never decide a request. The student is emailed the decision automatically.</p>
+        <p style="font-weight:600;margin-bottom:4px">Q: Where do I find submitted requests?</p>
+        <p style="color:var(--t2);margin-bottom:0">A: In the Requests tab. Pending requests appear at the top.</p>
+      </div>
+
+      <div class="section-card">
+        <div class="card-title">Gradebook</div>
+        <p style="font-weight:600;margin-bottom:4px">Q: How do I access the gradebook?</p>
+        <p style="color:var(--t2);margin-bottom:14px">A: Click "Gradebook" in the navigation bar. Your instructor password works there too — no separate login.</p>
+        <p style="font-weight:600;margin-bottom:4px">Q: How do I print a student report?</p>
+        <p style="color:var(--t2);margin-bottom:0">A: Open the gradebook, go to the Student Report tab, select a student, then Print.</p>
+      </div>
+
+      <div class="section-card">
+        <div class="card-title">Tool Study Cards</div>
+        <p style="font-weight:600;margin-bottom:4px">Q: Where are the tool study cards?</p>
+        <p style="color:var(--t2);margin-bottom:0">A: cohotrack.pages.dev/tools/ — share this link with students to study before finals.</p>
+      </div>
+
+      <div class="section-card">
+        <div class="card-title">Tool Finals (Tests)</div>
+        <p style="font-weight:600;margin-bottom:4px">Q: How do students take the finals?</p>
+        <p style="color:var(--t2);margin-bottom:14px">A: cohotrack.pages.dev/tests/ — students sign in with their Google (Chromebook) account and the class code.</p>
+        <p style="font-weight:600;margin-bottom:4px">Q: What is the class code / class PIN?</p>
+        <p style="color:var(--t2);margin-bottom:14px">A: Each class has a unique 6-digit PIN. Students need this PIN plus their Google account to access the test. Contact your coordinator if you need your class PIN.</p>
+        <p style="font-weight:600;margin-bottom:4px">Q: How do I preview the test and see answers?</p>
+        <p style="color:var(--t2);margin-bottom:14px">A: Go to cohotrack.pages.dev/tests/, click "Need guest access?", and enter the instructor PIN. Answer keys are highlighted in green as you advance through questions. You can also print a full answer key from the home screen.</p>
+        <p style="font-weight:600;margin-bottom:4px">Q: Where do I see student test scores?</p>
+        <p style="color:var(--t2);margin-bottom:0">A: Test results are saved automatically when students submit. (Results view coming soon to the hub.)</p>
+      </div>
+
+      <div class="section-card">
+        <div class="card-title">Trouble?</div>
+        <p style="font-weight:600;margin-bottom:4px">Q: A student can't log in to the test.</p>
+        <p style="color:var(--t2);margin-bottom:14px">A: Check that they are using a Google account tied to a Chromebook and that you have given them the correct class PIN for your cohort.</p>
+        <p style="font-weight:600;margin-bottom:4px">Q: The gradebook says I am not assigned to this class.</p>
+        <p style="color:var(--t2);margin-bottom:0">A: Make sure you select YOUR instructor name from the dropdown in the gradebook login screen.</p>
+      </div>
+    </div>
+
   </div>
 </div>
 
@@ -450,7 +505,6 @@
     <div id="cnAttachmentArea" style="border:.5px solid var(--b2);border-radius:11px;padding:12px;background:rgba(0,0,0,.18)">
       <div id="cnAttachmentList" style="margin-bottom:10px"></div>
       <label style="display:inline-flex;align-items:center;gap:8px;cursor:pointer;padding:8px 14px;background:var(--s3);border-radius:var(--rpill);font-size:13px;color:var(--t1);border:.5px solid var(--b2)">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
         Choose file
         <input type="file" id="cnFileInput" accept="image/*,.pdf" style="display:none" multiple onchange="handleCaseNoteFiles(this)">
       </label>
@@ -584,8 +638,11 @@ function openGradebook(){
 function doLogout(){
   sessionStorage.removeItem('anew_pw');
   sessionStorage.removeItem('anew_me');
+  sessionStorage.removeItem('cohotrack_gradebook_pw');
+  sessionStorage.removeItem('cohotrack_gradebook_classId');
+  sessionStorage.removeItem('cohotrack_gradebook_instructorId');
   PW='';ME=null;
-  location.reload();
+  location.href='/';
 }
 function switchInstructor(){
   sessionStorage.removeItem('anew_me');
@@ -703,7 +760,7 @@ function renderAttendance(){
     return `<tr>
       <td data-label="Student" class="student-name">${esc(studentName(s))}</td>
       <td data-label="Status"><div class="status-group">${statuses.map(k=>`<button class="status-btn ${st===k?'sel-'+k:''}" onclick="setStatus('${esc(s.id)}','${k}',this)">${k}</button>`).join('')}</div></td>
-      <td data-label="Demerits"><span class="dt-chip ${dtClass(t)}">${t} pts</span>${t>=7?` <span style="color:var(--am);font-size:11px">⚠ ${t>=10?'DISMISS':'CONTRACT'}</span>`:''}</td>
+      <td data-label="Demerits"><span class="dt-chip ${dtClass(t)}">${t} pts</span>${t>=7?` <span style="color:var(--am);font-size:11px">${t>=10?'DISMISS':'CONTRACT'}</span>`:''}</td>
       <td data-label="Notes"><input type="text" placeholder="Notes" value="${esc(notes)}" style="font-size:13px;padding:6px 9px" onchange="setNote('${esc(s.id)}',this.value)"></td>
     </tr>`;
   }).join('');
@@ -864,7 +921,7 @@ async function loadRequests(){
   }catch(e){list.innerHTML=`<div class="empty-state"><p>${esc(e.message)}</p></div>`;}
 }
 async function decide(id,decision){
-  try{await api('decideRequest',{id,decision,by:'Instructor'});toast(`Request ${decision}`);loadRequests();}
+  try{await api('decideRequest',{id,decision,by:(ME&&ME.name)||'Instructor'});toast(`Request ${decision}`);loadRequests();}
   catch(e){toast(e.message,true);}
 }
 
@@ -894,7 +951,7 @@ async function renderHistory(){
 async function voidDemerit(id,studentId){
   if(!confirm('Void this demerit? It will be removed from the student\u2019s point total and the active list. The record is kept (marked voided), not permanently deleted.'))return;
   try{
-    const out=await api('voidDemerit',{id,studentId,by:'Instructor'});
+    const out=await api('voidDemerit',{id,studentId,by:(ME&&ME.name)||'Instructor'});
     toast('Demerit voided');
     if(studentId&&demeritTotals.hasOwnProperty(studentId))demeritTotals[studentId]=out.total;
     renderHistory();
@@ -1081,7 +1138,7 @@ Documentation: Student was informed and demerit slip presented for signature.${r
 async function voidStudentDemerit(id){
   if(!confirm('Remove this demerit? It will be voided (kept for record, removed from point totals).'))return;
   try{
-    const out=await api('voidDemerit',{id,studentId:sdStudentId,by:'Instructor'});
+    const out=await api('voidDemerit',{id,studentId:sdStudentId,by:(ME&&ME.name)||'Instructor'});
     if(sdStudentId)demeritTotals[sdStudentId]=out.total;
     await refreshDemeritTotals();
     await loadStudentDemerits();
@@ -1100,7 +1157,7 @@ async function loadStudentCaseNotes(){
   const el=document.getElementById('sdCaseNoteList');
   if(!sdStudentId||!curClass){el.innerHTML='';return;}
   if(!ME || !ME.id){
-    el.innerHTML='<div class="empty-state"><p>Pick an instructor (top-right \u2192 Switch) to see case notes.</p></div>';
+    el.innerHTML='<div class="empty-state"><p>Pick an instructor (Switch button, top right) to see case notes.</p></div>';
     return;
   }
   try{
@@ -1341,7 +1398,7 @@ function buildClassName(){
 }
 function addCohort(){const inp=document.getElementById('cohortInput');const v=inp.value.trim().toUpperCase();if(v&&!cohorts.includes(v)){cohorts.push(v);renderCohortTags();}inp.value='';inp.focus();}
 function removeCohort(i){cohorts.splice(i,1);renderCohortTags();}
-function renderCohortTags(){document.getElementById('cohortTags').innerHTML=cohorts.map((c,i)=>`<span class="cohort-tag">${esc(c)}<button onclick="removeCohort(${i})">&times;</button></span>`).join('');}
+function renderCohortTags(){document.getElementById('cohortTags').innerHTML=cohorts.map((c,i)=>`<span class="cohort-tag">${esc(c)}<button onclick="removeCohort(${i})" title="Remove cohort">x</button></span>`).join('');}
 async function saveClass(){
   const program=document.getElementById('fProgram').value.trim();const slug=document.getElementById('fSlug').value.trim();
   const ids=[...document.querySelectorAll('#instrChecks input:checked')].map(c=>c.value);
@@ -1800,7 +1857,7 @@ function renderCnAttachmentList(){
     <div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:.5px solid var(--b1)">
       <span style="font-size:13px;flex:1;color:var(--t2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(f.name)}</span>
       <span class="note" style="display:inline">${(f.size/1024).toFixed(0)} KB</span>
-      <button class="btn btn-danger btn-sm" onclick="removeCnFile(${i})">✕</button>
+      <button class="btn btn-danger btn-sm" onclick="removeCnFile(${i})">Remove</button>
     </div>`).join('');
 }
 function removeCnFile(i){cnPendingFiles.splice(i,1);renderCnAttachmentList();}
@@ -2087,7 +2144,7 @@ function printContract(id){
   let body=_ctBlocks(tpl?tpl.blocks:[], c.terms);
   const hasStaff=(tpl&&tpl.blocks||[]).some(b=>b.k==='staff');
   if(!hasStaff && c.terms) body+=`<h2>STAFF NOTES</h2><div class="fill">${esc(c.terms).replace(/\n/g,'<br>')}</div>`;
-  const warn = tpl&&tpl.warn ? `<div class="warn">⚠ THIS STUDENT IS AT OR NEAR THE 10-DEMERIT DISMISSAL THRESHOLD ⚠</div>` : '';
+  const warn = tpl&&tpl.warn ? `<div class="warn">THIS STUDENT IS AT OR NEAR THE 10-DEMERIT DISMISSAL THRESHOLD</div>` : '';
   const infoHtml=`<div class="grid">${info.map(f=>`<div class="fld"><div class="fl">${f[0]}</div><div class="fv">${f[1]||'&nbsp;'}</div></div>`).join('')}</div>`;
   const sigHtml=`<div class="sigs">${sigs.map(r=>`<div class="sig"><div class="sigline"></div><div class="sl">${r}</div></div><div class="sig"><div class="sigline"></div><div class="sl">DATE</div></div>`).join('')}</div>`;
   const html=`<!DOCTYPE html><html><head><title>${title}</title><meta charset="utf-8"><style>
@@ -2223,9 +2280,9 @@ function printIncidentReport(id){
   inner+=`<h2>Individuals Involved / Witnesses</h2><div class="bl"></div><div class="bl"></div>`;
   inner+=`<h2>Immediate Action Taken</h2><div class="bl"></div><div class="bl"></div>`;
   inner+=`<h2>Incident Protocol</h2><ul>`+
-    `<li>Supervisor notified: ${sup?('YES'+(n.supervisor_notified_date?(' — '+esc(fmtDate(n.supervisor_notified_date))):'')):'☐ Yes  ☐ No   ·   Date: __________'}</li>`+
-    `<li>Written student statement obtained: ${stmt?'YES':'☐ Yes  ☐ No'}</li>`+
-    `<li>Photos / evidence attached: ${att?(n.attachments.length+' file(s)'):'☐ Yes  ☐ No'}</li>`+
+    `<li>Supervisor notified: ${sup?('YES'+(n.supervisor_notified_date?(' — '+esc(fmtDate(n.supervisor_notified_date))):'')):'[ ] Yes  [ ] No   ·   Date: __________'}</li>`+
+    `<li>Written student statement obtained: ${stmt?'YES':'[ ] Yes  [ ] No'}</li>`+
+    `<li>Photos / evidence attached: ${att?(n.attachments.length+' file(s)'):'[ ] Yes  [ ] No'}</li>`+
     `</ul>`;
   inner+=`<h2>Follow-Up / Corrective Action</h2><div class="bl"></div><div class="bl"></div>`;
   inner+=`<div class="closing">I certify that the information in this report is accurate to the best of my knowledge.</div>`;
