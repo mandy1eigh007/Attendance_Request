@@ -798,9 +798,13 @@ function showApp(skipBootstrap){
   if(ME && ME.name) document.getElementById('appSub').textContent=ME.name;
   if(ME && ME.name && !document.getElementById('dStaff').value) document.getElementById('dStaff').value=ME.name;
   applyRole();
+  history.pushState({anew:1},'',location.href);
   if(!skipBootstrap) bootstrap();
 }
 function applyRole(){}
+window.addEventListener('popstate',function(){
+  if(PW){history.pushState({anew:1},'',location.href);}
+});
 
 // ── Bootstrap ──
 async function bootstrap(){
