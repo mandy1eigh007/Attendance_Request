@@ -664,6 +664,8 @@ const DEMERIT_CODES = [
   {code:18,desc:"Possessing and/or being under the influence of controlled substances or alcohol",pts:10,asterisk:true},
 ];
 const EXCUSE_REASONS=["Death of immediate family member","Birth of child/grandchild","Mandatory court appearance","Mandatory probation/parole meeting","Jury duty","Job/apprenticeship interview","Illness/injury with doctor's note"];
+const _CODE_OPTS_HTML=DEMERIT_CODES.map(x=>`<option value="${x.code}">Code ${x.code} — ${esc(x.desc.length>55?x.desc.slice(0,55)+'…':x.desc)} (${x.pts} pts)</option>`).join('');
+const _EXCUSE_OPTS_HTML=EXCUSE_REASONS.map(r=>`<option>${esc(r)}</option>`).join('');
 
 let PW='';                       // admin password held in memory only for the session
 let ME=null;                     // chosen instructor: { id, name, email }
@@ -827,11 +829,13 @@ function renderClassSelect(){
 async function onClassChange(){
   curClass=document.getElementById('classSelect').value;
   if(!curClass)return;
-  const d=await api('students',{classId:curClass});students=d.students;
-  await refreshDemeritTotals();
+  const [sd,dd]=await Promise.all([api('students',{classId:curClass}),api('demerits',{classId:curClass})]);
+  students=sd.students;
+  demeritTotals={};
+  for(const s of students){demeritTotals[s.id]=(dd.demerits||[]).filter(x=>x.student_id===s.id&&!x.excused).reduce((a,x)=>a+(x.pts_num||0),0);}
+  window._demerits=dd.demerits||[];
   populateDemeritStudents();
   await loadAttendance();
-  // keep other views in sync when switching class
   try{renderManageStudents();}catch{}
   try{renderStudentList();}catch{}
   try{if(document.getElementById('view-history').classList.contains('active'))renderHistory();}catch{}
@@ -1033,18 +1037,19 @@ async function renderHistory(){
   const body=document.getElementById('histBody');body.innerHTML='<tr><td colspan="6">Loading…</td></tr>';
   const type=document.getElementById('histType').value;
   try{
+    const sMap=Object.fromEntries(students.map(s=>[s.id,s]));
+    const needsDem=!type||type==='demerit';
+    const needsAtt=!type||type==='attendance';
+    const attDate=document.getElementById('attDate').value;
+    const [demRes,attRes]=await Promise.all([
+      needsDem?api('demerits',{classId:curClass}):Promise.resolve(null),
+      needsAtt?api('attendanceDay',{classId:curClass,date:attDate}):Promise.resolve(null),
+    ]);
     let rows=[];
-    if(!type||type==='demerit'){
-      const d=await api('demerits',{classId:curClass});
-      (d.demerits||[]).forEach(x=>{const s=students.find(st=>st.id===x.student_id);
-        rows.push({date:x.date,name:s?studentName(s):'—',type:'Demerit',detail:`Code ${x.code}${x.excused?' (excused)':''}`,pts:x.pts_num,demeritId:x.id,studentId:x.student_id});});
-    }
-    if(!type||type==='attendance'){
-      const date=document.getElementById('attDate').value;
-      const d=await api('attendanceDay',{classId:curClass,date});
-      (d.attendance||[]).forEach(x=>{const s=students.find(st=>st.id===x.student_id);
-        rows.push({date:x.date,name:s?studentName(s):'—',studentId:x.student_id||null,type:'Attendance',detail:x.status,pts:'',demeritId:null});});
-    }
+    if(needsDem)(demRes.demerits||[]).forEach(x=>{const s=sMap[x.student_id];
+      rows.push({date:x.date,name:s?studentName(s):'—',type:'Demerit',detail:`Code ${x.code}${x.excused?' (excused)':''}`,pts:x.pts_num,demeritId:x.id,studentId:x.student_id});});
+    if(needsAtt)(attRes.attendance||[]).forEach(x=>{const s=sMap[x.student_id];
+      rows.push({date:x.date,name:s?studentName(s):'—',studentId:x.student_id||null,type:'Attendance',detail:x.status,pts:'',demeritId:null});});
     rows.sort((a,b)=>b.date.localeCompare(a.date));
     window._historyRows=rows; // cached for CSV export
     body.innerHTML=rows.length?rows.map(r=>`<tr><td data-label="Date">${esc(fmtDate(r.date))}</td><td data-label="Student">${r.studentId?'<button class="btn btn-ghost btn-sm" style="padding:0;text-align:left" onclick="navToStudent(\''+r.studentId+'\')">'+esc(r.name)+'</button>':esc(r.name)}</td><td data-label="Type">${esc(r.type)}</td><td data-label="Detail">${esc(r.detail)}</td><td data-label="Pts">${r.pts}</td><td data-label="">${r.demeritId?`<button class="btn btn-danger btn-sm" onclick="voidDemerit('${esc(r.demeritId)}','${esc(r.studentId||'')}')">Void</button>`:''}</td></tr>`).join(''):'<tr><td colspan="6"><div class="empty-state"><p>No records.</p></div></td></tr>';
@@ -1437,9 +1442,9 @@ function openEditDemerit(id){
   editDemeritId=id;
   document.getElementById('edDate').value=d.date||'';
   document.getElementById('edStaff').value=d.staff||'';
-  document.getElementById('edCode').innerHTML=DEMERIT_CODES.map(x=>`<option value="${x.code}">Code ${x.code} — ${esc(x.desc.length>55?x.desc.slice(0,55)+'…':x.desc)} (${x.pts} pts)</option>`).join('');
+  document.getElementById('edCode').innerHTML=_CODE_OPTS_HTML;
   document.getElementById('edCode').value=String(d.code||'');
-  document.getElementById('edExcuseReason').innerHTML=EXCUSE_REASONS.map(r=>`<option>${esc(r)}</option>`).join('');
+  document.getElementById('edExcuseReason').innerHTML=_EXCUSE_OPTS_HTML;
   document.getElementById('edExcused').value=d.excused?'yes':'no';
   document.getElementById('edExcuseReason').value=d.excuse_reason||EXCUSE_REASONS[0];
   document.getElementById('edIncident').value=d.incident||'';
