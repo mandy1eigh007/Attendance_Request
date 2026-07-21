@@ -4,6 +4,7 @@ import { onRequestPost as testsPost } from './functions/api/tests.js';
 import { onRequestPost as verifyTestAccessPost } from './functions/api/verify-test-access.js';
 import { onRequestGet as submitGet, onRequestPost as submitPost } from './functions/submit.js';
 import { onRequestGet as respondGet } from './functions/respond.js';
+import { onRequest as scanAttendanceRequest } from './functions/api/scan-attendance.js';
 
 function pageContext(request, env, executionCtx) {
   return {
@@ -53,6 +54,8 @@ export default {
       if (request.method === 'GET') return respondGet(context);
       return methodNotAllowed('GET');
     }
+
+    if (path === '/api/scan-attendance') return scanAttendanceRequest(context);
 
     return env.ASSETS.fetch(request);
   },

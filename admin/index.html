@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -68,6 +68,7 @@
       <button class="nav-tab" data-view="history" onclick="showView('history')">History</button>
       <button class="nav-tab" data-view="manage" onclick="showView('manage')">Manage</button>
       <button class="nav-tab" data-view="results" onclick="showView('results');loadTestResults()">Results</button>
+      <button class="nav-tab" data-view="scan" onclick="showView('scan');initScan()">Scan Sheets</button>
       <button class="nav-tab" data-view="faq" onclick="showView('faq')">FAQ</button>
     </div>
   </div>
@@ -207,6 +208,10 @@
             <div style="font-size:13px;color:var(--t3);line-height:1.5">See scores from the Hand Tool, Power Tool, and Tape Measure finals.</div>
             <div style="margin-top:14px;font-size:13px;font-weight:600;color:var(--ac2)">View Scores</div>
           </button>
+          <div class="instr-tile" onclick="instrOpenScan()" style="background:var(--ac1);color:#fff;cursor:pointer;padding:22px 20px;border-radius:var(--r2);grid-column:1/-1">
+            <div style="font-size:22px;font-weight:800">Scan Sheets</div>
+            <div style="font-size:13px;margin-top:4px">Upload attendance or demerit sheets</div>
+          </div>
         </div>
       </div>
     </div>
@@ -340,6 +345,37 @@
         </div>
       </div>
       <div id="resultsBody"><div class="empty-state"><p>Select a class and click Refresh.</p></div></div>
+    </div>
+
+    <!-- SCAN SHEETS -->
+    <div id="view-scan" class="view">
+      <div style="max-width:700px;margin:0 auto">
+        <div style="font-size:20px;font-weight:700;margin-bottom:16px">Scan Attendance Sheets</div>
+        <div id="scanUploadArea" style="border:2px dashed var(--border);border-radius:10px;padding:40px;text-align:center;cursor:pointer" onclick="document.getElementById('scanFileInput').click()">
+          <div style="font-size:16px;font-weight:600;color:var(--fg2)">Click to upload or drag a file here</div>
+          <div style="font-size:13px;color:var(--fg3);margin-top:6px">JPG, PNG, or PDF (single sheet or multi-page)</div>
+          <input type="file" id="scanFileInput" accept="image/*,.pdf" style="display:none" onchange="handleScanFile(event)">
+        </div>
+        <div id="scanStatus" style="display:none;margin-top:16px;padding:12px;background:var(--surface2);border-radius:8px;text-align:center;font-size:14px"></div>
+        <div id="scanReview" style="display:none;margin-top:20px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+            <div style="font-size:16px;font-weight:700">Review: <span id="scanWeekLabel"></span></div>
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+              <select id="scanWeekSelect" style="padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;background:var(--surface)" onchange="renderScanWeek()"></select>
+              <button onclick="saveScanWeek()" style="padding:7px 16px;background:var(--ac1);color:#fff;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer">Save This Week</button>
+              <button onclick="initScan()" style="padding:7px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;font-size:13px;cursor:pointer">Upload Another</button>
+            </div>
+          </div>
+          <div id="scanNotes" style="display:none;margin-bottom:12px;padding:10px 12px;background:#fffbe6;border:1px solid #f0d060;border-radius:8px;font-size:13px"></div>
+          <div style="overflow-x:auto">
+            <table id="scanTable" style="width:100%;border-collapse:collapse;font-size:13px">
+              <thead id="scanTableHead"></thead>
+              <tbody id="scanTableBody"></tbody>
+            </table>
+          </div>
+          <div style="margin-top:10px;font-size:12px;color:var(--fg3)">Yellow rows are unmatched names and will not be saved. Dropdowns are editable before saving.</div>
+        </div>
+      </div>
     </div>
 
     <!-- FAQ -->
@@ -2064,6 +2100,142 @@ function toast(msg,err){const el=document.getElementById('toast');el.textContent
     }
   }).catch(()=>{sessionStorage.removeItem('anew_pw');sessionStorage.removeItem('anew_me');PW='';ME=null;});
 })();
+
+// Scan Sheets
+let scanData = null;
+let scanCurrentIdx = 0;
+
+function initScan() {
+  scanData = null;
+  scanCurrentIdx = 0;
+  document.getElementById('scanUploadArea').style.display = '';
+  document.getElementById('scanStatus').style.display = 'none';
+  document.getElementById('scanReview').style.display = 'none';
+  document.getElementById('scanFileInput').value = '';
+}
+
+function instrOpenScan() {
+  showInstrDash();
+  showView('scan');
+  initScan();
+}
+
+function handleScanFile(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = async function(ev) {
+    const b64 = ev.target.result.split(',')[1];
+    const mime = file.type || 'image/jpeg';
+    await runScan(b64, mime);
+  };
+  reader.readAsDataURL(file);
+}
+
+async function runScan(fileData, mimeType) {
+  const statusEl = document.getElementById('scanStatus');
+  const uploadEl = document.getElementById('scanUploadArea');
+  statusEl.textContent = 'Scanning... this takes 10-20 seconds';
+  statusEl.style.display = '';
+  uploadEl.style.display = 'none';
+  try {
+    const classId = curClass || '';
+    const res = await fetch('/api/scan-attendance', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ password: PW, fileData, mimeType, classId })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Scan failed');
+    scanData = data;
+    statusEl.style.display = 'none';
+    buildScanWeekSelect();
+    renderScanWeek();
+    document.getElementById('scanReview').style.display = '';
+  } catch(err) {
+    statusEl.textContent = 'Error: ' + err.message;
+    uploadEl.style.display = '';
+  }
+}
+
+function buildScanWeekSelect() {
+  const sel = document.getElementById('scanWeekSelect');
+  sel.innerHTML = '';
+  (scanData.sheets || []).forEach((s, i) => {
+    const opt = document.createElement('option');
+    opt.value = i;
+    opt.textContent = (s.week || ('Sheet ' + (i+1))) + ' (' + (s.class || '') + ')';
+    sel.appendChild(opt);
+  });
+}
+
+function renderScanWeek() {
+  const idx = parseInt(document.getElementById('scanWeekSelect').value) || 0;
+  scanCurrentIdx = idx;
+  const sheet = (scanData.sheets || [])[idx];
+  if (!sheet) return;
+  document.getElementById('scanWeekLabel').textContent = (sheet.week || '') + ' (' + (sheet.class || '') + ')';
+  const notesEl = document.getElementById('scanNotes');
+  if (sheet.notes && sheet.notes.trim()) {
+    notesEl.style.display = '';
+    notesEl.innerHTML = '<strong>Sheet notes:</strong> ' + esc(sheet.notes);
+  } else { notesEl.style.display = 'none'; }
+  const dates = sheet.dates || [];
+  const CODES = ['OT', 'L', 'AE', 'AU', ''];
+  const thead = document.getElementById('scanTableHead');
+  thead.innerHTML = '<tr><th style="text-align:left;padding:6px 8px;border-bottom:2px solid var(--border);white-space:nowrap">Student</th><th style="padding:6px 8px;border-bottom:2px solid var(--border)">Match</th>' +
+    dates.map(d => '<th style="padding:6px 8px;border-bottom:2px solid var(--border);text-align:center;white-space:nowrap">' + esc(d) + '</th>').join('') + '</tr>';
+  const tbody = document.getElementById('scanTableBody');
+  tbody.innerHTML = '';
+  (sheet.students || []).forEach((stu, si) => {
+    if (stu.skipped) return;
+    const matched = stu.matched !== false;
+    const codeColor = c => c === 'OT' ? '#166534' : c === 'L' ? '#92400e' : c === 'AE' ? '#1e40af' : c === 'AU' ? '#991b1b' : '#888';
+    const tr = document.createElement('tr');
+    tr.style.background = matched ? '' : '#fffbe6';
+    const namePart = esc(stu.name) + (stu.rosterName ? '<div style="font-size:11px;color:var(--fg3)">' + esc(stu.rosterName) + '</div>' : '');
+    const dateCells = dates.map(d => {
+      const code = (stu.attendance || {})[d] || '';
+      return '<td style="padding:4px 6px;text-align:center"><select data-si="' + si + '" data-date="' + d + '" style="border:1px solid var(--border);border-radius:4px;padding:2px 4px;font-size:12px;font-weight:700;color:' + codeColor(code) + ';background:var(--surface)">' +
+        CODES.map(c => '<option value="' + c + '"' + (c === code ? ' selected' : '') + '>' + (c || '--') + '</option>').join('') + '</select></td>';
+    }).join('');
+    tr.innerHTML = '<td style="padding:6px 8px;font-weight:600;white-space:nowrap">' + namePart + '</td><td style="padding:6px 8px;text-align:center;font-size:12px;color:' + (matched ? 'var(--ac1)' : '#b45309') + '">' + (matched ? 'yes' : 'no') + '</td>' + dateCells;
+    tbody.appendChild(tr);
+  });
+}
+
+async function saveScanWeek() {
+  const sheet = (scanData.sheets || [])[scanCurrentIdx];
+  if (!sheet) return;
+  const dates = sheet.dates || [];
+  const tbody = document.getElementById('scanTableBody');
+  const records = [];
+  (sheet.students || []).forEach((stu, si) => {
+    if (!stu.studentId || stu.skipped) return;
+    dates.forEach(d => {
+      const sel = tbody.querySelector('select[data-si="' + si + '"][data-date="' + d + '"]');
+      const status = sel ? sel.value : ((stu.attendance || {})[d] || '');
+      if (status) records.push({ studentId: stu.studentId, date: scanIsoDate(d), status, notes: null });
+    });
+  });
+  if (!records.length) { alert('Nothing to save - no matched students with attendance codes.'); return; }
+  const classId = curClass || '';
+  const statusEl = document.getElementById('scanStatus');
+  statusEl.style.display = '';
+  statusEl.textContent = 'Saving...';
+  const r = await api('saveAttendance', { classId, records });
+  if (r.saved) {
+    statusEl.textContent = 'Saved ' + r.saved + ' attendance records.';
+  } else {
+    statusEl.textContent = 'Save failed: ' + (r.error || 'unknown error');
+  }
+}
+
+function scanIsoDate(d) {
+  const parts = d.split('/');
+  if (parts.length !== 3) return d;
+  return parts[2] + '-' + parts[0].padStart(2, '0') + '-' + parts[1].padStart(2, '0');
+}
 </script>
 <script>
 // ── CONTRACT ASSIGNMENT ──
@@ -2142,6 +2314,142 @@ async function voidContract(id){
   catch(e){toast(e.message,true);}
 }
 
+
+// Scan Sheets
+let scanData = null;
+let scanCurrentIdx = 0;
+
+function initScan() {
+  scanData = null;
+  scanCurrentIdx = 0;
+  document.getElementById('scanUploadArea').style.display = '';
+  document.getElementById('scanStatus').style.display = 'none';
+  document.getElementById('scanReview').style.display = 'none';
+  document.getElementById('scanFileInput').value = '';
+}
+
+function instrOpenScan() {
+  showInstrDash();
+  showView('scan');
+  initScan();
+}
+
+function handleScanFile(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = async function(ev) {
+    const b64 = ev.target.result.split(',')[1];
+    const mime = file.type || 'image/jpeg';
+    await runScan(b64, mime);
+  };
+  reader.readAsDataURL(file);
+}
+
+async function runScan(fileData, mimeType) {
+  const statusEl = document.getElementById('scanStatus');
+  const uploadEl = document.getElementById('scanUploadArea');
+  statusEl.textContent = 'Scanning... this takes 10-20 seconds';
+  statusEl.style.display = '';
+  uploadEl.style.display = 'none';
+  try {
+    const classId = curClass || '';
+    const res = await fetch('/api/scan-attendance', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ password: PW, fileData, mimeType, classId })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Scan failed');
+    scanData = data;
+    statusEl.style.display = 'none';
+    buildScanWeekSelect();
+    renderScanWeek();
+    document.getElementById('scanReview').style.display = '';
+  } catch(err) {
+    statusEl.textContent = 'Error: ' + err.message;
+    uploadEl.style.display = '';
+  }
+}
+
+function buildScanWeekSelect() {
+  const sel = document.getElementById('scanWeekSelect');
+  sel.innerHTML = '';
+  (scanData.sheets || []).forEach((s, i) => {
+    const opt = document.createElement('option');
+    opt.value = i;
+    opt.textContent = (s.week || ('Sheet ' + (i+1))) + ' (' + (s.class || '') + ')';
+    sel.appendChild(opt);
+  });
+}
+
+function renderScanWeek() {
+  const idx = parseInt(document.getElementById('scanWeekSelect').value) || 0;
+  scanCurrentIdx = idx;
+  const sheet = (scanData.sheets || [])[idx];
+  if (!sheet) return;
+  document.getElementById('scanWeekLabel').textContent = (sheet.week || '') + ' (' + (sheet.class || '') + ')';
+  const notesEl = document.getElementById('scanNotes');
+  if (sheet.notes && sheet.notes.trim()) {
+    notesEl.style.display = '';
+    notesEl.innerHTML = '<strong>Sheet notes:</strong> ' + esc(sheet.notes);
+  } else { notesEl.style.display = 'none'; }
+  const dates = sheet.dates || [];
+  const CODES = ['OT', 'L', 'AE', 'AU', ''];
+  const thead = document.getElementById('scanTableHead');
+  thead.innerHTML = '<tr><th style="text-align:left;padding:6px 8px;border-bottom:2px solid var(--border);white-space:nowrap">Student</th><th style="padding:6px 8px;border-bottom:2px solid var(--border)">Match</th>' +
+    dates.map(d => '<th style="padding:6px 8px;border-bottom:2px solid var(--border);text-align:center;white-space:nowrap">' + esc(d) + '</th>').join('') + '</tr>';
+  const tbody = document.getElementById('scanTableBody');
+  tbody.innerHTML = '';
+  (sheet.students || []).forEach((stu, si) => {
+    if (stu.skipped) return;
+    const matched = stu.matched !== false;
+    const codeColor = c => c === 'OT' ? '#166534' : c === 'L' ? '#92400e' : c === 'AE' ? '#1e40af' : c === 'AU' ? '#991b1b' : '#888';
+    const tr = document.createElement('tr');
+    tr.style.background = matched ? '' : '#fffbe6';
+    const namePart = esc(stu.name) + (stu.rosterName ? '<div style="font-size:11px;color:var(--fg3)">' + esc(stu.rosterName) + '</div>' : '');
+    const dateCells = dates.map(d => {
+      const code = (stu.attendance || {})[d] || '';
+      return '<td style="padding:4px 6px;text-align:center"><select data-si="' + si + '" data-date="' + d + '" style="border:1px solid var(--border);border-radius:4px;padding:2px 4px;font-size:12px;font-weight:700;color:' + codeColor(code) + ';background:var(--surface)">' +
+        CODES.map(c => '<option value="' + c + '"' + (c === code ? ' selected' : '') + '>' + (c || '--') + '</option>').join('') + '</select></td>';
+    }).join('');
+    tr.innerHTML = '<td style="padding:6px 8px;font-weight:600;white-space:nowrap">' + namePart + '</td><td style="padding:6px 8px;text-align:center;font-size:12px;color:' + (matched ? 'var(--ac1)' : '#b45309') + '">' + (matched ? 'yes' : 'no') + '</td>' + dateCells;
+    tbody.appendChild(tr);
+  });
+}
+
+async function saveScanWeek() {
+  const sheet = (scanData.sheets || [])[scanCurrentIdx];
+  if (!sheet) return;
+  const dates = sheet.dates || [];
+  const tbody = document.getElementById('scanTableBody');
+  const records = [];
+  (sheet.students || []).forEach((stu, si) => {
+    if (!stu.studentId || stu.skipped) return;
+    dates.forEach(d => {
+      const sel = tbody.querySelector('select[data-si="' + si + '"][data-date="' + d + '"]');
+      const status = sel ? sel.value : ((stu.attendance || {})[d] || '');
+      if (status) records.push({ studentId: stu.studentId, date: scanIsoDate(d), status, notes: null });
+    });
+  });
+  if (!records.length) { alert('Nothing to save - no matched students with attendance codes.'); return; }
+  const classId = curClass || '';
+  const statusEl = document.getElementById('scanStatus');
+  statusEl.style.display = '';
+  statusEl.textContent = 'Saving...';
+  const r = await api('saveAttendance', { classId, records });
+  if (r.saved) {
+    statusEl.textContent = 'Saved ' + r.saved + ' attendance records.';
+  } else {
+    statusEl.textContent = 'Save failed: ' + (r.error || 'unknown error');
+  }
+}
+
+function scanIsoDate(d) {
+  const parts = d.split('/');
+  if (parts.length !== 3) return d;
+  return parts[2] + '-' + parts[0].padStart(2, '0') + '-' + parts[1].padStart(2, '0');
+}
 </script>
 <script>
 // ── ANEW CONTRACT TEMPLATES + printable, signable forms ──
@@ -2352,6 +2660,142 @@ function printContract(id){
   win.document.write(html); win.document.close();
 }
 
+
+// Scan Sheets
+let scanData = null;
+let scanCurrentIdx = 0;
+
+function initScan() {
+  scanData = null;
+  scanCurrentIdx = 0;
+  document.getElementById('scanUploadArea').style.display = '';
+  document.getElementById('scanStatus').style.display = 'none';
+  document.getElementById('scanReview').style.display = 'none';
+  document.getElementById('scanFileInput').value = '';
+}
+
+function instrOpenScan() {
+  showInstrDash();
+  showView('scan');
+  initScan();
+}
+
+function handleScanFile(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = async function(ev) {
+    const b64 = ev.target.result.split(',')[1];
+    const mime = file.type || 'image/jpeg';
+    await runScan(b64, mime);
+  };
+  reader.readAsDataURL(file);
+}
+
+async function runScan(fileData, mimeType) {
+  const statusEl = document.getElementById('scanStatus');
+  const uploadEl = document.getElementById('scanUploadArea');
+  statusEl.textContent = 'Scanning... this takes 10-20 seconds';
+  statusEl.style.display = '';
+  uploadEl.style.display = 'none';
+  try {
+    const classId = curClass || '';
+    const res = await fetch('/api/scan-attendance', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ password: PW, fileData, mimeType, classId })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Scan failed');
+    scanData = data;
+    statusEl.style.display = 'none';
+    buildScanWeekSelect();
+    renderScanWeek();
+    document.getElementById('scanReview').style.display = '';
+  } catch(err) {
+    statusEl.textContent = 'Error: ' + err.message;
+    uploadEl.style.display = '';
+  }
+}
+
+function buildScanWeekSelect() {
+  const sel = document.getElementById('scanWeekSelect');
+  sel.innerHTML = '';
+  (scanData.sheets || []).forEach((s, i) => {
+    const opt = document.createElement('option');
+    opt.value = i;
+    opt.textContent = (s.week || ('Sheet ' + (i+1))) + ' (' + (s.class || '') + ')';
+    sel.appendChild(opt);
+  });
+}
+
+function renderScanWeek() {
+  const idx = parseInt(document.getElementById('scanWeekSelect').value) || 0;
+  scanCurrentIdx = idx;
+  const sheet = (scanData.sheets || [])[idx];
+  if (!sheet) return;
+  document.getElementById('scanWeekLabel').textContent = (sheet.week || '') + ' (' + (sheet.class || '') + ')';
+  const notesEl = document.getElementById('scanNotes');
+  if (sheet.notes && sheet.notes.trim()) {
+    notesEl.style.display = '';
+    notesEl.innerHTML = '<strong>Sheet notes:</strong> ' + esc(sheet.notes);
+  } else { notesEl.style.display = 'none'; }
+  const dates = sheet.dates || [];
+  const CODES = ['OT', 'L', 'AE', 'AU', ''];
+  const thead = document.getElementById('scanTableHead');
+  thead.innerHTML = '<tr><th style="text-align:left;padding:6px 8px;border-bottom:2px solid var(--border);white-space:nowrap">Student</th><th style="padding:6px 8px;border-bottom:2px solid var(--border)">Match</th>' +
+    dates.map(d => '<th style="padding:6px 8px;border-bottom:2px solid var(--border);text-align:center;white-space:nowrap">' + esc(d) + '</th>').join('') + '</tr>';
+  const tbody = document.getElementById('scanTableBody');
+  tbody.innerHTML = '';
+  (sheet.students || []).forEach((stu, si) => {
+    if (stu.skipped) return;
+    const matched = stu.matched !== false;
+    const codeColor = c => c === 'OT' ? '#166534' : c === 'L' ? '#92400e' : c === 'AE' ? '#1e40af' : c === 'AU' ? '#991b1b' : '#888';
+    const tr = document.createElement('tr');
+    tr.style.background = matched ? '' : '#fffbe6';
+    const namePart = esc(stu.name) + (stu.rosterName ? '<div style="font-size:11px;color:var(--fg3)">' + esc(stu.rosterName) + '</div>' : '');
+    const dateCells = dates.map(d => {
+      const code = (stu.attendance || {})[d] || '';
+      return '<td style="padding:4px 6px;text-align:center"><select data-si="' + si + '" data-date="' + d + '" style="border:1px solid var(--border);border-radius:4px;padding:2px 4px;font-size:12px;font-weight:700;color:' + codeColor(code) + ';background:var(--surface)">' +
+        CODES.map(c => '<option value="' + c + '"' + (c === code ? ' selected' : '') + '>' + (c || '--') + '</option>').join('') + '</select></td>';
+    }).join('');
+    tr.innerHTML = '<td style="padding:6px 8px;font-weight:600;white-space:nowrap">' + namePart + '</td><td style="padding:6px 8px;text-align:center;font-size:12px;color:' + (matched ? 'var(--ac1)' : '#b45309') + '">' + (matched ? 'yes' : 'no') + '</td>' + dateCells;
+    tbody.appendChild(tr);
+  });
+}
+
+async function saveScanWeek() {
+  const sheet = (scanData.sheets || [])[scanCurrentIdx];
+  if (!sheet) return;
+  const dates = sheet.dates || [];
+  const tbody = document.getElementById('scanTableBody');
+  const records = [];
+  (sheet.students || []).forEach((stu, si) => {
+    if (!stu.studentId || stu.skipped) return;
+    dates.forEach(d => {
+      const sel = tbody.querySelector('select[data-si="' + si + '"][data-date="' + d + '"]');
+      const status = sel ? sel.value : ((stu.attendance || {})[d] || '');
+      if (status) records.push({ studentId: stu.studentId, date: scanIsoDate(d), status, notes: null });
+    });
+  });
+  if (!records.length) { alert('Nothing to save - no matched students with attendance codes.'); return; }
+  const classId = curClass || '';
+  const statusEl = document.getElementById('scanStatus');
+  statusEl.style.display = '';
+  statusEl.textContent = 'Saving...';
+  const r = await api('saveAttendance', { classId, records });
+  if (r.saved) {
+    statusEl.textContent = 'Saved ' + r.saved + ' attendance records.';
+  } else {
+    statusEl.textContent = 'Save failed: ' + (r.error || 'unknown error');
+  }
+}
+
+function scanIsoDate(d) {
+  const parts = d.split('/');
+  if (parts.length !== 3) return d;
+  return parts[2] + '-' + parts[0].padStart(2, '0') + '-' + parts[1].padStart(2, '0');
+}
 </script>
 <script>
 // ── Printable case notes + incident report (ANEW forms) ──
@@ -2446,6 +2890,142 @@ function printIncidentReport(id){
   _anewPrintWindow('Incident Report — '+(studentName(s)||''), inner);
 }
 
+
+// Scan Sheets
+let scanData = null;
+let scanCurrentIdx = 0;
+
+function initScan() {
+  scanData = null;
+  scanCurrentIdx = 0;
+  document.getElementById('scanUploadArea').style.display = '';
+  document.getElementById('scanStatus').style.display = 'none';
+  document.getElementById('scanReview').style.display = 'none';
+  document.getElementById('scanFileInput').value = '';
+}
+
+function instrOpenScan() {
+  showInstrDash();
+  showView('scan');
+  initScan();
+}
+
+function handleScanFile(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = async function(ev) {
+    const b64 = ev.target.result.split(',')[1];
+    const mime = file.type || 'image/jpeg';
+    await runScan(b64, mime);
+  };
+  reader.readAsDataURL(file);
+}
+
+async function runScan(fileData, mimeType) {
+  const statusEl = document.getElementById('scanStatus');
+  const uploadEl = document.getElementById('scanUploadArea');
+  statusEl.textContent = 'Scanning... this takes 10-20 seconds';
+  statusEl.style.display = '';
+  uploadEl.style.display = 'none';
+  try {
+    const classId = curClass || '';
+    const res = await fetch('/api/scan-attendance', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ password: PW, fileData, mimeType, classId })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Scan failed');
+    scanData = data;
+    statusEl.style.display = 'none';
+    buildScanWeekSelect();
+    renderScanWeek();
+    document.getElementById('scanReview').style.display = '';
+  } catch(err) {
+    statusEl.textContent = 'Error: ' + err.message;
+    uploadEl.style.display = '';
+  }
+}
+
+function buildScanWeekSelect() {
+  const sel = document.getElementById('scanWeekSelect');
+  sel.innerHTML = '';
+  (scanData.sheets || []).forEach((s, i) => {
+    const opt = document.createElement('option');
+    opt.value = i;
+    opt.textContent = (s.week || ('Sheet ' + (i+1))) + ' (' + (s.class || '') + ')';
+    sel.appendChild(opt);
+  });
+}
+
+function renderScanWeek() {
+  const idx = parseInt(document.getElementById('scanWeekSelect').value) || 0;
+  scanCurrentIdx = idx;
+  const sheet = (scanData.sheets || [])[idx];
+  if (!sheet) return;
+  document.getElementById('scanWeekLabel').textContent = (sheet.week || '') + ' (' + (sheet.class || '') + ')';
+  const notesEl = document.getElementById('scanNotes');
+  if (sheet.notes && sheet.notes.trim()) {
+    notesEl.style.display = '';
+    notesEl.innerHTML = '<strong>Sheet notes:</strong> ' + esc(sheet.notes);
+  } else { notesEl.style.display = 'none'; }
+  const dates = sheet.dates || [];
+  const CODES = ['OT', 'L', 'AE', 'AU', ''];
+  const thead = document.getElementById('scanTableHead');
+  thead.innerHTML = '<tr><th style="text-align:left;padding:6px 8px;border-bottom:2px solid var(--border);white-space:nowrap">Student</th><th style="padding:6px 8px;border-bottom:2px solid var(--border)">Match</th>' +
+    dates.map(d => '<th style="padding:6px 8px;border-bottom:2px solid var(--border);text-align:center;white-space:nowrap">' + esc(d) + '</th>').join('') + '</tr>';
+  const tbody = document.getElementById('scanTableBody');
+  tbody.innerHTML = '';
+  (sheet.students || []).forEach((stu, si) => {
+    if (stu.skipped) return;
+    const matched = stu.matched !== false;
+    const codeColor = c => c === 'OT' ? '#166534' : c === 'L' ? '#92400e' : c === 'AE' ? '#1e40af' : c === 'AU' ? '#991b1b' : '#888';
+    const tr = document.createElement('tr');
+    tr.style.background = matched ? '' : '#fffbe6';
+    const namePart = esc(stu.name) + (stu.rosterName ? '<div style="font-size:11px;color:var(--fg3)">' + esc(stu.rosterName) + '</div>' : '');
+    const dateCells = dates.map(d => {
+      const code = (stu.attendance || {})[d] || '';
+      return '<td style="padding:4px 6px;text-align:center"><select data-si="' + si + '" data-date="' + d + '" style="border:1px solid var(--border);border-radius:4px;padding:2px 4px;font-size:12px;font-weight:700;color:' + codeColor(code) + ';background:var(--surface)">' +
+        CODES.map(c => '<option value="' + c + '"' + (c === code ? ' selected' : '') + '>' + (c || '--') + '</option>').join('') + '</select></td>';
+    }).join('');
+    tr.innerHTML = '<td style="padding:6px 8px;font-weight:600;white-space:nowrap">' + namePart + '</td><td style="padding:6px 8px;text-align:center;font-size:12px;color:' + (matched ? 'var(--ac1)' : '#b45309') + '">' + (matched ? 'yes' : 'no') + '</td>' + dateCells;
+    tbody.appendChild(tr);
+  });
+}
+
+async function saveScanWeek() {
+  const sheet = (scanData.sheets || [])[scanCurrentIdx];
+  if (!sheet) return;
+  const dates = sheet.dates || [];
+  const tbody = document.getElementById('scanTableBody');
+  const records = [];
+  (sheet.students || []).forEach((stu, si) => {
+    if (!stu.studentId || stu.skipped) return;
+    dates.forEach(d => {
+      const sel = tbody.querySelector('select[data-si="' + si + '"][data-date="' + d + '"]');
+      const status = sel ? sel.value : ((stu.attendance || {})[d] || '');
+      if (status) records.push({ studentId: stu.studentId, date: scanIsoDate(d), status, notes: null });
+    });
+  });
+  if (!records.length) { alert('Nothing to save - no matched students with attendance codes.'); return; }
+  const classId = curClass || '';
+  const statusEl = document.getElementById('scanStatus');
+  statusEl.style.display = '';
+  statusEl.textContent = 'Saving...';
+  const r = await api('saveAttendance', { classId, records });
+  if (r.saved) {
+    statusEl.textContent = 'Saved ' + r.saved + ' attendance records.';
+  } else {
+    statusEl.textContent = 'Save failed: ' + (r.error || 'unknown error');
+  }
+}
+
+function scanIsoDate(d) {
+  const parts = d.split('/');
+  if (parts.length !== 3) return d;
+  return parts[2] + '-' + parts[0].padStart(2, '0') + '-' + parts[1].padStart(2, '0');
+}
 </script>
 
 <style>.profile-tab-pane{display:block!important}.profile-tab-pane+.profile-tab-pane{margin-top:24px;border-top:.5px solid var(--b2);padding-top:20px}</style>

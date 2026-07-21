@@ -1,4 +1,4 @@
-// functions/api/admin.js  → served at /api/admin
+﻿// functions/api/admin.js  → served at /api/admin
 // Lives under /api so the path doesn't collide with the static /admin.html page
 // (Cloudflare Pages auto-redirects .html → clean URL, which would otherwise loop).
 import {
@@ -517,6 +517,29 @@ export async function onRequestPost(context) {
         if (classId) q += `&class_id=eq.${enc(classId)}`;
         const rows = await sb(q);
         return ok({ results: rows || [] });
+      }
+
+      case 'saveAttendance': {
+        const { classId, records } = payload;
+        if (!classId || !Array.isArray(records) || !records.length) return bad('Missing classId or records');
+        const inserts = records
+          .filter(r => r.studentId && r.date && r.status)
+          .map(r => ({
+            student_id: r.studentId,
+            class_id: classId,
+            date: r.date,
+            status: r.status,
+            notes: r.notes || null,
+            source: 'scan',
+          }));
+        if (!inserts.length) return bad('No valid records to save');
+        await sb('anew_attendance', {
+          method: 'POST',
+          prefer: 'return=minimal',
+          headers: { Prefer: 'resolution=merge-duplicates' },
+          body: JSON.stringify(inserts),
+        });
+        return ok({ saved: inserts.length });
       }
 
       default:
