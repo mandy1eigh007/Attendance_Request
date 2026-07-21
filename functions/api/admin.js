@@ -523,6 +523,26 @@ export async function onRequestPost(context) {
         return ok({ results: rows || [] });
       }
 
+      case 'saveTestResult': {
+        const { studentName, testName, score, total, classId } = payload;
+        if (!studentName || !testName || score == null || total == null) return bad('Missing required fields');
+        const pct = Math.round((Number(score) / Number(total)) * 100);
+        await sb('anew_test_results', {
+          method: 'POST',
+          prefer: 'return=minimal',
+          body: JSON.stringify({
+            student_name: studentName,
+            test_name: testName,
+            score: Number(score),
+            total: Number(total),
+            pct,
+            class_id: classId || null,
+            taken_at: new Date().toISOString(),
+          }),
+        });
+        return ok({ ok: true });
+      }
+
       case 'saveAttendance': {
         const { classId, records } = payload;
         if (!classId || !Array.isArray(records) || !records.length) return bad('Missing classId or records');

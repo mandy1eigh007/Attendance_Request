@@ -11,6 +11,12 @@
 <meta name="apple-mobile-web-app-title" content="ANEW">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='24' fill='%232dd4a7'/><path d='M50 18 L78 34 V66 L50 82 L22 66 V34 Z' fill='none' stroke='%2306231b' stroke-width='6' stroke-linejoin='round'/></svg>">
 <link rel="stylesheet" href="/app.css">
+<style>
+.help-hint{display:none;font-size:11px;color:#5a4200;background:#fffacc;border:1px solid #e8d44d;border-radius:4px;padding:5px 10px;margin-bottom:12px;line-height:1.5}
+body.help-mode .help-hint{display:block}
+.help-btn{background:none;border:1.5px solid var(--b2);border-radius:50%;width:26px;height:26px;font-weight:700;color:var(--t2);cursor:pointer;font-size:12px;line-height:1;padding:0;flex-shrink:0}
+.help-btn.on{background:#fffacc;border-color:#e8d44d;color:#5a4200}
+</style>
 </head>
 <body>
 
@@ -55,6 +61,7 @@
       <a href="/tools/">Tools</a>
       <a href="/tests/">Tests</a>
       <button onclick="switchInstructor()" title="Switch instructor">Switch</button>
+      <button class="help-btn" id="helpBtn" onclick="toggleHelp()" title="Help Mode">?</button>
       <button onclick="doLogout()">Sign Out</button>
     </div>
   </div>
@@ -175,46 +182,6 @@
       </div>
     </div>
 
-    <!-- INSTRUCTOR DASHBOARD (role=instructor) -->
-    <div class="view" id="view-instructor">
-      <div style="max-width:680px;margin:0 auto;padding:32px 16px">
-        <div style="margin-bottom:24px">
-          <div style="font-size:22px;font-weight:700;letter-spacing:-.02em" id="instrWelcome">Welcome</div>
-          <div style="font-size:14px;color:var(--t3);margin-top:4px" id="instrClass"></div>
-        </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
-          <button class="card" style="text-align:left;padding:22px 20px;cursor:pointer;width:100%;background:var(--s2)" onclick="openGradebook()">
-            <div style="font-size:16px;font-weight:700;margin-bottom:6px">Gradebook</div>
-            <div style="font-size:13px;color:var(--t3);line-height:1.5">Enter and view student grades for your class.</div>
-            <div style="margin-top:14px;font-size:13px;font-weight:600;color:var(--ac2)">Open Gradebook</div>
-          </button>
-          <button class="card" style="text-align:left;padding:22px 20px;cursor:pointer;width:100%;background:var(--s2)" onclick="location.href='/tools/'">
-            <div style="font-size:16px;font-weight:700;margin-bottom:6px">Tool Study Cards</div>
-            <div style="font-size:13px;color:var(--t3);line-height:1.5">Share with students to study before finals.</div>
-            <div style="margin-top:14px;font-size:13px;font-weight:600;color:var(--ac2)">Open Study Cards</div>
-          </button>
-          <button class="card" style="text-align:left;padding:22px 20px;cursor:pointer;width:100%;background:var(--s2)" onclick="location.href='/tests/'">
-            <div style="font-size:16px;font-weight:700;margin-bottom:6px">Tool Finals</div>
-            <div style="font-size:13px;color:var(--t3);line-height:1.5">Run the hand tool, power tool, or tape measure exam.</div>
-            <div style="margin-top:14px;font-size:13px;font-weight:600;color:var(--ac2)">Open Finals</div>
-          </button>
-          <button class="card" style="text-align:left;padding:22px 20px;cursor:pointer;width:100%;background:var(--s2)" onclick="instrOpenDemerit()">
-            <div style="font-size:16px;font-weight:700;margin-bottom:6px">Demerits</div>
-            <div style="font-size:13px;color:var(--t3);line-height:1.5">Issue a demerit or review a student record.</div>
-            <div style="margin-top:14px;font-size:13px;font-weight:600;color:var(--ac2)">Open Demerits</div>
-          </button>
-          <button class="card" style="text-align:left;padding:22px 20px;cursor:pointer;width:100%;background:var(--s2);grid-column:1/-1" onclick="instrOpenResults()">
-            <div style="font-size:16px;font-weight:700;margin-bottom:6px">Test Results</div>
-            <div style="font-size:13px;color:var(--t3);line-height:1.5">See scores from the Hand Tool, Power Tool, and Tape Measure finals.</div>
-            <div style="margin-top:14px;font-size:13px;font-weight:600;color:var(--ac2)">View Scores</div>
-          </button>
-          <div class="instr-tile" onclick="instrOpenScan()" style="background:var(--ac1);color:#fff;cursor:pointer;padding:22px 20px;border-radius:var(--r2);grid-column:1/-1">
-            <div style="font-size:22px;font-weight:800">Scan Sheets</div>
-            <div style="font-size:13px;margin-top:4px">Upload attendance or demerit sheets</div>
-          </div>
-        </div>
-      </div>
-    </div>
 
     <!-- ATTENDANCE -->
     <div class="view active" id="view-attendance">
@@ -650,6 +617,28 @@
   </div>
 </div></div>
 
+<div class="modal-bg" id="enterScoreModal"><div class="modal" role="dialog" aria-modal="true"><div class="grab"></div>
+  <h2 style="font-size:22px;font-weight:700;letter-spacing:-.03em;margin-bottom:4px">Enter Score</h2>
+  <p id="esSubtitle" style="font-size:13px;color:var(--t3);margin-bottom:18px"></p>
+  <div class="grid2">
+    <div class="field"><label>Score <span class="req">*</span></label><input type="number" id="esScore" min="0" max="200" placeholder="e.g. 18"></div>
+    <div class="field"><label>Out of <span class="req">*</span></label><input type="number" id="esTotal" min="1" max="200" placeholder="e.g. 20"></div>
+  </div>
+  <div class="modal-actions">
+    <button class="btn btn-ghost" onclick="closeModal('enterScoreModal')">Cancel</button>
+    <button class="btn btn-primary" id="esSaveBtn" onclick="saveManualScore()">Save Score</button>
+  </div>
+</div></div>
+
+<div class="modal-bg" id="linkNameModal"><div class="modal" role="dialog" aria-modal="true"><div class="grab"></div>
+  <h2 style="font-size:22px;font-weight:700;letter-spacing:-.03em;margin-bottom:4px">Link Test Name</h2>
+  <p id="lnSubtitle" style="font-size:13px;color:var(--t3);margin-bottom:14px"></p>
+  <div id="lnOptions" style="display:flex;flex-direction:column;gap:6px;margin-bottom:18px"></div>
+  <div class="modal-actions">
+    <button class="btn btn-ghost" onclick="closeModal('linkNameModal')">Cancel</button>
+  </div>
+</div></div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -805,53 +794,7 @@ function showApp(skipBootstrap){
   applyRole();
   if(!skipBootstrap) bootstrap();
 }
-function applyRole(){
-  const isInstr=ME && ME.role==='instructor';
-  document.getElementById('navTabs').style.display=isInstr?'none':'';
-  document.getElementById('contextBar').style.display=isInstr?'none':'';
-  if(isInstr){
-    document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
-    document.getElementById('view-instructor').classList.add('active');
-    document.getElementById('instrWelcome').textContent='Welcome, '+(ME.name||'Instructor');
-  }
-}
-function instrOpenResults(){
-  document.getElementById('contextBar').style.display='none';
-  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
-  document.getElementById('view-results').classList.add('active');
-  let bar=document.getElementById('instrBackBar');
-  if(!bar){
-    bar=document.createElement('div');
-    bar.id='instrBackBar';
-    bar.style.cssText='max-width:1000px;margin:10px auto -4px;padding:0 16px';
-    bar.innerHTML='<button class="btn btn-ghost btn-sm" onclick="showInstrDash()">Back to Dashboard</button>';
-    document.querySelector('.main').insertAdjacentElement('beforebegin',bar);
-  }
-  bar.style.display='';
-  loadTestResults();
-}
-function instrOpenDemerit(){
-  // Show demerit view with a back-to-dashboard bar
-  document.getElementById('contextBar').style.display='';
-  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
-  document.getElementById('view-demerit').classList.add('active');
-  let bar=document.getElementById('instrBackBar');
-  if(!bar){
-    bar=document.createElement('div');
-    bar.id='instrBackBar';
-    bar.style.cssText='max-width:1000px;margin:10px auto -4px;padding:0 16px';
-    bar.innerHTML='<button class="btn btn-ghost btn-sm" onclick="showInstrDash()">Back to Dashboard</button>';
-    document.querySelector('.main').insertAdjacentElement('beforebegin',bar);
-  }
-  bar.style.display='';
-}
-function showInstrDash(){
-  const bar=document.getElementById('instrBackBar');
-  if(bar) bar.style.display='none';
-  document.getElementById('contextBar').style.display='none';
-  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
-  document.getElementById('view-instructor').classList.add('active');
-}
+function applyRole(){}
 
 // ── Bootstrap ──
 async function bootstrap(){
@@ -860,7 +803,6 @@ async function bootstrap(){
     instructors=d.instructors;classes=d.classes;
     renderClassSelect();renderManage();
     if(classes.length){curClass=classes[0].id;document.getElementById('classSelect').value=curClass;await onClassChange();}
-    if(ME && ME.role==='instructor' && classes.length){document.getElementById('instrClass').textContent=classes.find(c=>c.id===curClass)?.program_name||'';}
   }catch(e){toast(e.message,true);}
 }
 
@@ -874,6 +816,8 @@ function showView(name){
   if(name==='history')renderHistory();
   if(name==='students'){closeStudentProfile();renderStudentList();}
 }
+function toggleHelp(){const b=document.getElementById('helpBtn');const on=document.body.classList.toggle('help-mode');b.classList.toggle('on',on);}
+function navToStudent(id){showView('students');openStudentProfile(id);}
 
 // ── Class selector ──
 function renderClassSelect(){
@@ -1591,6 +1535,15 @@ async function delClass(id){
 
 // ── Test Results ──
 let _testResults=[];
+let _nameAliases=(()=>{try{return JSON.parse(localStorage.getItem('anew_name_aliases')||'{}')}catch{return{}}})();
+function saveNameAlias(resultName,studentId){_nameAliases[resultName]=studentId;localStorage.setItem('anew_name_aliases',JSON.stringify(_nameAliases));}
+function studentHasTested(s,tname){
+  const took=_testResults.filter(r=>r.test_name===tname);
+  return took.some(r=>nameWordsMatch(s.first,s.last,r.student_name)||(_nameAliases[r.student_name]||null)===s.id);
+}
+function unmatchedResults(tname){
+  return _testResults.filter(r=>r.test_name===tname&&!_nameAliases[r.student_name]&&!students.some(s=>nameWordsMatch(s.first,s.last,r.student_name)));
+}
 async function loadTestResults(){
   const host=document.getElementById('resultsBody');
   if(!host) return;
@@ -1645,15 +1598,59 @@ function buildMissingSection(filter){
   if(!roster.length) return '';
   const allTests=['Tape Measure Final','Hand Tool Final','Power Tool Final'];
   const checkTests=filter?[filter]:allTests;
-  let any=false;
   const blocks=checkTests.map(tname=>{
-    const tookResults=_testResults.filter(r=>r.test_name===tname);
-    const missing=roster.filter(s=>!tookResults.some(r=>nameWordsMatch(s.first,s.last,r.student_name)));
+    const missing=roster.filter(s=>!studentHasTested(s,tname));
     if(!missing.length) return `<div style="display:flex;align-items:center;gap:8px;padding:6px 0"><span style="font-size:12px;font-weight:600;color:var(--t3);min-width:130px">${esc(tname.replace(' Final',''))}</span><span style="font-size:12px;color:var(--ac)">All done</span></div>`;
-    any=true;
-    return `<div style="padding:6px 0;border-bottom:.5px solid var(--b1)"><div style="font-size:12px;font-weight:600;color:var(--t3);margin-bottom:4px">${esc(tname.replace(' Final',''))} — ${missing.length} missing</div><div style="font-size:13px;color:#e74c3c;line-height:1.8">${missing.map(s=>esc(s.first+' '+s.last)).join(' &nbsp;·&nbsp; ')}</div></div>`;
+    return `<div style="padding:6px 0;border-bottom:.5px solid var(--b1)">
+      <div style="font-size:12px;font-weight:600;color:var(--t3);margin-bottom:6px">${esc(tname.replace(' Final',''))} — ${missing.length} missing</div>
+      <div style="display:flex;flex-direction:column;gap:5px">${missing.map(s=>`<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        <span style="font-size:13px;color:#e74c3c;min-width:160px">${esc(s.first+' '+s.last)}</span>
+        <button class="btn btn-ghost btn-sm" style="padding:2px 8px;font-size:11px" onclick="openEnterScore(${JSON.stringify(s.id)},${JSON.stringify(s.first)},${JSON.stringify(s.last)},${JSON.stringify(tname)})">Enter Score</button>
+        <button class="btn btn-ghost btn-sm" style="padding:2px 8px;font-size:11px" onclick="openLinkName(${JSON.stringify(s.id)},${JSON.stringify(s.first)},${JSON.stringify(s.last)},${JSON.stringify(tname)})">Link Name</button>
+      </div>`).join('')}</div>
+    </div>`;
   }).join('');
   return `<div style="margin-top:24px;border-top:1px solid var(--b1);padding-top:16px"><div style="font-size:12px;font-weight:700;color:var(--t3);letter-spacing:.06em;text-transform:uppercase;margin-bottom:10px">Has Not Tested</div>${blocks}</div>`;
+}
+
+// ── Enter Score / Link Name ──
+let _esStudentId=null,_esStudentName='',_esTname='';
+function openEnterScore(id,first,last,tname){
+  _esStudentId=id;_esStudentName=first+' '+last;_esTname=tname;
+  document.getElementById('esSubtitle').textContent=first+' '+last+' — '+tname.replace(' Final','');
+  document.getElementById('esScore').value='';
+  document.getElementById('esTotal').value='';
+  document.getElementById('esSaveBtn').disabled=false;
+  openModal('enterScoreModal');
+}
+async function saveManualScore(){
+  const score=parseInt(document.getElementById('esScore').value,10);
+  const total=parseInt(document.getElementById('esTotal').value,10);
+  if(isNaN(score)||isNaN(total)||total<1||score<0||score>total){toast('Enter a valid score and total',true);return;}
+  document.getElementById('esSaveBtn').disabled=true;
+  try{
+    await api('saveTestResult',{studentName:_esStudentName,testName:_esTname,score,total,classId:curClass});
+    toast('Score saved');
+    closeModal('enterScoreModal');
+    await loadTestResults();
+  }catch(e){toast(e.message,true);document.getElementById('esSaveBtn').disabled=false;}
+}
+let _lnStudentId=null,_lnTname='';
+function openLinkName(id,first,last,tname){
+  _lnStudentId=id;_lnTname=tname;
+  document.getElementById('lnSubtitle').textContent='Pick the name they entered for: '+first+' '+last;
+  const unmatched=unmatchedResults(tname);
+  const opts=document.getElementById('lnOptions');
+  opts.innerHTML=unmatched.length
+    ?unmatched.map(r=>`<button class="btn btn-ghost" style="text-align:left;justify-content:flex-start" onclick="applyLinkName(${JSON.stringify(r.student_name)})">${esc(r.student_name||'—')}</button>`).join('')
+    :'<p style="font-size:13px;color:var(--t3)">No unmatched results for this test.</p>';
+  openModal('linkNameModal');
+}
+function applyLinkName(resultName){
+  saveNameAlias(resultName,_lnStudentId);
+  closeModal('linkNameModal');
+  toast('Linked');
+  renderTestResults();
 }
 
 // ── Student modals ──
@@ -2164,11 +2161,6 @@ function initScan() {
   document.getElementById('scanFileInput').value = '';
 }
 
-function instrOpenScan() {
-  showInstrDash();
-  showView('scan');
-  initScan();
-}
 
 function handleScanFile(e) {
   const file = e.target.files[0];
@@ -2450,11 +2442,6 @@ function initScan() {
   document.getElementById('scanFileInput').value = '';
 }
 
-function instrOpenScan() {
-  showInstrDash();
-  showView('scan');
-  initScan();
-}
 
 function handleScanFile(e) {
   const file = e.target.files[0];
@@ -2803,11 +2790,6 @@ function initScan() {
   document.getElementById('scanFileInput').value = '';
 }
 
-function instrOpenScan() {
-  showInstrDash();
-  showView('scan');
-  initScan();
-}
 
 function handleScanFile(e) {
   const file = e.target.files[0];
@@ -3040,11 +3022,6 @@ function initScan() {
   document.getElementById('scanFileInput').value = '';
 }
 
-function instrOpenScan() {
-  showInstrDash();
-  showView('scan');
-  initScan();
-}
 
 function handleScanFile(e) {
   const file = e.target.files[0];
