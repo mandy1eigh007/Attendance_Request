@@ -90,6 +90,7 @@ body.help-mode .help-hint{display:block}
 
     <!-- STUDENTS -->
     <div class="view" id="view-students">
+      <div class="help-hint">Search or scroll to find a student. Click their name to open their full profile — attendance history, demerits, contracts, case notes, and photo all live there. Student names in Attendance, History, and Results tabs are also clickable and jump straight here. Status filter shows Active, Dropped, or Early Grad students.</div>
       <!-- Student List (shown when no student selected) -->
       <div id="studentListPane">
         <div class="page-header">
@@ -247,6 +248,7 @@ body.help-mode .help-hint{display:block}
 
     <!-- REQUESTS -->
     <div class="view" id="view-requests">
+      <div class="help-hint">These are absence and appointment requests submitted by students. Click Approve or Deny — the student gets a decision email automatically. Denied requests drop off the list. You can't undo an approval, so read the reason first.</div>
       <div class="page-header">
         <div><div class="page-title">Requests</div><div class="page-sub">Review student absence and appointment requests. Approve or deny — the student gets a decision email automatically.</div></div>
         <div class="flex-gap">
@@ -261,6 +263,7 @@ body.help-mode .help-hint{display:block}
 
     <!-- HISTORY -->
     <div class="view" id="view-history">
+      <div class="help-hint">Full log of all demerits and attendance records. Filter by type (demerits only or attendance only) and by date. Click any student name to jump to their profile. Use Export CSV to pull a spreadsheet for reports or meetings.</div>
       <div class="page-header">
         <div><div class="page-title">History</div><div class="page-sub">All attendance and demerit records in one place. Filter by type or export to CSV for reports.</div></div>
         <div class="flex-gap">
@@ -280,6 +283,7 @@ body.help-mode .help-hint{display:block}
 
     <!-- MANAGE -->
     <div class="view" id="view-manage">
+      <div class="help-hint">Add or edit classes, instructors, and students here. The Class PIN is what students enter on the test page to identify their cohort. New instructors added here will appear in the login dropdown. Changes to students (status, name) take effect immediately across all views.</div>
       <div class="page-header"><div><div class="page-title">Manage</div><div class="page-sub">Add or edit classes, instructors, and students. New instructors can be added here and selected at login.</div></div></div>
       <div class="section-card">
         <div class="card-title">Classes <button class="btn btn-primary btn-sm" style="margin-left:auto" onclick="openClassModal()">+ Add</button></div>
@@ -301,7 +305,7 @@ body.help-mode .help-hint{display:block}
 
     <!-- TEST RESULTS -->
     <div class="view" id="view-results">
-      <div class="help-hint">The "Has Not Tested" section shows who hasn't submitted a score yet. Use "Enter Score" to manually log a result. Use "Link Name" if a student submitted under a misspelled name — pick their entry from the list and it will link to their roster record permanently.</div>
+      <div class="help-hint">The "Has Not Tested" section shows who hasn't submitted a score yet. Enter Score logs a manual result — enter score/total or just a percentage and it calculates automatically. Median pre-fills the class median so special cases get a fair baseline. Link Name connects a misspelled submission to the right student permanently. Click View on any digital result to see the full per-question answer breakdown.</div>
       <div class="page-header">
         <div><div class="page-title">Test Results</div><div class="page-sub">Tool Finals scores submitted by students. Filtered by selected class.</div></div>
         <div class="flex-gap">
@@ -357,6 +361,7 @@ body.help-mode .help-hint{display:block}
 
     <!-- FAQ -->
     <div class="view" id="view-faq">
+      <div class="help-hint">Quick answers for common questions — absence codes, demerit codes, what each status means, and how to handle edge cases. The "?" button in the top bar toggles tips like this one on every page. Press it again to turn them off.</div>
       <div class="page-header"><div><div class="page-title">FAQ</div><div class="page-sub">ANEW CohoTrack — quick answers for instructors and coordinators.</div></div></div>
 
       <div class="section-card">
