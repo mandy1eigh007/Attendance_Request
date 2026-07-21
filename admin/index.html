@@ -335,6 +335,7 @@
       <div class="page-header">
         <div><div class="page-title">Test Results</div><div class="page-sub">Tool Finals scores submitted by students. Filtered by selected class.</div></div>
         <div class="flex-gap">
+          <input type="text" id="resultsSearch" placeholder="Find student..." oninput="renderTestResults()" style="width:150px;padding:6px 10px;font-size:13px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--fg1)">
           <select id="resultsFilter" onchange="renderTestResults()" style="width:auto">
             <option value="">All Tests</option>
             <option value="Hand Tool Final">Hand Tool</option>
@@ -1578,7 +1579,8 @@ function renderTestResults(){
   const host=document.getElementById('resultsBody');
   if(!host) return;
   const filter=document.getElementById('resultsFilter')?.value||'';
-  const rows=_testResults.filter(r=>!filter||r.test_name===filter);
+  const search=(document.getElementById('resultsSearch')?.value||'').toLowerCase().trim();
+  const rows=_testResults.filter(r=>(!filter||r.test_name===filter)&&(!search||(r.student_name||'').toLowerCase().includes(search))).sort((a,b)=>(a.student_name||'').localeCompare(b.student_name||''));
   if(!rows.length){host.innerHTML='<div class="empty-state"><p>No results found.</p></div>';return;}
   const passMark=70;
   host.innerHTML=`<table style="width:100%;border-collapse:collapse;font-size:13px">
