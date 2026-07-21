@@ -495,6 +495,13 @@
     </div>
   </div>
   <div class="field"><label>Email <span class="note" style="display:inline">(optional)</span></label><input type="email" id="sdEmail" placeholder="for request matching"></div>
+  <div class="field"><label>Status</label>
+    <select id="sdStatus" style="width:100%">
+      <option value="active">Active</option>
+      <option value="dropped">Dropped</option>
+      <option value="early_grad">Early Grad</option>
+    </select>
+  </div>
   <div class="modal-actions" style="margin-top:6px">
     <button class="btn btn-ghost" onclick="closeModal('studentDetailModal')">Close</button>
     <button class="btn btn-primary" id="sdSaveBtn" onclick="saveStudentDetail()">Save Student</button>
@@ -1145,13 +1152,22 @@ function renderManage(){
         <button class="btn btn-danger btn-sm" onclick="delInstr('${esc(i.id)}')">Remove</button></div></div>`).join(''):'<div class="empty-state"><p>No instructors yet.</p></div>';
   renderManageStudents();
 }
+const STATUS_LABEL={'active':'Active','dropped':'Dropped','early_grad':'Early Grad'};
+const STATUS_COLOR={'active':'var(--ac)','dropped':'#e74c3c','early_grad':'#f39c12'};
 function renderManageStudents(){
   const el=document.getElementById('manageStudents');
   if(!curClass||!students.length){el.innerHTML='<div class="empty-state"><p>Select a class above, or add some.</p></div>';return;}
-  el.innerHTML=students.map(s=>`<div style="padding:9px 0;border-bottom:.5px solid var(--b1);display:flex;justify-content:space-between;align-items:center;gap:10px">
-    <button class="btn btn-ghost btn-sm" style="padding-left:0" onclick="openStudentDetail('${esc(s.id)}')">${esc(studentName(s))}</button>
+  const active=students.filter(s=>!s.status||s.status==='active');
+  const inactive=students.filter(s=>s.status&&s.status!=='active');
+  const row=s=>`<div style="padding:9px 0;border-bottom:.5px solid var(--b1);display:flex;justify-content:space-between;align-items:center;gap:10px">
+    <div style="display:flex;align-items:center;gap:8px;min-width:0">
+      ${s.status&&s.status!=='active'?`<span style="font-size:11px;font-weight:700;color:${STATUS_COLOR[s.status]||'#888'};white-space:nowrap">${STATUS_LABEL[s.status]||s.status}</span>`:''}
+      <button class="btn btn-ghost btn-sm" style="padding-left:0" onclick="openStudentDetail('${esc(s.id)}')">${esc(studentName(s))}</button>
+    </div>
     <div class="flex-gap"><span class="dt-chip ${dtClass(demeritTotals[s.id]||0)}">${demeritTotals[s.id]||0} pts</span>
-      <button class="btn btn-danger btn-sm" onclick="delStudent('${esc(s.id)}')">Remove</button></div></div>`).join('');
+      <button class="btn btn-danger btn-sm" onclick="delStudent('${esc(s.id)}')">Remove</button></div></div>`;
+  el.innerHTML=active.map(row).join('')+
+    (inactive.length?`<div style="margin-top:16px;padding-top:8px;border-top:1px solid var(--b1)"><div style="font-size:11px;font-weight:700;color:var(--t3);letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px">Inactive</div>${inactive.map(row).join('')}</div>`:'');
 }
 
 // ── Student details ──
@@ -1162,6 +1178,7 @@ async function openStudentDetail(id){
   document.getElementById('sdFirst').value=s.first||'';
   document.getElementById('sdLast').value=s.last||'';
   document.getElementById('sdEmail').value=s.email||'';
+  document.getElementById('sdStatus').value=s.status||'active';
   document.getElementById('sdSlipBlock').style.display='none';
   document.getElementById('sdDemeritList').innerHTML='<div class="empty-state"><p>Loading…</p></div>';
   document.getElementById('sdCaseNoteList').innerHTML='<div class="empty-state"><p>Loading…</p></div>';
@@ -1176,9 +1193,12 @@ async function saveStudentDetail(){
     const first=document.getElementById('sdFirst').value.trim();
     const last=document.getElementById('sdLast').value.trim();
     const email=document.getElementById('sdEmail').value.trim();
-    await api('updateStudent',{id:sdStudentId,first,last,email});
+    const status=document.getElementById('sdStatus').value||'active';
+    await api('updateStudent',{id:sdStudentId,first,last,email,status});
     const s=students.find(x=>x.id===sdStudentId);
-    if(s){s.first=first;s.last=last;s.email=email||null;}
+    if(s){s.first=first;s.last=last;s.email=email||null;s.status=status;s.active=status==='active';}
+    // Remove from local list if no longer active so they disappear from attendance/roster
+    if(status!=='active') students=students.filter(x=>x.id!==sdStudentId);
     renderManageStudents();renderAttendance();
     toast('Student saved');
   }catch(e){toast(e.message,true);}finally{btn.disabled=false;btn.textContent='Save Student';}

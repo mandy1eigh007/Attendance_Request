@@ -60,7 +60,7 @@ export async function onRequestPost(context) {
 
       // ── Roster ─────────────────────────────────────────────────────
       case 'students': {
-        const rows = await sb(`anew_students?class_id=eq.${enc(payload.classId)}&active=eq.true&order=last.asc`);
+        const rows = await sb(`anew_students?class_id=eq.${enc(payload.classId)}&active=eq.true&order=last.asc,first.asc`);
         return ok({ students: rows || [] });
       }
 
@@ -145,9 +145,13 @@ export async function onRequestPost(context) {
         const last  = clean(payload.last);
         const email = clean(payload.email);
         if (!first || !last) return bad('First and last name required');
+        const VALID_STATUS = ['active','dropped','early_grad'];
+        const status = VALID_STATUS.includes(payload.status) ? payload.status : null;
+        const patch = { first, last, email: email || null };
+        if (status) { patch.status = status; patch.active = status === 'active'; }
         await sb(`anew_students?id=eq.${enc(id)}`, {
           method: 'PATCH', prefer: 'return=minimal',
-          body: JSON.stringify({ first, last, email: email || null }),
+          body: JSON.stringify(patch),
         });
         return ok({ ok:true });
       }
