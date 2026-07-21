@@ -623,11 +623,20 @@ body.help-mode .help-hint{display:block}
 
 <div class="modal-bg" id="enterScoreModal"><div class="modal" role="dialog" aria-modal="true"><div class="grab"></div>
   <h2 style="font-size:22px;font-weight:700;letter-spacing:-.03em;margin-bottom:4px">Enter Score</h2>
-  <p id="esSubtitle" style="font-size:13px;color:var(--t3);margin-bottom:18px"></p>
-  <div class="grid2">
-    <div class="field"><label>Score <span class="req">*</span></label><input type="number" id="esScore" min="0" max="200" placeholder="e.g. 18"></div>
-    <div class="field"><label>Out of <span class="req">*</span></label><input type="number" id="esTotal" min="1" max="200" placeholder="e.g. 20"></div>
+  <p id="esSubtitle" style="font-size:13px;color:var(--t3);margin-bottom:14px"></p>
+  <div class="field" style="margin-bottom:10px">
+    <label style="font-size:12px;font-weight:600">Enter percentage directly</label>
+    <div style="display:flex;align-items:center;gap:6px">
+      <input type="number" id="esPct" min="0" max="100" placeholder="e.g. 85" style="max-width:100px" oninput="onEsPctInput()">
+      <span style="font-size:14px;color:var(--t3)">% — sets score / 100</span>
+    </div>
   </div>
+  <div style="font-size:11px;color:var(--t3);margin-bottom:10px;text-align:center">— or enter score and total manually —</div>
+  <div class="grid2">
+    <div class="field"><label>Score <span class="req">*</span></label><input type="number" id="esScore" min="0" max="200" placeholder="e.g. 18" oninput="onEsScoreInput()"></div>
+    <div class="field"><label>Out of <span class="req">*</span></label><input type="number" id="esTotal" min="1" max="200" placeholder="e.g. 20" oninput="onEsScoreInput()"></div>
+  </div>
+  <div id="esPctPreview" style="font-size:13px;color:var(--t3);margin-top:-6px;margin-bottom:12px;min-height:18px"></div>
   <div class="modal-actions">
     <button class="btn btn-ghost" onclick="closeModal('enterScoreModal')">Cancel</button>
     <button class="btn btn-primary" id="esSaveBtn" onclick="saveManualScore()">Save Score</button>
@@ -1625,6 +1634,7 @@ function buildMissingSection(filter){
       <div style="display:flex;flex-direction:column;gap:5px">${missing.map(s=>`<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
         <span style="font-size:13px;color:#e74c3c;min-width:160px">${esc(s.first+' '+s.last)}</span>
         <button class="btn btn-ghost btn-sm" style="padding:2px 8px;font-size:11px" onclick="openEnterScore(${esc(JSON.stringify(s.id))},${esc(JSON.stringify(s.first))},${esc(JSON.stringify(s.last))},${esc(JSON.stringify(tname))})">Enter Score</button>
+        <button class="btn btn-ghost btn-sm" style="padding:2px 8px;font-size:11px" onclick="openEnterScoreMedian(${esc(JSON.stringify(s.id))},${esc(JSON.stringify(s.first))},${esc(JSON.stringify(s.last))},${esc(JSON.stringify(tname))})">Median</button>
         <button class="btn btn-ghost btn-sm" style="padding:2px 8px;font-size:11px" onclick="openLinkName(${esc(JSON.stringify(s.id))},${esc(JSON.stringify(s.first))},${esc(JSON.stringify(s.last))},${esc(JSON.stringify(tname))})">Link Name</button>
       </div>`).join('')}</div>
     </div>`;
@@ -1634,13 +1644,49 @@ function buildMissingSection(filter){
 
 // ── Enter Score / Link Name ──
 let _esStudentId=null,_esStudentName='',_esTname='';
+function _resetEsModal(){
+  document.getElementById('esPct').value='';
+  document.getElementById('esScore').value='';
+  document.getElementById('esTotal').value='';
+  document.getElementById('esPctPreview').textContent='';
+  document.getElementById('esSaveBtn').disabled=false;
+}
+function onEsPctInput(){
+  const pct=parseInt(document.getElementById('esPct').value,10);
+  if(!isNaN(pct)&&pct>=0&&pct<=100){
+    document.getElementById('esScore').value=pct;
+    document.getElementById('esTotal').value=100;
+    document.getElementById('esPctPreview').textContent=pct+'%';
+  }else{
+    document.getElementById('esScore').value='';
+    document.getElementById('esTotal').value='';
+    document.getElementById('esPctPreview').textContent='';
+  }
+}
+function onEsScoreInput(){
+  document.getElementById('esPct').value='';
+  const s=parseInt(document.getElementById('esScore').value,10);
+  const t=parseInt(document.getElementById('esTotal').value,10);
+  document.getElementById('esPctPreview').textContent=(!isNaN(s)&&!isNaN(t)&&t>0)?Math.round(s/t*100)+'%':'';
+}
+function _medianPct(tname){
+  const vals=_testResults.filter(r=>r.test_name===tname&&r.pct!=null).map(r=>r.pct).sort((a,b)=>a-b);
+  if(!vals.length)return null;
+  const m=Math.floor(vals.length/2);
+  return vals.length%2?vals[m]:Math.round((vals[m-1]+vals[m])/2);
+}
 function openEnterScore(id,first,last,tname){
   _esStudentId=id;_esStudentName=first+' '+last;_esTname=tname;
   document.getElementById('esSubtitle').textContent=first+' '+last+' — '+tname.replace(' Final','');
-  document.getElementById('esScore').value='';
-  document.getElementById('esTotal').value='';
-  document.getElementById('esSaveBtn').disabled=false;
+  _resetEsModal();
   openModal('enterScoreModal');
+}
+function openEnterScoreMedian(id,first,last,tname){
+  const med=_medianPct(tname);
+  if(med===null){toast('No scores yet for this test to compute a median',true);return;}
+  openEnterScore(id,first,last,tname);
+  document.getElementById('esPct').value=med;
+  onEsPctInput();
 }
 async function saveManualScore(){
   const score=parseInt(document.getElementById('esScore').value,10);
