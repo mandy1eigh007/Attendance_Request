@@ -542,6 +542,23 @@ export async function onRequestPost(context) {
         return ok({ saved: inserts.length });
       }
 
+      case 'saveDemerit': {
+        const { classId, records } = payload;
+        if (!classId || !Array.isArray(records) || !records.length) return bad('Missing classId or records');
+        const D_PTS = {1:1,2:1,3:1,4:1,5:1,6:1,7:3,8:2,9:2,10:3,11:3,12:3,13:5,14:5,15:10,16:10,17:10,18:10};
+        const D_DESC = {1:'Violation of phone, visitor, or dress policy',2:'Unprofessional behavior during class',3:'Failure to submit homework assignment on time',4:'Failure to have proper PPE',5:'Mistreatment of ANEW, guest, partner site, or classmate property',6:'Refusal to sign demerit table',7:'Absent during guest speaker, site visit, or certification',8:'Arriving late or leaving early',9:'Refusal or inability to participate in class activities',10:'Absent full day (4+ hours)',11:'Unprofessional behavior during site visits or certification classes',12:'Mistreatment of ANEW staff, guest, or classmate',13:'No-call no-show',14:'Failure to follow safety instructions during class instruction or site visits',15:'Violation of anti-harassment policy',16:'Engaging in a physical altercation',17:'Bringing weapons onto ANEW property',18:'Possessing and/or being under the influence of controlled substances or alcohol'};
+        const inserts = records.filter(r => r.studentId && r.date && r.code).map(r => ({
+          student_id: r.studentId, class_id: classId, date: r.date,
+          staff: r.staff || 'Instructor', code: r.code,
+          description: D_DESC[r.code] || '', pts_num: D_PTS[r.code] || 1,
+          excused: r.excused || false, excuse_reason: r.notes || null,
+          incident: r.notes || null, signed: true,
+        }));
+        if (!inserts.length) return bad('No valid records to save');
+        await sb('anew_demerits', { method: 'POST', prefer: 'return=minimal', body: JSON.stringify(inserts) });
+        return ok({ saved: inserts.length });
+      }
+
       default:
         return bad('Unknown action: ' + action);
     }
