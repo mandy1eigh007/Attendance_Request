@@ -1605,7 +1605,23 @@ function renderTestResults(){
         <td style="padding:9px 10px;color:var(--t3);font-size:12px">${esc(dateStr)}</td>
       </tr>`;
     }).join('')}</tbody>
-  </table>`;
+  </table>${buildMissingSection(filter)}`;
+}
+
+function buildMissingSection(filter){
+  const roster=students.filter(s=>s.active!==false);
+  if(!roster.length) return '';
+  const allTests=['Tape Measure Final','Hand Tool Final','Power Tool Final'];
+  const checkTests=filter?[filter]:allTests;
+  let any=false;
+  const blocks=checkTests.map(tname=>{
+    const took=new Set(_testResults.filter(r=>r.test_name===tname).map(r=>(r.student_name||'').toLowerCase().trim()));
+    const missing=roster.filter(s=>!took.has((s.first+' '+s.last).toLowerCase().trim()));
+    if(!missing.length) return `<div style="display:flex;align-items:center;gap:8px;padding:6px 0"><span style="font-size:12px;font-weight:600;color:var(--t3);min-width:130px">${esc(tname.replace(' Final',''))}</span><span style="font-size:12px;color:var(--ac)">All done</span></div>`;
+    any=true;
+    return `<div style="padding:6px 0;border-bottom:.5px solid var(--b1)"><div style="font-size:12px;font-weight:600;color:var(--t3);margin-bottom:4px">${esc(tname.replace(' Final',''))} — ${missing.length} missing</div><div style="font-size:13px;color:#e74c3c;line-height:1.8">${missing.map(s=>esc(s.first+' '+s.last)).join(' &nbsp;·&nbsp; ')}</div></div>`;
+  }).join('');
+  return `<div style="margin-top:24px;border-top:1px solid var(--b1);padding-top:16px"><div style="font-size:12px;font-weight:700;color:var(--t3);letter-spacing:.06em;text-transform:uppercase;margin-bottom:10px">Has Not Tested</div>${blocks}</div>`;
 }
 
 // ── Student modals ──
