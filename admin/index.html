@@ -643,6 +643,17 @@ body.help-mode .help-hint{display:block}
   </div>
 </div></div>
 
+<div class="modal-bg" id="answerSheetModal"><div class="modal" role="dialog" aria-modal="true" style="max-width:600px;max-height:80vh;display:flex;flex-direction:column"><div class="grab"></div>
+  <div style="flex-shrink:0">
+    <h2 style="font-size:20px;font-weight:700;letter-spacing:-.03em;margin-bottom:2px" id="asTitle">Answer Sheet</h2>
+    <p id="asSubtitle" style="font-size:12px;color:var(--t3);margin-bottom:14px"></p>
+  </div>
+  <div id="asBody" style="overflow-y:auto;flex:1;font-size:13px"></div>
+  <div class="modal-actions" style="flex-shrink:0;margin-top:12px">
+    <button class="btn btn-ghost" onclick="closeModal('answerSheetModal')">Close</button>
+  </div>
+</div></div>
+
 <div class="modal-bg" id="linkNameModal"><div class="modal" role="dialog" aria-modal="true"><div class="grab"></div>
   <h2 style="font-size:22px;font-weight:700;letter-spacing:-.03em;margin-bottom:4px">Link Test Name</h2>
   <p id="lnSubtitle" style="font-size:13px;color:var(--t3);margin-bottom:14px"></p>
@@ -1597,12 +1608,14 @@ function renderTestResults(){
       <th style="padding:8px 10px;color:var(--t3);font-weight:600;text-align:center">Pct</th>
       <th style="padding:8px 10px;color:var(--t3);font-weight:600;text-align:center">Pass</th>
       <th style="padding:8px 10px;color:var(--t3);font-weight:600">Date</th>
+      <th style="padding:8px 10px"></th>
     </tr></thead>
     <tbody>${rows.map(r=>{
       const pct=r.pct!=null?Math.round(r.pct):r.total?Math.round(r.score/r.total*100):null;
       const pass=pct!=null&&pct>=passMark;
       const dateStr=r.taken_at?new Date(r.taken_at).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}):'—';
       const _ms=findStudentByResultName(r.student_name);
+      const hasAnswers=Array.isArray(r.answers)&&r.answers.length>0;
       return `<tr style="border-bottom:.5px solid var(--b1)">
         <td style="padding:9px 10px;font-weight:500">${_ms?'<button class="btn btn-ghost btn-sm" style="padding:0;font-weight:500;text-align:left" onclick="navToStudent(\''+_ms.id+'\')">'+ esc(r.student_name||'—')+'</button>':esc(r.student_name||'—')}</td>
         <td style="padding:9px 10px;color:var(--t2)">${esc(r.test_name||'—')}</td>
@@ -1610,9 +1623,44 @@ function renderTestResults(){
         <td style="padding:9px 10px;text-align:center;font-weight:600;color:${pct==null?'var(--t3)':pct>=passMark?'var(--ac)':'#e74c3c'}">${pct!=null?pct+'%':'—'}</td>
         <td style="padding:9px 10px;text-align:center;font-weight:600;color:${pass?'var(--ac)':'#e74c3c'}">${pct==null?'—':pass?'Yes':'No'}</td>
         <td style="padding:9px 10px;color:var(--t3);font-size:12px">${esc(dateStr)}</td>
+        <td style="padding:9px 6px;text-align:right">${hasAnswers?`<button class="btn btn-ghost btn-sm" onclick="openAnswerSheet(${esc(JSON.stringify(r.id))})">View</button>`:'<span style="font-size:11px;color:var(--t3)">paper</span>'}</td>
       </tr>`;
     }).join('')}</tbody>
   </table>${buildMissingSection(filter)}`;
+}
+
+function openAnswerSheet(resultId){
+  const r=_testResults.find(x=>x.id===resultId);
+  if(!r)return;
+  const pct=r.pct!=null?Math.round(r.pct):r.total?Math.round(r.score/r.total*100):null;
+  const dateStr=r.taken_at?new Date(r.taken_at).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}):'—';
+  document.getElementById('asTitle').textContent=esc(r.student_name||'—');
+  document.getElementById('asSubtitle').textContent=`${esc(r.test_name||'')} · ${r.score}/${r.total} (${pct!=null?pct+'%':'—'}) · ${dateStr}`;
+  const answers=Array.isArray(r.answers)?r.answers:[];
+  const wrong=answers.filter(a=>!a.correct);
+  const correct=answers.filter(a=>a.correct);
+  document.getElementById('asBody').innerHTML=`
+    <div style="display:flex;gap:16px;margin-bottom:14px;font-size:12px;font-weight:600">
+      <span style="color:var(--ac)">${correct.length} correct</span>
+      <span style="color:#e74c3c">${wrong.length} wrong</span>
+      <span style="color:var(--t3)">${answers.length} total</span>
+    </div>
+    ${wrong.length?`<div style="font-size:11px;font-weight:700;color:var(--t3);letter-spacing:.06em;text-transform:uppercase;margin-bottom:8px">Missed Questions</div>
+    ${wrong.map(a=>`<div style="padding:10px 0;border-bottom:.5px solid var(--b1)">
+      <div style="font-size:12px;color:var(--t3);margin-bottom:3px">Q${a.num}</div>
+      <div style="font-size:13px;color:var(--fg1);margin-bottom:5px">${esc(a.question||'')}</div>
+      <div style="display:flex;gap:10px;font-size:12px">
+        <span style="color:#e74c3c">Student: ${esc(String(a.studentAnswer||'—'))}</span>
+        <span style="color:var(--ac)">Correct: ${esc(String(a.correctAnswer||'—'))}</span>
+      </div>
+    </div>`).join('')}`:'<div style="color:var(--ac);font-size:13px;padding:12px 0">All questions answered correctly.</div>'}
+    ${correct.length&&wrong.length?`<details style="margin-top:14px"><summary style="font-size:11px;font-weight:700;color:var(--t3);letter-spacing:.06em;text-transform:uppercase;cursor:pointer;padding:8px 0">Show correct answers (${correct.length})</summary>
+    <div style="margin-top:8px">${correct.map(a=>`<div style="padding:8px 0;border-bottom:.5px solid var(--b1);display:flex;gap:10px;font-size:12px">
+      <span style="color:var(--t3);min-width:30px">Q${a.num}</span>
+      <span style="color:var(--t2);flex:1">${esc(a.question||'')}</span>
+      <span style="color:var(--ac)">${esc(String(a.studentAnswer||'—'))}</span>
+    </div>`).join('')}</div></details>`:''}`;
+  openModal('answerSheetModal');
 }
 
 function nameWordsMatch(rFirst,rLast,resultName){
