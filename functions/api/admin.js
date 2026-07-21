@@ -145,10 +145,10 @@ export async function onRequestPost(context) {
         const last  = clean(payload.last);
         const email = clean(payload.email);
         if (!first || !last) return bad('First and last name required');
-        const VALID_STATUS = ['active','dropped','early_grad'];
+        const VALID_STATUS = ['active','dropped','early_grad','early_grad_w_test'];
         const status = VALID_STATUS.includes(payload.status) ? payload.status : null;
         const patch = { first, last, email: email || null };
-        if (status) { patch.status = status; patch.active = status === 'active'; }
+        if (status) { patch.status = status; patch.active = status !== 'dropped'; }
         await sb(`anew_students?id=eq.${enc(id)}`, {
           method: 'PATCH', prefer: 'return=minimal',
           body: JSON.stringify(patch),

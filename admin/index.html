@@ -499,7 +499,7 @@
     <select id="sdStatus" style="width:100%">
       <option value="active">Active</option>
       <option value="dropped">Dropped</option>
-      <option value="early_grad">Early Grad</option>
+      <option value="early_grad_w_test">Early Grad W/Test</option>
     </select>
   </div>
   <div class="modal-actions" style="margin-top:6px">
@@ -1152,13 +1152,14 @@ function renderManage(){
         <button class="btn btn-danger btn-sm" onclick="delInstr('${esc(i.id)}')">Remove</button></div></div>`).join(''):'<div class="empty-state"><p>No instructors yet.</p></div>';
   renderManageStudents();
 }
-const STATUS_LABEL={'active':'Active','dropped':'Dropped','early_grad':'Early Grad'};
-const STATUS_COLOR={'active':'var(--ac)','dropped':'#e74c3c','early_grad':'#f39c12'};
+const STATUS_LABEL={'active':'Active','dropped':'Dropped','early_grad':'Early Grad','early_grad_w_test':'Early Grad W/Test'};
+const STATUS_COLOR={'active':'var(--ac)','dropped':'#e74c3c','early_grad':'#f39c12','early_grad_w_test':'#f39c12'};
 function renderManageStudents(){
   const el=document.getElementById('manageStudents');
   if(!curClass||!students.length){el.innerHTML='<div class="empty-state"><p>Select a class above, or add some.</p></div>';return;}
-  const active=students.filter(s=>!s.status||s.status==='active');
-  const inactive=students.filter(s=>s.status&&s.status!=='active');
+  // early_grad_w_test stays in active section (active=true, still needs to test)
+  const active=students.filter(s=>!s.status||s.status==='active'||s.status==='early_grad_w_test');
+  const inactive=students.filter(s=>s.status&&s.status!=='active'&&s.status!=='early_grad_w_test');
   const row=s=>`<div style="padding:9px 0;border-bottom:.5px solid var(--b1);display:flex;justify-content:space-between;align-items:center;gap:10px">
     <div style="display:flex;align-items:center;gap:8px;min-width:0">
       ${s.status&&s.status!=='active'?`<span style="font-size:11px;font-weight:700;color:${STATUS_COLOR[s.status]||'#888'};white-space:nowrap">${STATUS_LABEL[s.status]||s.status}</span>`:''}
@@ -1197,8 +1198,8 @@ async function saveStudentDetail(){
     await api('updateStudent',{id:sdStudentId,first,last,email,status});
     const s=students.find(x=>x.id===sdStudentId);
     if(s){s.first=first;s.last=last;s.email=email||null;s.status=status;s.active=status==='active';}
-    // Remove from local list if no longer active so they disappear from attendance/roster
-    if(status!=='active') students=students.filter(x=>x.id!==sdStudentId);
+    // Only dropped students leave the active roster immediately
+    if(status==='dropped') students=students.filter(x=>x.id!==sdStudentId);
     renderManageStudents();renderAttendance();
     toast('Student saved');
   }catch(e){toast(e.message,true);}finally{btn.disabled=false;btn.textContent='Save Student';}
