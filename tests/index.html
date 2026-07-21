@@ -89,10 +89,19 @@
     #screen-test{flex:1;min-height:0;overflow:hidden;padding-bottom:0}
     #test-scroll{flex:1;overflow-y:auto;width:100%;padding:32px 0 8px}
     /* Nav */
-    .nav-row{display:flex;justify-content:flex-end;width:100%;padding:12px 0 28px;flex-shrink:0;background:#0a0a0a;margin-top:0}
+    .nav-row{display:flex;justify-content:space-between;width:100%;padding:12px 0 28px;flex-shrink:0;background:#0a0a0a;margin-top:0}
     .next-btn{background:#fff;color:#0a0a0a;border:none;border-radius:8px;padding:13px 30px;font-size:0.97rem;font-weight:700;cursor:pointer;transition:opacity 0.15s}
     .next-btn:disabled{opacity:0.18;cursor:not-allowed}
     .next-btn:hover:not(:disabled){opacity:0.88}
+    .prev-btn{background:#141414;color:#ccc;border:1px solid #333;border-radius:8px;padding:13px 24px;font-size:0.97rem;font-weight:600;cursor:pointer;transition:opacity 0.15s}
+    .prev-btn:hover{color:#fff;border-color:#555}
+    /* Review */
+    #screen-review{flex:1;min-height:0;overflow:hidden;padding-bottom:0}
+    #review-scroll{flex:1;overflow-y:auto;width:100%;padding:32px 0 8px}
+    .rv-item{display:flex;align-items:flex-start;gap:12px;padding:12px 0;border-bottom:1px solid #181818}
+    .rv-num{flex-shrink:0;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.7rem;font-weight:700;margin-top:2px}
+    .rv-edit{flex-shrink:0;background:none;border:1px solid #333;border-radius:6px;padding:5px 12px;font-size:0.78rem;color:#888;cursor:pointer}
+    .rv-edit:hover{border-color:#555;color:#ccc}
 
     /* Results */
     .score-ring{width:136px;height:136px;border-radius:50%;border:3px solid #fff;display:flex;flex-direction:column;align-items:center;justify-content:center;margin:44px 0 28px;flex-shrink:0}
@@ -224,7 +233,21 @@
     <div id="instructor-answer" class="instructor-answer"></div>
   </div>
   <div class="nav-row">
+    <button class="prev-btn" id="prev-btn" onclick="prevQ()" style="visibility:hidden">Prev</button>
     <button class="next-btn" id="next-btn" disabled onclick="nextQ()">Next</button>
+  </div>
+</div>
+
+<!-- ── REVIEW ── -->
+<div id="screen-review" class="screen">
+  <div id="review-scroll">
+    <div class="res-title" style="margin-top:44px;margin-bottom:6px">Review Your Answers</div>
+    <div class="res-sub" id="review-sub" style="margin-bottom:28px">Check your work before submitting.</div>
+    <div id="review-list" style="width:100%"></div>
+  </div>
+  <div class="nav-row">
+    <button class="prev-btn" onclick="exitReview()">Back</button>
+    <button class="next-btn" onclick="buildResults()">Submit</button>
   </div>
 </div>
 
@@ -458,6 +481,8 @@ let currentIndex = 0;
 let studentName = '';
 let answers = [];
 let currentAnswer = null;
+let _cameFromReview = false;
+let _suppressHistoryPush = false;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // SCREENS
@@ -466,17 +491,31 @@ let currentAnswer = null;
 function showScreen(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById('screen-' + id).classList.add('active');
-  // Mid-test and on results, lock the nav down to a plain ANEW header so a
-  // stray tap can't navigate away from an in-progress test.
-  const locked = (id === 'test' || id === 'results');
+  const locked = (id === 'test' || id === 'results' || id === 'review');
   document.getElementById('site-nav').classList.toggle('nav-locked', locked);
-  document.body.classList.toggle('testing', id === 'test');
+  document.body.classList.toggle('testing', id === 'test' || id === 'review');
   window.scrollTo(0, 0);
+  if (!_suppressHistoryPush) history.pushState({ screen: id }, '');
 }
 
-// Warn before leaving the page while a test is in progress.
+// Initialize history state on first load.
+history.replaceState({ screen: 'auth' }, '');
+
+// Browser back: don't let authenticated users fall back to the login screen.
+window.addEventListener('popstate', function(e) {
+  const target = e.state?.screen;
+  const goTo = (!target || (target === 'auth' && authData)) ? (authData ? 'home' : 'auth') : target;
+  _suppressHistoryPush = true;
+  showScreen(goTo);
+  _suppressHistoryPush = false;
+  if (goTo !== target) history.replaceState({ screen: goTo }, '');
+});
+
+// Warn before leaving while a test is in progress.
 window.onbeforeunload = function () {
-  if (document.getElementById('screen-test').classList.contains('active')) {
+  const inTest = document.getElementById('screen-test')?.classList.contains('active');
+  const inReview = document.getElementById('screen-review')?.classList.contains('active');
+  if (inTest || inReview) {
     return 'Your test is in progress — leaving now will lose your answers.';
   }
 };
@@ -584,9 +623,10 @@ function selectTest(key) {
   const bonus = src.questions[src.questions.length - 1];
   const rest  = shuffleArray(src.questions.slice(0, -1));
   currentTest = { ...src, questions: [...rest, bonus] };
-  answers = [];
+  answers = new Array(currentTest.questions.length).fill(null);
   currentIndex = 0;
   currentAnswer = null;
+  _cameFromReview = false;
   showScreen('test');
   renderQ(0);
 }
@@ -614,7 +654,6 @@ function renderQ(idx) {
   }
 
   const area = document.getElementById('answer-area');
-  currentAnswer = null;
 
   if (q.type === 'measure') {
     area.innerHTML = `
@@ -644,7 +683,6 @@ function renderQ(idx) {
     }</div>`;
 
   } else if (q.type === 'multiimg') {
-    currentAnswer = new Set();
     area.innerHTML = `<div class="multiimg-grid">${
       q.imgs.map((src, i) =>
         `<div class="multiimg-item" id="mi-${i}" onclick="toggleMultiImg(${i})">
@@ -669,9 +707,25 @@ function renderQ(idx) {
     instrEl.style.display = 'none';
   }
 
+  // Restore saved answer for this question
+  const saved = answers[idx];
+  if (saved !== null && saved !== undefined) {
+    restoreAnswer(q, saved);
+    currentAnswer = (q.type === 'multiimg' && saved instanceof Set) ? new Set(saved) : saved;
+  } else {
+    currentAnswer = q.type === 'multiimg' ? new Set() : null;
+  }
+
   const nextBtn = document.getElementById('next-btn');
-  nextBtn.disabled = !isInstructor && q.type !== 'multiimg';
-  nextBtn.textContent = idx === total - 1 ? 'Submit' : 'Next';
+  nextBtn.disabled = !isInstructor && q.type !== 'multiimg' && (saved === null || saved === undefined);
+  if (_cameFromReview) {
+    nextBtn.textContent = 'Return to Review';
+  } else {
+    nextBtn.textContent = idx === total - 1 ? 'Review' : 'Next';
+  }
+
+  const prevBtn = document.getElementById('prev-btn');
+  prevBtn.style.visibility = idx > 0 ? 'visible' : 'hidden';
 }
 
 function onMeasureInput() {
@@ -715,14 +769,94 @@ function selectTF(val, btn) {
 }
 
 function nextQ() {
-  answers.push({ q: currentTest.questions[currentIndex], answer: currentAnswer });
+  answers[currentIndex] = currentAnswer;
+  if (_cameFromReview) {
+    _cameFromReview = false;
+    showReview();
+    return;
+  }
   currentIndex++;
   if (currentIndex >= currentTest.questions.length) {
-    buildResults();
+    showReview();
   } else {
     renderQ(currentIndex);
     window.scrollTo(0, 0);
   }
+}
+
+function prevQ() {
+  answers[currentIndex] = currentAnswer;
+  currentIndex--;
+  renderQ(currentIndex);
+  window.scrollTo(0, 0);
+}
+
+function restoreAnswer(q, saved) {
+  if (q.type === 'measure') {
+    const ftEl = document.getElementById('ans-ft');
+    const inEl = document.getElementById('ans-in');
+    const fracEl = document.getElementById('ans-frac');
+    if (ftEl) ftEl.value = saved.ft ?? '';
+    if (inEl) inEl.value = saved.in ?? '';
+    if (fracEl) fracEl.value = saved.frac ?? '0';
+    document.getElementById('next-btn').disabled = false;
+  } else if (q.type === 'mc' || q.type === 'img') {
+    if (saved !== null && saved !== undefined) {
+      const btns = document.querySelectorAll('.mc-opt');
+      if (btns[saved]) btns[saved].classList.add('selected');
+      document.getElementById('next-btn').disabled = false;
+    }
+  } else if (q.type === 'tf') {
+    const tfBtns = document.querySelectorAll('.tf-btn');
+    if (saved === true && tfBtns[0]) tfBtns[0].classList.add('selected');
+    else if (saved === false && tfBtns[1]) tfBtns[1].classList.add('selected');
+    document.getElementById('next-btn').disabled = false;
+  } else if (q.type === 'multiimg') {
+    if (saved instanceof Set) {
+      saved.forEach(i => {
+        const el = document.getElementById('mi-' + i);
+        if (el) el.classList.add('selected');
+      });
+    }
+  }
+}
+
+function showReview() {
+  const qs = currentTest.questions;
+  document.getElementById('review-list').innerHTML = qs.map((q, i) => {
+    const ans = answers[i];
+    const answered = ans !== null && ans !== undefined;
+    const numColor = answered ? '#333' : '#3a0e0e';
+    const numTextColor = answered ? '#555' : '#e74c3c';
+    const ansText = answered ? fmtAnswer(q, ans) : 'Not answered';
+    const ansColor = answered ? '#666' : '#e74c3c';
+    return `<div class="rv-item">
+      <div class="rv-num" style="background:${numColor};border:1px solid ${answered?'#444':'#6b1515'};color:${numTextColor}">${i+1}</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:0.88rem;color:#ccc;line-height:1.45">${q.q.split('\n')[0].slice(0,100)}${q.q.split('\n')[0].length>100?'…':''}</div>
+        <div style="font-size:0.8rem;color:${ansColor};margin-top:3px">${ansText}</div>
+      </div>
+      <button class="rv-edit" onclick="editFromReview(${i})">Edit</button>
+    </div>`;
+  }).join('');
+  const unanswered = qs.filter((q, i) => answers[i] === null).length;
+  document.getElementById('review-sub').textContent = unanswered > 0
+    ? `${unanswered} question(s) not answered — check before submitting.`
+    : 'All questions answered. Ready to submit.';
+  showScreen('review');
+}
+
+function editFromReview(idx) {
+  _cameFromReview = true;
+  currentIndex = idx;
+  showScreen('test');
+  renderQ(idx);
+}
+
+function exitReview() {
+  _cameFromReview = false;
+  showScreen('test');
+  renderQ(currentIndex);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -787,7 +921,8 @@ function fmtCorrect(q) {
 
 function buildResults() {
   let score = 0;
-  const items = answers.map(({q, answer}, i) => {
+  const items = currentTest.questions.map((q, i) => {
+    const answer = answers[i];
     const correct = gradeAnswer(q, answer);
     if (correct) score++;
     return {q, answer, correct, num: i + 1};
