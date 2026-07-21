@@ -970,12 +970,13 @@ function buildResults() {
   const submitBtn = document.getElementById('submit-btn');
   if (isInstructor) {
     submitBtn.style.display = 'none';
+    document.getElementById('status-line').textContent = '';
   } else {
-    submitBtn.style.display = '';
-    submitBtn.disabled = false;
+    submitBtn.style.display = 'none'; // hidden until needed as retry
+    document.getElementById('status-line').textContent = 'Saving your score...';
   }
-  document.getElementById('status-line').textContent = '';
   showScreen('results');
+  if (!isInstructor) submitResult();
 }
 
 function printAnswerKey(key) {
@@ -993,8 +994,8 @@ function printAnswerKey(key) {
 async function submitResult() {
   const btn = document.getElementById('submit-btn');
   const statusEl = document.getElementById('status-line');
-  btn.disabled = true;
-  statusEl.textContent = 'Saving...';
+  btn.style.display = 'none';
+  statusEl.textContent = 'Saving your score...';
   try {
     const res = await fetch('/api/tests', {
       method: 'POST',
@@ -1005,11 +1006,12 @@ async function submitResult() {
       const err = await res.json().catch(() => ({}));
       throw new Error(err.error || 'Server error ' + res.status);
     }
-    statusEl.textContent = 'Score saved successfully.';
-    btn.textContent = 'Saved';
+    statusEl.textContent = 'Score saved.';
   } catch (e) {
-    statusEl.textContent = 'Could not save — check your connection and try again.';
+    statusEl.textContent = 'Save failed — tap the button below to try again.';
+    btn.style.display = '';
     btn.disabled = false;
+    btn.textContent = 'Retry Save';
   }
 }
 </script>
