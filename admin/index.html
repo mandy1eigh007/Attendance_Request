@@ -185,6 +185,7 @@ body.help-mode .help-hint{display:block}
 
     <!-- ATTENDANCE -->
     <div class="view active" id="view-attendance">
+      <div class="help-hint">Tap a status cell (OT / L / AE / AU) to mark attendance — it saves automatically. Tap the student name to jump to their profile. Change the date with the date picker to view or edit another day.</div>
       <div class="page-header">
         <div><div class="page-title">Attendance</div><div class="page-sub">Select your class and date, then tap a status to mark each student. Changes save automatically.</div></div>
         <div class="flex-gap">
@@ -203,6 +204,7 @@ body.help-mode .help-hint{display:block}
 
     <!-- DEMERIT -->
     <div class="view" id="view-demerit">
+      <div class="help-hint">Pick the student, fill in the date and your name, choose a code, then hit Issue. The slip auto-generates for printing and the Salesforce case note is ready to copy. Codes marked * require an incident description.</div>
       <div class="page-header"><div><div class="page-title">Issue Demerit</div><div class="page-sub">Select a student and demerit code. A printable slip and Salesforce case note are generated automatically.</div></div></div>
       <div id="demeritAlert"></div>
       <div class="section-card">
@@ -299,6 +301,7 @@ body.help-mode .help-hint{display:block}
 
     <!-- TEST RESULTS -->
     <div class="view" id="view-results">
+      <div class="help-hint">The "Has Not Tested" section shows who hasn't submitted a score yet. Use "Enter Score" to manually log a result. Use "Link Name" if a student submitted under a misspelled name — pick their entry from the list and it will link to their roster record permanently.</div>
       <div class="page-header">
         <div><div class="page-title">Test Results</div><div class="page-sub">Tool Finals scores submitted by students. Filtered by selected class.</div></div>
         <div class="flex-gap">
@@ -317,6 +320,7 @@ body.help-mode .help-hint{display:block}
 
     <!-- SCAN SHEETS -->
     <div id="view-scan" class="view">
+      <div class="help-hint">Upload a photo or PDF of the attendance sheet or demerit slip. The AI reads names and codes, then shows a review table. Edit any cell before saving. Students are matched to the roster automatically — unmatched rows are highlighted yellow.</div>
       <div style="max-width:700px;margin:0 auto">
         <div style="font-size:20px;font-weight:700;margin-bottom:16px">Scan Attendance Sheets</div>
         <div style="margin-bottom:16px;display:flex;gap:16px;align-items:center">
@@ -1616,8 +1620,8 @@ function buildMissingSection(filter){
       <div style="font-size:12px;font-weight:600;color:var(--t3);margin-bottom:6px">${esc(tname.replace(' Final',''))} — ${missing.length} missing</div>
       <div style="display:flex;flex-direction:column;gap:5px">${missing.map(s=>`<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
         <span style="font-size:13px;color:#e74c3c;min-width:160px">${esc(s.first+' '+s.last)}</span>
-        <button class="btn btn-ghost btn-sm" style="padding:2px 8px;font-size:11px" onclick="openEnterScore(${JSON.stringify(s.id)},${JSON.stringify(s.first)},${JSON.stringify(s.last)},${JSON.stringify(tname)})">Enter Score</button>
-        <button class="btn btn-ghost btn-sm" style="padding:2px 8px;font-size:11px" onclick="openLinkName(${JSON.stringify(s.id)},${JSON.stringify(s.first)},${JSON.stringify(s.last)},${JSON.stringify(tname)})">Link Name</button>
+        <button class="btn btn-ghost btn-sm" style="padding:2px 8px;font-size:11px" onclick="openEnterScore(${esc(JSON.stringify(s.id))},${esc(JSON.stringify(s.first))},${esc(JSON.stringify(s.last))},${esc(JSON.stringify(tname))})">Enter Score</button>
+        <button class="btn btn-ghost btn-sm" style="padding:2px 8px;font-size:11px" onclick="openLinkName(${esc(JSON.stringify(s.id))},${esc(JSON.stringify(s.first))},${esc(JSON.stringify(s.last))},${esc(JSON.stringify(tname))})">Link Name</button>
       </div>`).join('')}</div>
     </div>`;
   }).join('');
@@ -1653,7 +1657,7 @@ function openLinkName(id,first,last,tname){
   const unmatched=unmatchedResults(tname);
   const opts=document.getElementById('lnOptions');
   opts.innerHTML=unmatched.length
-    ?unmatched.map(r=>`<button class="btn btn-ghost" style="text-align:left;justify-content:flex-start" onclick="applyLinkName(${JSON.stringify(r.student_name)})">${esc(r.student_name||'—')}</button>`).join('')
+    ?unmatched.map(r=>`<button class="btn btn-ghost" style="text-align:left;justify-content:flex-start" onclick="applyLinkName(${esc(JSON.stringify(r.student_name))})">${esc(r.student_name||'—')}</button>`).join('')
     :'<p style="font-size:13px;color:var(--t3)">No unmatched results for this test.</p>';
   openModal('linkNameModal');
 }
