@@ -75,11 +75,8 @@ When students take the **digital test** (`/tests`), every question answer is sto
 Manually-entered scores (via Enter Score in the dashboard) have `answers: null`. The admin dashboard
 shows a **View** button for digital results and "paper" for manual ones.
 
-### Live operational records (non-secret)
-- **Active class:** "PACE 64", slug `pace-64`, class_id `5ef3bc96-2d02-45fc-bbcf-01faf7befea8`
-- **Instructors (both linked to PACE 64):**
-  - Mandy — id `27b2652b-7327-4ec8-b2dc-a71bac8ea126`
-  - Ashley — id `03038373-49a9-4ddc-a39a-51244b284f43`
+Live class, student, and instructor records are operational data. Inspect them through the authenticated
+application or Supabase when needed; never copy identifiers or private-person records into this public repo.
 
 ---
 
@@ -189,6 +186,8 @@ or demerit data. Admin reviews in a table before saving. Match status per studen
 
 ---
 
-## 8. How to push
+## 8. How to ship
 
-Claude Code pushes directly via `git push origin main`. Mandy does not push — don't ask her to.
+Work on a branch, have Codex review every authored change, and use a pull request. Do not push authored
+work directly to `main`; `main` auto-deploys to production. Mandy approves risky or consequential changes,
+but she is not expected to run the push herself.
