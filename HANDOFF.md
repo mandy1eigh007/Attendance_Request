@@ -32,6 +32,8 @@ browser ──> Cloudflare Pages Functions ──> Supabase (service-role; RLS o
 ```
 
 - **Hosting:** Cloudflare Pages, live at `cohotrack.pages.dev`, auto-deploying from `main`.
+- **Pages build:** `node scripts/build-pages.mjs` publishes the allowlisted `dist/` output. Cloudflare Pages
+  must keep its build output directory set to `dist`; never publish the repository root.
 - **All DB access through Functions** — browser never hits Supabase directly.
 - **Auth:** one shared `ADMIN_PASSWORD` env var. Every admin action verifies it. No per-user login.
 
@@ -145,6 +147,8 @@ Single-file SPA, login-gated by `ADMIN_PASSWORD`. All roles (instructor/coordina
 
 Accepts a base64 image/PDF, sends to Claude API (`ANTHROPIC_API_KEY`), returns structured attendance
 or demerit data. Admin reviews in a table before saving. Match status per student (green/yellow).
+`parseAiJson` accepts plain JSON or markdown-fenced JSON for both scan types. Parse failures return a
+generic error; never echo model output because it can contain document-derived student information.
 
 ---
 

@@ -7,8 +7,8 @@ functions
 scripts
 supabase
 node-tests
-tools
 email-templates
+dist
 
 .env*
 .gitignore
