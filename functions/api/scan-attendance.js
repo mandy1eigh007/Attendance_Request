@@ -6,7 +6,7 @@ import { makeSb, ok, bad, enc } from '../_lib.js';
 const DEMERIT_PARSE_PROMPT = `Parse these ANEW demerit slips and return ONLY valid JSON, no markdown.
 
 Each page is one demerit slip. Return:
-{"slips":[{"student_name":"Gemechu Washo","staff_name":"Mandy Richardson","date":"7/2/2026","demerit_code":8,"excused":false,"notes":"Student arrived late to class..."}]}
+{"slips":[{"student_name":"Sample Student","staff_name":"Sample Staff","date":"1/2/2026","demerit_code":8,"excused":false,"notes":"Sample note"}]}
 
 Rules:
 - student_name: from Client Name field at bottom of slip
@@ -21,7 +21,7 @@ Rules:
 const PARSE_PROMPT = `Parse this ANEW program attendance sheet and return ONLY valid JSON, no markdown, no explanation.
 
 Return this exact structure:
-{"sheets":[{"class":"Pace 64","week":"Week 9","dates":["7/14/2026","7/15/2026","7/16/2026","7/17/2026"],"students":[{"row":1,"name":"Aaron DeSelms","skipped":false,"attendance":{"7/14/2026":"OT","7/15/2026":"OT","7/16/2026":null,"7/17/2026":"L"}}],"notes":"handwritten notes at bottom verbatim"}]}
+{"sheets":[{"class":"Sample Cohort","week":"Week 1","dates":["1/2/2026","1/3/2026"],"students":[{"row":1,"name":"Student, Sample","skipped":false,"attendance":{"1/2/2026":"OT","1/3/2026":"L"}}],"notes":"sample note"}]}
 
 Rules:
 - Each day has 5 columns: On Time, Late, Absent, Excused, Unexcused
@@ -63,6 +63,15 @@ function matchName(parsed, roster) {
     }
   }
   return null;
+}
+
+export function parseAiJson(rawText) {
+  const cleaned = String(rawText == null ? '' : rawText)
+    .trim()
+    .replace(/^```[a-z0-9_-]*\s*/i, '')
+    .replace(/\s*```\s*$/i, '')
+    .trim();
+  return JSON.parse(cleaned);
 }
 
 export async function onRequest(context) {
@@ -129,10 +138,8 @@ export async function onRequestPost(context) {
   // Demerit path
   if (scanType === 'demerit') {
     let parsed;
-    try {
-      const cleaned = rawText.replace(/^```[a-z]*\s*/i, '').replace(/\s*```\s*$/i, '').trim();
-      parsed = JSON.parse(cleaned);
-    } catch { return bad('Could not parse demerit slips', 422); }
+    try { parsed = parseAiJson(rawText); }
+    catch { return bad('Could not parse demerit slips', 422); }
     const slips = (parsed.slips || []).map(slip => {
       const match = matchName(slip.student_name, roster);
       return { ...slip, studentId: match ? match.id : null, matched: !!match, rosterName: match ? match.first + ' ' + match.last : null };
@@ -143,10 +150,10 @@ export async function onRequestPost(context) {
   // Attendance path
   let parsed;
   try {
-    const cleaned = rawText.replace(/^```[a-z]*\s*/i, '').replace(/\s*```\s*$/i, '').trim();
-    parsed = JSON.parse(cleaned);
+    parsed = parseAiJson(rawText);
   } catch (e) {
-    return bad('AI returned non-JSON response: ' + rawText.slice(0, 200), 502);
+    console.error('scan-attendance: AI returned invalid JSON');
+    return bad('AI returned non-JSON response', 502);
   }
 
   const sheets = parsed.sheets || [];
