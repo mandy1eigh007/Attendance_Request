@@ -129,7 +129,10 @@ export async function onRequestPost(context) {
   // Demerit path
   if (scanType === 'demerit') {
     let parsed;
-    try { parsed = JSON.parse(rawText); } catch { return bad('Could not parse demerit slips', 422); }
+    try {
+      const cleaned = rawText.replace(/^```[a-z]*\s*/i, '').replace(/\s*```\s*$/i, '').trim();
+      parsed = JSON.parse(cleaned);
+    } catch { return bad('Could not parse demerit slips', 422); }
     const slips = (parsed.slips || []).map(slip => {
       const match = matchName(slip.student_name, roster);
       return { ...slip, studentId: match ? match.id : null, matched: !!match, rosterName: match ? match.first + ' ' + match.last : null };
@@ -140,7 +143,7 @@ export async function onRequestPost(context) {
   // Attendance path
   let parsed;
   try {
-    const cleaned = rawText.replace(/^```[a-z]*\n?/i, '').replace(/\n?```$/i, '').trim();
+    const cleaned = rawText.replace(/^```[a-z]*\s*/i, '').replace(/\s*```\s*$/i, '').trim();
     parsed = JSON.parse(cleaned);
   } catch (e) {
     return bad('AI returned non-JSON response: ' + rawText.slice(0, 200), 502);
